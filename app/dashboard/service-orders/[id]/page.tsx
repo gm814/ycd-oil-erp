@@ -42,7 +42,7 @@ export default async function ServiceOrderPage({
         <div>
           <a href="/dashboard/service-orders" className="backLink">← أوامر الخدمة</a>
           <h1>{order.orderNo}</h1>
-          <p>{order.customer.name} · {order.vehicle.plate} · العداد {order.odometer?.toLocaleString("ar-SA") ?? "—"}</p>
+          <p><a className="orderLink" href={`/dashboard/customers/${order.customerId}`}>{order.customer.name}</a> · {order.vehicle.plate} · العداد {order.odometer?.toLocaleString("ar-SA") ?? "—"}</p>
         </div>
         <span className="statusBadge">{order.status}</span>
       </div>
@@ -85,7 +85,7 @@ export default async function ServiceOrderPage({
           <div className="orderTotal"><span>الإجمالي قبل الضريبة</span><b>{subtotal.toFixed(2)} ر.س</b></div>
           {order.invoice && (
             <div className="invoiceBox">
-              <div><b>الفاتورة: {order.invoice.invoiceNo}</b><span>الإجمالي شامل الضريبة: {Number(order.invoice.total).toFixed(2)} ر.س</span></div>
+              <div><b>الفاتورة: <a className="orderLink" href={`/dashboard/invoices/${order.invoice.id}`}>{order.invoice.invoiceNo}</a></b><span>الإجمالي شامل الضريبة: {Number(order.invoice.total).toFixed(2)} ر.س</span></div>
               {order.invoice.coupons[0] && <div><b>كوبون الغسيل</b><span>{order.invoice.coupons[0].serial}</span></div>}
             </div>
           )}
