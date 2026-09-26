@@ -1,0 +1,24 @@
+:root {
+  --orange:#F18F21; --gold:#F7A81D; --gray:#939497; --light:#BDBDBF;
+  --black:#111111; --white:#ffffff; --bg:#f6f6f4;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,"Noto Sans Arabic",sans-serif;background:var(--bg);color:var(--black)}
+a{text-decoration:none;color:inherit}
+.shell{min-height:100vh;display:grid;grid-template-columns:1fr 270px}
+.sidebar{grid-column:2;background:var(--black);color:#fff;padding:28px 22px;min-height:100vh}
+.brand{border-bottom:1px solid #333;padding-bottom:22px;margin-bottom:18px}
+.logoPlaceholder{font-size:30px;font-weight:900;letter-spacing:1px}.logoPlaceholder span{color:var(--orange)}
+.brand small{display:block;color:#aaa;line-height:1.7;margin-top:8px}
+nav{display:flex;flex-direction:column;gap:7px}nav strong{color:var(--gold);padding:10px 12px}
+nav a{padding:10px 12px;border-radius:10px;color:#ddd}nav a:hover{background:#222;color:#fff}
+.content{grid-column:1;padding:32px;max-width:1500px;width:100%;margin:auto}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+header h1{margin:0 0 6px;font-size:28px}header p{margin:0;color:#666}.branch{background:#fff;border:1px solid #ddd;padding:10px 14px;border-radius:12px}
+.hero{background:#fff;border-right:6px solid var(--orange);padding:28px;border-radius:18px;display:flex;align-items:center;justify-content:space-between;gap:20px;box-shadow:0 8px 30px #0000000d}
+.hero h2{font-size:30px;margin:10px 0}.hero p{color:#666}.eyebrow{color:var(--orange);font-weight:800}
+button{border:0;background:var(--orange);color:#fff;font-weight:800;padding:13px 20px;border-radius:12px;cursor:pointer}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0}.kpis article,.panel{background:#fff;border:1px solid #e6e6e6;border-radius:16px;padding:20px}
+.kpis span{display:block;color:#666;margin-bottom:10px}.kpis b{font-size:25px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.panel h3{margin-top:0}.empty{color:#777}
+@media(max-width:900px){.shell{display:block}.sidebar{min-height:auto}.content{padding:18px}.kpis{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.hero{align-items:flex-start;flex-direction:column}}
