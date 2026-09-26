@@ -84,7 +84,7 @@ export default async function ReportsPage({
     }),
     db.shift.findMany({
       where: { branchId: session.branchId, openedAt: { gte: range.start, lt: range.end } },
-      select: { id: true, openedAt: true, closedAt: true, cashVariance: true },
+      select: { id: true, openedAt: true, closedAt: true, expectedCash: true, countedCash: true, cashVariance: true, expectedCard: true, countedCard: true, cardVariance: true, expectedTransfer: true, countedTransfer: true, transferVariance: true },
       orderBy: { openedAt: "desc" },
     }),
     db.financialTransaction.findMany({
@@ -173,7 +173,14 @@ export default async function ReportsPage({
   }, 0);
 
   const cashVariance = shifts.reduce((sum, shift) => sum + Math.abs(Number(shift.cashVariance ?? 0)), 0);
-  const varianceShifts = shifts.filter((shift) => Number(shift.cashVariance ?? 0) !== 0).length;
+  const cardVariance = shifts.reduce((sum, shift) => sum + Math.abs(Number(shift.cardVariance ?? 0)), 0);
+  const transferVariance = shifts.reduce((sum, shift) => sum + Math.abs(Number(shift.transferVariance ?? 0)), 0);
+  const totalReconciliationVariance = cashVariance + cardVariance + transferVariance;
+  const varianceShifts = shifts.filter((shift) =>
+    Number(shift.cashVariance ?? 0) !== 0 ||
+    Number(shift.cardVariance ?? 0) !== 0 ||
+    Number(shift.transferVariance ?? 0) !== 0
+  ).length;
   const openShifts = shifts.filter((shift) => !shift.closedAt).length;
 
   const financialIn = financialTransactions.filter((item) => Number(item.amount) > 0)
@@ -194,7 +201,7 @@ export default async function ReportsPage({
     ["عهد غير مقفلة", openCustodies, "/dashboard/custody"],
     ["مسيرات رواتب تنتظر الإجراء", pendingPayrolls, "/dashboard/hr"],
     ["أصول تحتاج متابعة صيانة", maintenanceAlerts, "/dashboard/assets"],
-    ["ورديات بالفترة بها فروقات نقدية", varianceShifts, "/dashboard/shifts"],
+    ["ورديات بالفترة بها فروقات تسوية", varianceShifts, "/dashboard/shifts"],
   ] as const;
 
   return (
@@ -270,7 +277,7 @@ export default async function ReportsPage({
               </a>
             ))}
           </div>
-          <p>إجمالي القيمة المطلقة لفروقات النقد في الورديات: <b>{money(cashVariance)}</b> · ورديات مفتوحة ضمن الفترة: <b>{openShifts}</b></p>
+          <p>إجمالي فروقات التسوية: <b>{money(totalReconciliationVariance)}</b> · نقد: <b>{money(cashVariance)}</b> · مدى: <b>{money(cardVariance)}</b> · تحويلات: <b>{money(transferVariance)}</b> · ورديات مفتوحة: <b>{openShifts}</b></p>
         </article>
 
         <article className="panel">
@@ -286,6 +293,40 @@ export default async function ReportsPage({
           </div>
         </article>
       </section>
+
+      <article className="panel inventoryPanel">
+        <h2>تسويات الورديات حسب قناة التحصيل</h2>
+        <div className="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>الوردية</th><th>الحالة</th>
+                <th>النقد المتوقع</th><th>النقد الفعلي</th><th>الفرق</th>
+                <th>مدى المتوقع</th><th>مدى الفعلي</th><th>الفرق</th>
+                <th>التحويل المتوقع</th><th>التحويل الفعلي</th><th>الفرق</th>
+              </tr>
+            </thead>
+            <tbody>
+              {shifts.map((shift) => (
+                <tr key={shift.id}>
+                  <td>{shift.openedAt.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</td>
+                  <td>{shift.closedAt ? <span className="okBadge">مقفلة</span> : <span className="alertBadge">مفتوحة</span>}</td>
+                  <td>{money(Number(shift.expectedCash ?? 0))}</td>
+                  <td>{shift.countedCash === null ? "—" : money(Number(shift.countedCash))}</td>
+                  <td>{shift.cashVariance === null ? "—" : money(Number(shift.cashVariance))}</td>
+                  <td>{money(Number(shift.expectedCard ?? 0))}</td>
+                  <td>{shift.countedCard === null ? "—" : money(Number(shift.countedCard))}</td>
+                  <td>{shift.cardVariance === null ? "—" : money(Number(shift.cardVariance))}</td>
+                  <td>{money(Number(shift.expectedTransfer ?? 0))}</td>
+                  <td>{shift.countedTransfer === null ? "—" : money(Number(shift.countedTransfer))}</td>
+                  <td>{shift.transferVariance === null ? "—" : money(Number(shift.transferVariance))}</td>
+                </tr>
+              ))}
+              {shifts.length === 0 && <tr><td colSpan={11} className="empty">لا توجد ورديات ضمن الفترة المحددة.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </article>
 
       <section className="workGrid">
         <article className="panel">
