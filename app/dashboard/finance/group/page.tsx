@@ -18,7 +18,11 @@ export default async function GroupFinancePage() {
 
   const canManageFunding = hasPermission(session.permissions, PERMISSIONS.GROUP_FUNDING_MANAGE);
   const [companies, accounts, fundings] = await Promise.all([
-    db.groupCompany.findMany({ where: { active: true }, orderBy: [{ relationType: "asc" }, { legalNameAr: "asc" }] }),
+    db.groupCompany.findMany({
+      where: { active: true, organization: { branches: { some: { id: session.branchId } } } },
+      include: { bankAccounts: { where: { active: true }, orderBy: { createdAt: "asc" } } },
+      orderBy: [{ relationType: "asc" }, { legalNameAr: "asc" }],
+    }),
     db.financialAccount.findMany({
       where: { branchId: session.branchId, active: true, type: { in: ["CASH", "BANK"] } },
       include: { transactions: { select: { amount: true } } },
@@ -53,7 +57,12 @@ export default async function GroupFinancePage() {
 
       {canManageFunding && (
         <GroupFinanceActions
-          companies={companies.map((company) => ({ id: company.id, legalNameAr: company.legalNameAr, relationType: company.relationType }))}
+          companies={companies.map((company) => ({
+            id: company.id,
+            legalNameAr: company.legalNameAr,
+            relationType: company.relationType,
+            bankAccountCount: company.bankAccounts.length,
+          }))}
           accounts={accounts.map((account) => ({
             id: account.id,
             nameAr: account.nameAr,
@@ -68,7 +77,7 @@ export default async function GroupFinancePage() {
           <h2>شركات المجموعة</h2>
           <div className="tableWrap">
             <table>
-              <thead><tr><th>الكود</th><th>الشركة</th><th>العلاقة</th><th>الرقم الموحد</th><th>السجل التجاري</th></tr></thead>
+              <thead><tr><th>الكود</th><th>الشركة</th><th>العلاقة</th><th>الرقم الموحد</th><th>السجل التجاري</th><th>الحسابات البنكية</th></tr></thead>
               <tbody>
                 {companies.map((company) => (
                   <tr key={company.id}>
@@ -77,9 +86,19 @@ export default async function GroupFinancePage() {
                     <td>{relationLabel[company.relationType] ?? company.relationType}</td>
                     <td>{company.unifiedNumber || "بانتظار البيانات"}</td>
                     <td>{company.crNumber || "بانتظار البيانات"}</td>
+                    <td>
+                      {company.bankAccounts.length === 0 ? "بانتظار شهادة الآيبان" : company.bankAccounts.map((account) => (
+                        <div key={account.id} className="bankAccountCell">
+                          <b>{account.bankName}</b>
+                          <span>{account.accountNameAr || company.legalNameAr}</span>
+                          <span dir="ltr">A/C {account.accountNumber || "—"}</span>
+                          <span dir="ltr">IBAN {account.iban || "—"}</span>
+                        </div>
+                      ))}
+                    </td>
                   </tr>
                 ))}
-                {companies.length === 0 && <tr><td colSpan={5} className="empty">لا توجد شركات مجموعة مسجلة.</td></tr>}
+                {companies.length === 0 && <tr><td colSpan={6} className="empty">لا توجد شركات مجموعة مسجلة.</td></tr>}
               </tbody>
             </table>
           </div>
