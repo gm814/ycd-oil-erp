@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
+import CreditTermsForm from "./credit-terms-form";
 
 function money(value: number) {
   return value.toLocaleString("ar-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
@@ -63,6 +64,10 @@ export default async function CustomerDetailsPage({
     0,
   );
   const balance = Math.max(totalSales - totalPaid, 0);
+  const canManageCredit = hasPermission(session.permissions, PERMISSIONS.CREDIT_MANAGE);
+  const availableCredit = customer.creditAllowed
+    ? Math.max(Number(customer.creditLimit) - balance, 0)
+    : 0;
 
   const vehicleSummaries = customer.vehicles.map((vehicle) => {
     const orders = customer.serviceOrders.filter((order) => order.vehicleId === vehicle.id);
@@ -94,6 +99,23 @@ export default async function CustomerDetailsPage({
         <article><span>إجمالي المحصل</span><b>{money(totalPaid)}</b></article>
         <article><span>الرصيد المتبقي</span><b>{money(balance)}</b></article>
       </section>
+
+      <article className="panel creditPanel">
+        <div className="creditSummary">
+          <div><span>حالة الائتمان</span><b>{customer.creditAllowed ? "مفعّل" : "غير مفعّل"}</b></div>
+          <div><span>حد الائتمان</span><b>{money(Number(customer.creditLimit))}</b></div>
+          <div><span>المتاح حاليًا</span><b>{money(availableCredit)}</b></div>
+          <div><span>مهلة السداد</span><b>{customer.creditDays.toLocaleString("ar-SA")} يوم</b></div>
+        </div>
+        {canManageCredit && (
+          <CreditTermsForm
+            customerId={customer.id}
+            creditAllowed={customer.creditAllowed}
+            creditLimit={Number(customer.creditLimit)}
+            creditDays={customer.creditDays}
+          />
+        )}
+      </article>
 
       <section className="vehicleCards">
         {vehicleSummaries.map(({ vehicle, orders, lastOrder, lastOilOrder, latestHistory }) => (
