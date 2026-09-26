@@ -20,7 +20,10 @@ export default async function FinancialClosesPage() {
   });
 
   const today = riyadhDateKey(new Date());
-  const defaultMonth = today.slice(0, 7);
+  const defaultDay = riyadhDateKey(new Date(Date.now() - 24 * 60 * 60 * 1000));
+  const [year, month] = today.split("-").map(Number);
+  const previousMonth = new Date(Date.UTC(year, month - 2, 1));
+  const defaultMonth = `${previousMonth.getUTCFullYear()}-${String(previousMonth.getUTCMonth() + 1).padStart(2, "0")}`;
 
   return (
     <main className="workspace">
@@ -36,14 +39,14 @@ export default async function FinancialClosesPage() {
       <CloseActions
         canPrepare={canPrepare}
         canReview={canReview}
-        defaultDay={today}
+        defaultDay={defaultDay}
         defaultMonth={defaultMonth}
         rows={closes.map((item) => ({
           id: item.id,
           closeNo: item.closeNo,
           type: item.type,
           periodStart: item.periodStart.toISOString(),
-          periodEnd: item.periodEnd.toISOString(),
+          periodEnd: new Date(item.periodEnd.getTime() - 1).toISOString(),
           status: item.status,
           salesTotal: Number(item.salesTotal),
           netFinancialMovement: Number(item.netFinancialMovement),
