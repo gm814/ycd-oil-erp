@@ -6,6 +6,7 @@ const prisma = new PrismaClient();
 const permissionCodes = [
   "dashboard.view",
   "user.manage",
+  "operations.go_live",
   "service_order.create",
   "service_order.approve",
   "inventory.manage",
@@ -127,6 +128,7 @@ async function main() {
       organizationId: organization.id,
       nameAr: "الفرع الأول – الرياض - حي طويق",
       city: "الرياض",
+      operationalStatus: "PREOPENING",
     },
   });
 
