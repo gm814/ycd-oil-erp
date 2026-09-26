@@ -7,6 +7,7 @@ import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 
 const schema = z.object({
   sourceCompanyId: z.string().min(1),
+  sourceBankAccountId: z.string().optional(),
   accountId: z.string().min(1),
   amount: z.coerce.number().positive().max(100_000_000),
   reference: z.string().trim().max(120).optional(),
@@ -55,6 +56,17 @@ export async function POST(request: Request) {
       if (!sourceCompany) throw new Error("GROUP_COMPANY_NOT_FOUND");
       if (!account) throw new Error("FINANCIAL_ACCOUNT_NOT_FOUND");
 
+      const sourceBankAccount = parsed.data.sourceBankAccountId
+        ? await tx.groupCompanyBankAccount.findFirst({
+            where: {
+              id: parsed.data.sourceBankAccountId,
+              companyId: sourceCompany.id,
+              active: true,
+            },
+          })
+        : null;
+      if (parsed.data.sourceBankAccountId && !sourceBankAccount) throw new Error("GROUP_BANK_ACCOUNT_NOT_FOUND");
+
       const amount = new Prisma.Decimal(parsed.data.amount);
       const transaction = await tx.financialTransaction.create({
         data: {
@@ -76,6 +88,7 @@ export async function POST(request: Request) {
           fundingNo: `FUND-${parsed.data.idempotencyReference}`,
           branchId: session.branchId!,
           sourceCompanyId: sourceCompany.id,
+          sourceBankAccountId: sourceBankAccount?.id ?? null,
           accountId: account.id,
           amount,
           reference: parsed.data.reference || null,
@@ -96,6 +109,9 @@ export async function POST(request: Request) {
             fundingNo: funding.fundingNo,
             sourceCompanyId: sourceCompany.id,
             sourceCompanyNameAr: sourceCompany.legalNameAr,
+            sourceBankAccountId: sourceBankAccount?.id ?? null,
+            sourceBankName: sourceBankAccount?.bankName ?? null,
+            sourceIbanLast4: sourceBankAccount?.iban?.slice(-4) ?? null,
             accountId: account.id,
             amount: amount.toString(),
             reference: funding.reference,
@@ -109,7 +125,7 @@ export async function POST(request: Request) {
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
     const code = error instanceof Error ? error.message : "GROUP_FUNDING_FAILED";
-    const status = ["GROUP_COMPANY_NOT_FOUND", "FINANCIAL_ACCOUNT_NOT_FOUND"].includes(code) ? 404
+    const status = ["GROUP_COMPANY_NOT_FOUND", "GROUP_BANK_ACCOUNT_NOT_FOUND", "FINANCIAL_ACCOUNT_NOT_FOUND"].includes(code) ? 404
       : code === "IDEMPOTENCY_CONFLICT" ? 409 : 400;
     return NextResponse.json({ error: code }, { status });
   }
