@@ -38,6 +38,10 @@ export default async function TeamPage() {
             <div className="teamResponsibilities">
               {member.responsibilitiesAr.map((role) => <span key={role}>{role}</span>)}
             </div>
+            <div className="teamResponsibilities">
+              <small className="muted">أدوار النظام المعتمدة</small>
+              {member.systemRolesAr.map((role) => <span key={role}>{role}</span>)}
+            </div>
           </article>
         ))}
       </section>
