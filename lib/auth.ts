@@ -6,7 +6,9 @@ export const SESSION_COOKIE = "ycd_session";
 export type SessionPayload = {
   userId: string;
   name: string;
-  email: string;
+  username: string;
+  email?: string;
+  mustChangePassword: boolean;
   branchId?: string;
   roles: string[];
   permissions: string[];
