@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { companyConfig } from "@/lib/config";
 import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
+import { operationalTeam } from "@/lib/operations";
 import GoLiveControl from "./go-live-control";
 
 function statusBadge(done: boolean) {
@@ -35,7 +36,21 @@ export default async function ReadinessPage() {
       where: { id: session.branchId },
       select: { operationalStatus: true, goLiveAt: true },
     }),
-    db.employee.count({ where: { branchId: session.branchId, active: true } }),
+    db.employee.findMany({
+      where: { branchId: session.branchId, active: true },
+      select: {
+        code: true,
+        nameAr: true,
+        user: {
+          select: {
+            status: true,
+            passwordHash: true,
+            roles: { select: { role: { select: { code: true, nameAr: true } } } },
+          },
+        },
+      },
+      orderBy: { code: "asc" },
+    }),
     db.user.count({ where: { branchId: session.branchId, status: "ACTIVE", employeeId: { not: null } } }),
     db.financialAccount.findMany({
       where: { branchId: session.branchId, active: true, type: "BANK" },
@@ -65,9 +80,19 @@ export default async function ReadinessPage() {
   const fundingTotal = Number(groupFunding._sum.amount ?? 0);
   const bankReady = bankAccounts.some((account) => account.bankName && account.accountNumber && account.iban);
   const identityReady = Boolean(companyConfig.brand && companyConfig.bank.iban);
-  const staffReady = employees >= 8;
+  const staffReady = employees.length >= operationalTeam.length;
   const fundingReady = parentCompanies > 0 && fundingTotal >= openingBalance && openingBalance > 0;
-  const usersReady = activeUsers >= employees && employees > 0;
+  const employeeByCode = new Map(employees.map((employee) => [employee.code, employee]));
+  const accessRows = operationalTeam.map((member) => {
+    const employee = employeeByCode.get(member.code);
+    const user = employee?.user;
+    const actualRoleCodes = new Set(user?.roles.map((entry) => entry.role.code) ?? []);
+    const accountReady = Boolean(user?.status === "ACTIVE" && user.passwordHash);
+    const rolesReady = member.systemRoleCodes.every((roleCode) => actualRoleCodes.has(roleCode));
+    return { member, employee, user, accountReady, rolesReady };
+  });
+  const accessReadyCount = accessRows.filter((row) => row.accountReady && row.rolesReady).length;
+  const usersReady = accessRows.length > 0 && accessReadyCount === accessRows.length;
   const productsReady = physicalProducts > 0;
   const servicesReady = serviceProducts > 0;
   const stockReady = openingStockMovements > 0;
@@ -79,12 +104,12 @@ export default async function ReadinessPage() {
     { label: "العدد والأدوات التشغيلية", done: companyConfig.preopening.toolsReady, detail: companyConfig.preopening.readinessSourceAr },
     { label: "المعدات التشغيلية", done: companyConfig.preopening.equipmentReady, detail: companyConfig.preopening.readinessSourceAr },
     { label: "التراخيص اللازمة للمركز", done: companyConfig.preopening.licensesReady, detail: "مؤكد إداريًا؛ تفاصيل وأرقام التراخيص تضاف عند تزويد النظام بالمستندات" },
-    { label: "الهيكل الوظيفي الأساسي", done: staffReady, detail: `${employees} موظفين مسجلين` },
+    { label: "الهيكل الوظيفي الأساسي", done: staffReady, detail: `${employees.length} موظفين مسجلين` },
     { label: "هوية YCD OIL وبيانات المنشأة", done: identityReady, detail: "الهوية والألوان وبيانات الشركة مثبتة بالنظام" },
     { label: "الحساب البنكي الرئيسي", done: bankReady, detail: bankReady ? `${bankAccounts[0]?.bankName ?? "بنك"} · IBAN ينتهي بـ ${bankAccounts[0]?.iban?.slice(-4) ?? "—"}` : "بانتظار بيانات البنك" },
     { label: "الرصيد البنكي الافتتاحي", done: openingBalance > 0, detail: `${openingBalance.toFixed(2)} ر.س` },
     { label: "مصدر تمويل المشروع", done: fundingReady, detail: `تمويل مجموعة مسجل: ${fundingTotal.toFixed(2)} ر.س` },
-    { label: "حسابات دخول الموظفين والصلاحيات", done: usersReady, detail: `${activeUsers} من ${employees} موظفين لديهم حسابات دخول مرتبطة` },
+    { label: "حسابات دخول الموظفين والصلاحيات", done: usersReady, detail: `${accessReadyCount} من ${accessRows.length} حسابات مطابقة لخطة الصلاحيات المعتمدة` },
     { label: "دليل الزيوت والفلاتر والقطع", done: productsReady, detail: `${physicalProducts} صنف مادي مسجل` },
     { label: "دليل الخدمات والأسعار", done: servicesReady, detail: `${serviceProducts} خدمة مسجلة` },
     { label: "رصيد المخزون الافتتاحي", done: stockReady, detail: `${openingStockMovements} حركة توريد/رصيد موجبة مسجلة` },
@@ -115,7 +140,7 @@ export default async function ReadinessPage() {
       <section className="kpis reportKpis">
         <article><span>مرحلة المشروع</span><b>{phaseLabel}</b></article>
         <article><span>نسبة اكتمال بيانات التشغيل</span><b>{readinessPercent}%</b></article>
-        <article><span>الموظفون المسجلون</span><b>{employees}</b></article>
+        <article><span>الموظفون المسجلون</span><b>{employees.length}</b></article>
         <article><span>التمويل الافتتاحي المسجل</span><b>{fundingTotal.toFixed(2)} ر.س</b></article>
       </section>
 
@@ -161,6 +186,27 @@ export default async function ReadinessPage() {
             </tbody>
           </table>
         </div>
+      </article>
+
+      <article className="panel inventoryPanel">
+        <h2>خطة حسابات الدخول والصلاحيات قبل الإطلاق</h2>
+        <div className="tableWrap">
+          <table>
+            <thead><tr><th>الموظف</th><th>المسؤوليات</th><th>الأدوار النظامية المعتمدة</th><th>حساب الدخول</th><th>مطابقة الصلاحيات</th></tr></thead>
+            <tbody>
+              {accessRows.map(({ member, user, accountReady, rolesReady }) => (
+                <tr key={member.code}>
+                  <td><b>{member.nameAr}</b><br /><small>{member.code}</small></td>
+                  <td>{member.responsibilitiesAr.join(" · ")}</td>
+                  <td>{member.systemRoleCodes.join(" + ")}</td>
+                  <td>{accountReady ? <span className="okBadge">نشط ومؤمّن</span> : <span className="alertBadge">بانتظار إنشاء الحساب</span>}</td>
+                  <td>{rolesReady ? <span className="okBadge">مطابق</span> : <span className="alertBadge">يحتاج استكمال الأدوار</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="muted">لا يتم إنشاء كلمات مرور تلقائيًا. تُنشأ الحسابات من شاشة المستخدمين بواسطة المدير العام، وتكون كلمة المرور مؤقتة ويُلزم الموظف بتغييرها عند أول دخول.</p>
       </article>
 
       <article className="panel inventoryPanel">
