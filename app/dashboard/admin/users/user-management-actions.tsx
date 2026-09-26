@@ -12,7 +12,9 @@ type Employee = {
   suggestedRoleCodes: string[];
   user: null | {
     id: string;
-    email: string;
+    username: string;
+    email: string | null;
+    mustChangePassword: boolean;
     status: string;
     roleCodes: string[];
   };
@@ -45,6 +47,7 @@ export default function UserManagementActions({
       const messages: Record<string, string> = {
         EMPLOYEE_NOT_FOUND: "الموظف غير موجود أو غير نشط.",
         EMPLOYEE_ALREADY_HAS_USER: "الموظف لديه حساب دخول بالفعل.",
+        USERNAME_ALREADY_USED: "اسم المستخدم مستخدم في حساب آخر.",
         EMAIL_ALREADY_USED: "البريد الإلكتروني مستخدم في حساب آخر.",
         INVALID_ROLE: "أحد الأدوار المحددة غير صالح.",
         USER_NOT_FOUND: "حساب المستخدم غير موجود.",
@@ -67,10 +70,12 @@ export default function UserManagementActions({
     const roleCodes = data.getAll("roleCodes").map(String);
     void post("/api/secure/admin/users", {
       employeeId,
+      username: data.get("username"),
       email: data.get("email"),
       password: data.get("password"),
       roleCodes,
-    }, "تم إنشاء حساب الدخول وربطه بالموظف.").then((ok) => { if (ok) form.reset(); });
+    }, "تم إنشاء حساب الدخول وربطه بالموظف. كلمة المرور مؤقتة ويجب تغييرها عند أول دخول.")
+      .then((ok) => { if (ok) form.reset(); });
   }
 
   function updateUser(event: FormEvent<HTMLFormElement>, userId: string) {
@@ -83,12 +88,13 @@ export default function UserManagementActions({
     void post(`/api/secure/admin/users/${userId}`, {
       ...(!isSelf ? { status: data.get("status"), roleCodes } : {}),
       ...(password ? { password } : {}),
-    }, isSelf ? "تم تحديث كلمة مرور حسابك." : "تم تحديث حالة المستخدم وأدواره.").then((ok) => {
-      if (ok) {
-        const passwordInput = form.elements.namedItem("password") as HTMLInputElement | null;
-        if (passwordInput) passwordInput.value = "";
-      }
-    });
+    }, isSelf ? "تم تحديث كلمة مرور حسابك." : "تم تحديث حالة المستخدم وأدواره.")
+      .then((ok) => {
+        if (ok) {
+          const passwordInput = form.elements.namedItem("password") as HTMLInputElement | null;
+          if (passwordInput) passwordInput.value = "";
+        }
+      });
   }
 
   return (
@@ -102,8 +108,18 @@ export default function UserManagementActions({
 
             {!employee.user ? (
               <form className="intakeForm userAccessForm" onSubmit={(event) => createUser(event, employee.id)}>
-                <label>البريد الإلكتروني
-                  <input name="email" type="email" autoComplete="off" required placeholder="name@ycdoil.sa" />
+                <label>اسم المستخدم
+                  <input
+                    name="username"
+                    type="text"
+                    autoComplete="off"
+                    required
+                    defaultValue={employee.code.toLowerCase()}
+                    pattern="[A-Za-z0-9._-]+"
+                  />
+                </label>
+                <label>البريد الإلكتروني — اختياري
+                  <input name="email" type="email" autoComplete="off" placeholder="name@ycdoil.sa" />
                 </label>
                 <label>كلمة مرور مؤقتة
                   <input name="password" type="password" minLength={10} autoComplete="new-password" required />
@@ -121,7 +137,13 @@ export default function UserManagementActions({
               </form>
             ) : (
               <form className="intakeForm userAccessForm" onSubmit={(event) => updateUser(event, employee.user!.id)}>
-                <p className="userEmail">{employee.user.email}</p>
+                <p className="userEmail">
+                  <b>{employee.user.username}</b>
+                  {employee.user.email ? ` · ${employee.user.email}` : ""}
+                </p>
+                {employee.user.mustChangePassword && (
+                  <p className="alertBadge">كلمة مرور مؤقتة — يجب تغييرها عند أول دخول</p>
+                )}
                 <label>الحالة
                   <select name="status" defaultValue={employee.user.status} disabled={employee.user.id === currentUserId}>
                     <option value="ACTIVE">نشط</option>
@@ -145,8 +167,13 @@ export default function UserManagementActions({
                 <label>إعادة تعيين كلمة المرور
                   <input name="password" type="password" minLength={10} autoComplete="new-password" placeholder="اتركه فارغًا بدون تغيير" />
                 </label>
+                {employee.user.id !== currentUserId && (
+                  <small className="muted">عند إعادة التعيين تصبح كلمة المرور مؤقتة ويُلزم الموظف بتغييرها عند أول دخول.</small>
+                )}
                 <button disabled={busy}>حفظ إعدادات المستخدم</button>
-                {employee.user.id === currentUserId && <small className="muted">حسابك الحالي: تغيير الأدوار أو الإيقاف محمي، ويمكن فقط إعادة تعيين كلمة المرور.</small>}
+                {employee.user.id === currentUserId && (
+                  <small className="muted">حسابك الحالي: تغيير الأدوار أو الإيقاف محمي، ويمكن فقط إعادة تعيين كلمة المرور.</small>
+                )}
               </form>
             )}
           </article>
