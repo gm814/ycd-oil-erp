@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Props = {
-  companies: { id: string; legalNameAr: string; relationType: string }[];
+  companies: { id: string; legalNameAr: string; relationType: string; bankAccountCount: number }[];
   accounts: { id: string; nameAr: string; type: string; balance: number }[];
 };
 
@@ -26,7 +26,9 @@ export default function GroupFinanceActions({ companies, accounts }: Props) {
     if (!response.ok) {
       const labels: Record<string, string> = {
         GROUP_COMPANY_CREATE_FAILED: "تعذر إضافة الشركة؛ تحقق من عدم تكرار الكود.",
-        GROUP_COMPANY_NOT_FOUND: "شركة التمويل غير موجودة.",
+        GROUP_COMPANY_NOT_FOUND: "شركة المجموعة غير موجودة.",
+        GROUP_COMPANY_BANK_CREATE_FAILED: "تعذر تسجيل الحساب البنكي.",
+        IBAN_ALREADY_REGISTERED: "رقم الآيبان مسجل مسبقًا لشركة أخرى.",
         FINANCIAL_ACCOUNT_NOT_FOUND: "الحساب المالي غير موجود.",
         IDEMPOTENCY_CONFLICT: "مرجع العملية مستخدم سابقًا.",
         FORBIDDEN: "لا تملك صلاحية تسجيل تمويل المجموعة.",
@@ -43,6 +45,17 @@ export default function GroupFinanceActions({ companies, accounts }: Props) {
     event.preventDefault();
     const form = event.currentTarget;
     void post("/api/secure/finance/group-companies", Object.fromEntries(new FormData(form).entries()), "تمت إضافة شركة المجموعة.")
+      .then((ok) => { if (ok) form.reset(); });
+  }
+
+  function addBankAccount(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = Object.fromEntries(new FormData(form).entries());
+    const companyId = String(data.companyId || "");
+    if (!companyId) return;
+    const { companyId: _companyId, ...body } = data;
+    void post(`/api/secure/finance/group-companies/${companyId}/bank-accounts`, body, "تم تسجيل الحساب البنكي للشركة وحفظ بيانات الآيبان.")
       .then((ok) => { if (ok) form.reset(); });
   }
 
@@ -108,6 +121,42 @@ export default function GroupFinanceActions({ companies, accounts }: Props) {
           </form>
         </article>
       </section>
+      <section className="workGrid">
+        <article className="panel">
+          <h2>تسجيل حساب بنكي لشركة المجموعة</h2>
+          <p className="muted">مخصص لشهادات الآيبان التي سيتم تزويد النظام بها للشركة الرئيسية وباقي شركات المجموعة.</p>
+          <form className="intakeForm" onSubmit={addBankAccount}>
+            <label>الشركة
+              <select name="companyId" required defaultValue="">
+                <option value="" disabled>اختر الشركة</option>
+                {companies.map((company) => (
+                  <option key={company.id} value={company.id}>{company.legalNameAr} · {company.bankAccountCount} حساب</option>
+                ))}
+              </select>
+            </label>
+            <div className="formRow">
+              <label>اسم البنك<input name="bankName" required placeholder="مثال: مصرف الراجحي" /></label>
+              <label>اسم الحساب<input name="accountNameAr" placeholder="اسم الشركة كما يظهر في البنك" /></label>
+            </div>
+            <div className="formRow">
+              <label>رقم الحساب<input name="accountNumber" dir="ltr" /></label>
+              <label>IBAN<input name="iban" dir="ltr" placeholder="SA..." /></label>
+            </div>
+            <div className="formRow">
+              <label>العملة<input name="currency" defaultValue="SAR" maxLength={3} required /></label>
+              <label>ملاحظات<input name="notes" /></label>
+            </div>
+            <button disabled={busy || companies.length === 0}>حفظ الحساب البنكي</button>
+          </form>
+        </article>
+
+        <article className="panel">
+          <h2>استكمال بيانات المجموعة</h2>
+          <p>يمكن تسجيل كل شركة الآن، ثم إضافة السجل التجاري والرقم الموحد والرقم الضريبي، وبعد وصول شهادة الآيبان يضاف الحساب البنكي بدون خلطه بحسابات YCD OIL التشغيلية.</p>
+          <p className="formNotice">الحسابات البنكية لشركات المجموعة تستخدم كبيانات مرجعية لمصدر التمويل، بينما قيد التمويل نفسه يدخل فقط إلى حساب YCD OIL المستلم.</p>
+        </article>
+      </section>
+
       {message && <p className="formNotice globalNotice">{message}</p>}
     </>
   );
