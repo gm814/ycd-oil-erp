@@ -709,6 +709,7 @@ model FinancialAccount {
   nameAr       String
   type         FinancialAccountType
   bankName     String?
+  accountNumber String?
   iban         String?
   active       Boolean                @default(true)
   transactions FinancialTransaction[]
