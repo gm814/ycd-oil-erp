@@ -1,0 +1,70 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+
+export default function ChangePasswordPage() {
+  const router = useRouter();
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const newPassword = String(form.get("newPassword") || "");
+    const confirmPassword = String(form.get("confirmPassword") || "");
+    if (newPassword !== confirmPassword) {
+      setMessage("كلمتا المرور الجديدتان غير متطابقتين.");
+      return;
+    }
+
+    setBusy(true);
+    setMessage("");
+    const response = await fetch("/api/secure/account/change-password", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        currentPassword: form.get("currentPassword"),
+        newPassword,
+      }),
+    });
+    const result = await response.json().catch(() => ({}));
+    setBusy(false);
+
+    if (!response.ok) {
+      setMessage(
+        result.error === "CURRENT_PASSWORD_INVALID"
+          ? "كلمة المرور الحالية غير صحيحة."
+          : "تعذر تغيير كلمة المرور. استخدم كلمة جديدة لا تقل عن 10 أحرف.",
+      );
+      return;
+    }
+
+    router.replace("/dashboard");
+    router.refresh();
+  }
+
+  return (
+    <main className="loginShell">
+      <section className="loginCard">
+        <img className="loginLogo" src="/brand/ycd-logo-source.svg" alt="YCD OIL" />
+        <p className="loginSubtitle">تأمين حساب الموظف</p>
+        <h1>تغيير كلمة المرور المؤقتة</h1>
+        <p>قبل دخول النظام لأول مرة، أنشئ كلمة مرور خاصة بك لا تقل عن 10 أحرف.</p>
+        <form onSubmit={submit}>
+          <label>كلمة المرور الحالية
+            <input name="currentPassword" type="password" autoComplete="current-password" minLength={8} required />
+          </label>
+          <label>كلمة المرور الجديدة
+            <input name="newPassword" type="password" autoComplete="new-password" minLength={10} required />
+          </label>
+          <label>تأكيد كلمة المرور الجديدة
+            <input name="confirmPassword" type="password" autoComplete="new-password" minLength={10} required />
+          </label>
+          {message && <p className="formError">{message}</p>}
+          <button type="submit" disabled={busy}>{busy ? "جارٍ الحفظ..." : "حفظ والدخول للنظام"}</button>
+        </form>
+      </section>
+    </main>
+  );
+}
