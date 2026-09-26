@@ -32,11 +32,15 @@ export default async function FinancePage() {
 
   const canManage = hasPermission(session.permissions, PERMISSIONS.FINANCE_MANAGE);
   const canExpense = hasPermission(session.permissions, PERMISSIONS.FINANCE_EXPENSE);
+  const canExpenseApprove = hasPermission(session.permissions, PERMISSIONS.FINANCE_EXPENSE_APPROVE);
+  const canExpensePay = hasPermission(session.permissions, PERMISSIONS.FINANCE_EXPENSE_PAY);
+  const canBankReconcile = hasPermission(session.permissions, PERMISSIONS.BANK_RECONCILE);
+  const canBankReview = hasPermission(session.permissions, PERMISSIONS.BANK_RECONCILE_REVIEW);
   const canTransfer = hasPermission(session.permissions, PERMISSIONS.FINANCE_TRANSFER);
   const canPosSettle = hasPermission(session.permissions, PERMISSIONS.POS_SETTLE);
   const canPaySupplier = hasPermission(session.permissions, PERMISSIONS.SUPPLIER_PAYMENT_EXECUTE);
 
-  const [accounts, transactions, supplierInvoices] = await Promise.all([
+  const [accounts, transactions, supplierInvoices, expenseRequests, reconciliations] = await Promise.all([
     db.financialAccount.findMany({
       where: { branchId: session.branchId, active: true },
       include: { transactions: { select: { amount: true } } },
@@ -52,6 +56,18 @@ export default async function FinancePage() {
       where: { branchId: session.branchId, status: "APPROVED_FOR_PAYMENT" },
       include: { supplier: true, purchaseOrder: true },
       orderBy: { approvedForPaymentAt: "asc" },
+    }),
+    db.expenseRequest.findMany({
+      where: { branchId: session.branchId },
+      include: { account: { select: { nameAr: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 30,
+    }),
+    db.bankReconciliation.findMany({
+      where: { branchId: session.branchId },
+      include: { account: { select: { nameAr: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 20,
     }),
   ]);
 
@@ -92,9 +108,35 @@ export default async function FinancePage() {
         accounts={accountRows}
         canManage={canManage}
         canExpense={canExpense}
+        canExpenseApprove={canExpenseApprove}
+        canExpensePay={canExpensePay}
+        canBankReconcile={canBankReconcile}
+        canBankReview={canBankReview}
         canTransfer={canTransfer}
         canPosSettle={canPosSettle}
         canPaySupplier={canPaySupplier}
+        expenseRequests={expenseRequests.map((expense) => ({
+          id: expense.id,
+          requestNo: expense.requestNo,
+          accountName: expense.account.nameAr,
+          category: expense.category,
+          descriptionAr: expense.descriptionAr,
+          amount: Number(expense.amount),
+          recipientName: expense.recipientName,
+          status: expense.status,
+          isOwn: expense.requestedBy === session.userId,
+        }))}
+        reconciliations={reconciliations.map((item) => ({
+          id: item.id,
+          reconciliationNo: item.reconciliationNo,
+          accountName: item.account.nameAr,
+          statementDate: item.statementDate.toISOString(),
+          systemBalance: Number(item.systemBalance),
+          statementBalance: Number(item.statementBalance),
+          difference: Number(item.difference),
+          status: item.status,
+          isOwn: item.preparedBy === session.userId,
+        }))}
         invoices={supplierInvoices.map((invoice) => ({
           id: invoice.id,
           invoiceNo: invoice.invoiceNo,
