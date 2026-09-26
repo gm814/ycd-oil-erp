@@ -5,6 +5,7 @@ import { companyConfig } from "@/lib/config";
 type CompleteServiceInput = {
   serviceOrderId: string;
   actorId: string;
+  branchId: string;
   paymentMethod: "CASH" | "CARD" | "TRANSFER";
   paymentReference?: string;
   idempotencyReference: string;
@@ -26,7 +27,7 @@ export async function completeServiceOrder(input: CompleteServiceInput) {
         invoice: { include: { coupons: true } },
       },
     });
-    if (!order) throw new Error("SERVICE_ORDER_NOT_FOUND");
+    if (!order || order.branchId !== input.branchId) throw new Error("SERVICE_ORDER_NOT_FOUND");
     if (order.invoice) return order.invoice;
     if (order.status === "CANCELLED") throw new Error("SERVICE_ORDER_CANCELLED");
     if (order.items.length === 0) throw new Error("SERVICE_ORDER_EMPTY");
