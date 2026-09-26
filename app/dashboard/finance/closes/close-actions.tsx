@@ -59,6 +59,7 @@ export default function CloseActions({
         OPEN_SHIFTS_REMAIN: "توجد ورديات مفتوحة داخل الفترة ويجب إقفالها أولًا.",
         SHIFT_VARIANCES_UNRESOLVED: "توجد فروقات ورديات لم تعتمد بعد.",
         BANK_RECONCILIATIONS_UNRESOLVED: "توجد مطابقات بنكية غير مقفلة أو بها فروقات.",
+        DAILY_CLOSES_UNRESOLVED: "لا يمكن الإقفال الشهري قبل إقفال جميع الأيام التابعة للشهر.",
         FINANCIAL_CLOSE_REVIEW_REQUIRED: "يجب مراجعة الإقفال قبل الإقفال النهائي.",
         FORBIDDEN: "لا تملك صلاحية تنفيذ هذه العملية.",
       };
