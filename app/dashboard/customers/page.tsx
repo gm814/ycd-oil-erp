@@ -103,6 +103,7 @@ export default async function CustomersPage({
           <a href="/dashboard" className="backLink">← لوحة التحكم</a>
           <h1>المبيعات والعملاء</h1>
           <p>ملف موحد للعميل والسيارة والفواتير وتاريخ أوامر الخدمة.</p>
+          <p><a className="orderLink" href="/dashboard/receivables">فتح الذمم المدينة والتحصيل ←</a></p>
         </div>
         <div className="logoPlaceholder">YCD <span>OIL</span></div>
       </div>
