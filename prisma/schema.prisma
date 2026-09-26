@@ -104,6 +104,12 @@ enum FinancialAccountType {
   POS_CLEARING
 }
 
+enum GroupCompanyRelation {
+  PARENT
+  SUBSIDIARY
+  AFFILIATE
+}
+
 enum ExpenseRequestStatus {
   REQUESTED
   APPROVED
@@ -147,6 +153,7 @@ enum FinancialTransactionType {
   CUSTODY_SETTLEMENT
   PAYROLL_PAYMENT
   ADJUSTMENT
+  GROUP_FUNDING
 }
 
 enum CustodyStatus {
@@ -207,6 +214,7 @@ model Organization {
   vatNumber String?
   crNumber  String?
   branches  Branch[]
+  groupCompanies GroupCompany[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -230,6 +238,7 @@ model Branch {
   supplierInvoices SupplierInvoice[]
   financialAccounts FinancialAccount[]
   financialTransactions FinancialTransaction[]
+  groupFundings GroupFunding[]
   expenseRequests ExpenseRequest[]
   bankReconciliations BankReconciliation[]
   shiftVarianceResolutions ShiftVarianceResolution[]
@@ -716,6 +725,7 @@ model FinancialAccount {
   iban         String?
   active       Boolean                @default(true)
   transactions FinancialTransaction[]
+  groupFundings GroupFunding[]
   expenseRequests ExpenseRequest[]
   bankReconciliations BankReconciliation[]
   custodyRequests CustodyRequest[]
@@ -778,6 +788,46 @@ model FinancialClose {
   updatedAt                     DateTime             @updatedAt
   @@unique([branchId, type, periodStart, periodEnd])
   @@index([branchId, status, periodStart])
+}
+
+model GroupCompany {
+  id             String               @id @default(cuid())
+  organizationId String
+  organization   Organization         @relation(fields: [organizationId], references: [id])
+  code           String               @unique
+  legalNameAr    String
+  brandName      String?
+  relationType   GroupCompanyRelation
+  unifiedNumber  String?
+  crNumber       String?
+  vatNumber      String?
+  active         Boolean              @default(true)
+  fundings       GroupFunding[]
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  @@index([organizationId, relationType, active])
+}
+
+model GroupFunding {
+  id              String               @id @default(cuid())
+  fundingNo       String               @unique
+  branchId        String
+  branch          Branch               @relation(fields: [branchId], references: [id])
+  sourceCompanyId String
+  sourceCompany   GroupCompany         @relation(fields: [sourceCompanyId], references: [id])
+  accountId       String
+  account         FinancialAccount     @relation(fields: [accountId], references: [id])
+  amount          Decimal              @db.Decimal(12,2)
+  reference       String?
+  notes           String?
+  fundedAt        DateTime
+  transactionId   String               @unique
+  transaction     FinancialTransaction @relation(fields: [transactionId], references: [id])
+  createdBy       String
+  createdAt       DateTime             @default(now())
+  @@index([branchId, fundedAt])
+  @@index([sourceCompanyId, fundedAt])
+  @@index([accountId, fundedAt])
 }
 
 model ExpenseRequest {
@@ -850,6 +900,7 @@ model FinancialTransaction {
   relatedEntityId   String?
   performedBy       String
   idempotencyKey    String?                  @unique
+  groupFunding      GroupFunding?
   createdAt         DateTime                 @default(now())
   @@index([branchId, createdAt])
   @@index([accountId, createdAt])
