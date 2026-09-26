@@ -17,6 +17,9 @@ const permissionCodes = [
   "sales_return.process",
   "shift.open",
   "shift.close",
+  "shift.variance.approve",
+  "finance.close.prepare",
+  "finance.close.review",
   "coupon.redeem",
   "procurement.request",
   "procurement.quote",
@@ -57,11 +60,11 @@ const roleDefinitions: Record<string, { nameAr: string; permissions: readonly st
   GENERAL_MANAGER: { nameAr: "المدير العام", permissions: permissionCodes },
   FINANCE_MANAGER: {
     nameAr: "مدير المالية",
-    permissions: ["dashboard.view", "invoice.issue", "payment.receive", "customer.view", "credit.manage", "credit.sale", "sales_return.process", "shift.close", "supplier_invoice.create", "supplier_invoice.approve_payment", "finance.view", "finance.manage", "finance.expense", "finance.expense.approve", "finance.expense.pay", "finance.bank_reconcile", "finance.bank_reconcile.review", "finance.transfer", "pos.settle", "supplier_payment.execute", "custody.request", "custody.approve", "custody.disburse", "custody.settle", "custody.close", "hr.view", "payroll.approve", "payroll.pay", "reports.view", "audit.view"],
+    permissions: ["dashboard.view", "invoice.issue", "payment.receive", "customer.view", "credit.manage", "credit.sale", "sales_return.process", "shift.close", "shift.variance.approve", "finance.close.prepare", "finance.close.review", "supplier_invoice.create", "supplier_invoice.approve_payment", "finance.view", "finance.manage", "finance.expense", "finance.expense.approve", "finance.expense.pay", "finance.bank_reconcile", "finance.bank_reconcile.review", "finance.transfer", "pos.settle", "supplier_payment.execute", "custody.request", "custody.approve", "custody.disburse", "custody.settle", "custody.close", "hr.view", "payroll.approve", "payroll.pay", "reports.view", "audit.view"],
   },
   OPERATIONS_MANAGER: {
     nameAr: "مدير العمليات",
-    permissions: ["dashboard.view", "service_order.create", "service_order.approve", "customer.view", "inventory.issue", "shift.open", "shift.close", "coupon.redeem", "procurement.request", "procurement.approve", "custody.request", "custody.approve", "custody.settle", "hr.view", "attendance.manage", "asset.view", "asset.manage", "maintenance.manage", "reports.view", "audit.view"],
+    permissions: ["dashboard.view", "service_order.create", "service_order.approve", "customer.view", "inventory.issue", "shift.open", "shift.close", "shift.variance.approve", "coupon.redeem", "procurement.request", "procurement.approve", "custody.request", "custody.approve", "custody.settle", "hr.view", "attendance.manage", "asset.view", "asset.manage", "maintenance.manage", "reports.view", "audit.view"],
   },
   BRANCH_MANAGER: {
     nameAr: "مدير الفرع",
@@ -69,7 +72,7 @@ const roleDefinitions: Record<string, { nameAr: string; permissions: readonly st
   },
   ACCOUNTANT: {
     nameAr: "المحاسب",
-    permissions: ["dashboard.view", "invoice.issue", "payment.receive", "customer.view", "sales_return.process", "shift.close", "supplier_invoice.create", "finance.view", "finance.manage", "finance.expense", "finance.expense.pay", "finance.bank_reconcile", "finance.transfer", "pos.settle", "custody.request", "custody.disburse", "custody.settle", "custody.close", "hr.view", "payroll.prepare", "payroll.pay", "reports.view", "audit.view"],
+    permissions: ["dashboard.view", "invoice.issue", "payment.receive", "customer.view", "sales_return.process", "shift.close", "finance.close.prepare", "supplier_invoice.create", "finance.view", "finance.manage", "finance.expense", "finance.expense.pay", "finance.bank_reconcile", "finance.transfer", "pos.settle", "custody.request", "custody.disburse", "custody.settle", "custody.close", "hr.view", "payroll.prepare", "payroll.pay", "reports.view", "audit.view"],
   },
   HR_MANAGER: {
     nameAr: "مدير الموارد البشرية",
