@@ -268,19 +268,21 @@ model Department {
 }
 
 model User {
-  id           String     @id @default(cuid())
-  email        String     @unique
-  name         String
-  passwordHash String?
-  status       UserStatus @default(ACTIVE)
-  branchId     String?
-  branch       Branch?    @relation(fields: [branchId], references: [id])
-  employeeId   String?    @unique
-  employee     Employee?  @relation(fields: [employeeId], references: [id])
-  roles        UserRole[]
-  auditLogs    AuditLog[] @relation("ActorAudit")
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id                 String     @id @default(cuid())
+  username           String     @unique
+  email              String?    @unique
+  name               String
+  passwordHash       String?
+  mustChangePassword Boolean    @default(true)
+  status             UserStatus @default(ACTIVE)
+  branchId           String?
+  branch             Branch?    @relation(fields: [branchId], references: [id])
+  employeeId         String?    @unique
+  employee           Employee?  @relation(fields: [employeeId], references: [id])
+  roles              UserRole[]
+  auditLogs          AuditLog[] @relation("ActorAudit")
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
 }
 
 model Role {
