@@ -1,0 +1,25 @@
+import { jwtVerify } from "jose";
+import { NextRequest, NextResponse } from "next/server";
+import { SESSION_COOKIE } from "@/lib/auth";
+
+export async function middleware(request: NextRequest) {
+  const token = request.cookies.get(SESSION_COOKIE)?.value;
+  const authSecret = process.env.AUTH_SECRET;
+
+  if (!token || !authSecret) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  try {
+    await jwtVerify(token, new TextEncoder().encode(authSecret));
+    return NextResponse.next();
+  } catch {
+    const response = NextResponse.redirect(new URL("/", request.url));
+    response.cookies.delete(SESSION_COOKIE);
+    return response;
+  }
+}
+
+export const config = {
+  matcher: ["/dashboard/:path*", "/api/secure/:path*"],
+};
