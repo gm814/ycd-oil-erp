@@ -6,6 +6,7 @@ export const PERMISSIONS = {
   INVENTORY_ISSUE: "inventory.issue",
   INVOICE_ISSUE: "invoice.issue",
   PAYMENT_RECEIVE: "payment.receive",
+  CUSTOMER_VIEW: "customer.view",
   SHIFT_OPEN: "shift.open",
   SHIFT_CLOSE: "shift.close",
   COUPON_REDEEM: "coupon.redeem",
