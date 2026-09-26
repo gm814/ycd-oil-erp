@@ -15,7 +15,6 @@ export async function POST() {
   const [
     branch,
     employees,
-    activeUsers,
     bankAccounts,
     openingBankBalance,
     parentCompanies,
@@ -40,7 +39,6 @@ export async function POST() {
         },
       },
     }),
-    db.user.count({ where: { branchId: session.branchId, status: "ACTIVE", employeeId: { not: null } } }),
     db.financialAccount.findMany({
       where: { branchId: session.branchId, active: true, type: "BANK" },
       select: { bankName: true, accountNumber: true, iban: true },
