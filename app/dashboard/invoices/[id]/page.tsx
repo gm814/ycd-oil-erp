@@ -5,6 +5,7 @@ import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import PrintButton from "./print-button";
 import CollectionForm from "./collection-form";
+import SalesReturnForm from "./sales-return-form";
 
 function money(value: number) {
   return value.toLocaleString("ar-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
@@ -40,14 +41,30 @@ export default async function InvoicePage({
       },
       payments: { orderBy: { paidAt: "asc" } },
       coupons: { orderBy: { issuedAt: "desc" } },
+      returns: {
+        where: { status: "COMPLETED" },
+        include: { items: true },
+        orderBy: { createdAt: "desc" },
+      },
     },
   });
 
   if (!invoice) notFound();
 
   const paid = invoice.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
-  const remaining = Math.max(Number(invoice.total) - paid, 0);
+  const returnedTotal = invoice.returns.reduce((sum, item) => sum + Number(item.total), 0);
+  const refunded = invoice.returns.reduce((sum, item) => sum + Number(item.refundAmount), 0);
+  const effectiveTotal = Math.max(Number(invoice.total) - returnedTotal, 0);
+  const netPaid = Math.max(paid - refunded, 0);
+  const remaining = Math.max(effectiveTotal - netPaid, 0);
   const canCollect = hasPermission(session.permissions, PERMISSIONS.PAYMENT_RECEIVE);
+  const canReturn = hasPermission(session.permissions, PERMISSIONS.SALES_RETURN_PROCESS);
+  const returnedByItem = new Map<string, number>();
+  for (const salesReturn of invoice.returns) {
+    for (const item of salesReturn.items) {
+      returnedByItem.set(item.serviceOrderItemId, (returnedByItem.get(item.serviceOrderItemId) ?? 0) + Number(item.quantity));
+    }
+  }
 
   return (
     <main className="workspace invoiceWorkspace">
@@ -151,7 +168,10 @@ export default async function InvoicePage({
             <div><span>الخصم</span><b>{money(Number(invoice.discount))}</b></div>
             <div><span>ضريبة القيمة المضافة</span><b>{money(Number(invoice.vatAmount))}</b></div>
             <div className="grandTotal"><span>الإجمالي شامل الضريبة</span><b>{money(Number(invoice.total))}</b></div>
+            <div><span>مرتجعات / إشعارات دائنة</span><b>{money(returnedTotal)}</b></div>
             <div><span>المحصل</span><b>{money(paid)}</b></div>
+            <div><span>مبالغ مستردة</span><b>{money(refunded)}</b></div>
+            <div><span>صافي قيمة الفاتورة</span><b>{money(effectiveTotal)}</b></div>
             <div><span>المتبقي</span><b>{money(remaining)}</b></div>
           </div>
         </section>
@@ -159,6 +179,35 @@ export default async function InvoicePage({
         {remaining > 0 && canCollect && (
           <section className="noPrint invoiceCollection">
             <CollectionForm invoiceId={invoice.id} remaining={remaining} />
+          </section>
+        )}
+
+        {invoice.returns.length > 0 && (
+          <section className="returnHistory">
+            <h3>المرتجعات والتسويات</h3>
+            {invoice.returns.map((salesReturn) => (
+              <div className="returnHistoryRow" key={salesReturn.id}>
+                <div><b>{salesReturn.returnNo}</b><small>{salesReturn.createdAt.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</small></div>
+                <div><span>قيمة المرتجع</span><b>{money(Number(salesReturn.total))}</b></div>
+                <div><span>المبلغ المسترد</span><b>{money(Number(salesReturn.refundAmount))}</b></div>
+                <div><span>السبب</span><b>{salesReturn.reason}</b></div>
+              </div>
+            ))}
+          </section>
+        )}
+
+        {canReturn && invoice.status !== "VOID" && invoice.serviceOrder.items.some((item) => (returnedByItem.get(item.id) ?? 0) < Number(item.quantity)) && (
+          <section className="noPrint invoiceCollection">
+            <SalesReturnForm
+              invoiceId={invoice.id}
+              items={invoice.serviceOrder.items.map((item) => ({
+                id: item.id,
+                descriptionAr: item.descriptionAr,
+                quantity: Number(item.quantity),
+                returnedQuantity: returnedByItem.get(item.id) ?? 0,
+                productCategory: item.product?.category ?? null,
+              }))}
+            />
           </section>
         )}
 
