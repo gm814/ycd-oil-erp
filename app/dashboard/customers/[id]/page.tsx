@@ -46,6 +46,7 @@ export default async function CustomerDetailsPage({
           invoice: {
             include: {
               payments: { orderBy: { paidAt: "asc" } },
+              returns: { where: { status: "COMPLETED" }, orderBy: { createdAt: "desc" } },
               coupons: { orderBy: { issuedAt: "desc" } },
             },
           },
@@ -58,11 +59,21 @@ export default async function CustomerDetailsPage({
   if (!customer) notFound();
 
   const invoices = customer.serviceOrders.flatMap((order) => order.invoice ? [order.invoice] : []);
-  const totalSales = invoices.reduce((sum, invoice) => sum + Number(invoice.total), 0);
-  const totalPaid = invoices.reduce(
+  const totalReturns = invoices.reduce(
+    (sum, invoice) => sum + invoice.returns.reduce((returned, item) => returned + Number(item.total), 0),
+    0,
+  );
+  const totalRefunded = invoices.reduce(
+    (sum, invoice) => sum + invoice.returns.reduce((refunded, item) => refunded + Number(item.refundAmount), 0),
+    0,
+  );
+  const grossSales = invoices.reduce((sum, invoice) => sum + Number(invoice.total), 0);
+  const totalSales = Math.max(grossSales - totalReturns, 0);
+  const grossPaid = invoices.reduce(
     (sum, invoice) => sum + invoice.payments.reduce((paid, payment) => paid + Number(payment.amount), 0),
     0,
   );
+  const totalPaid = Math.max(grossPaid - totalRefunded, 0);
   const balance = Math.max(totalSales - totalPaid, 0);
   const canManageCredit = hasPermission(session.permissions, PERMISSIONS.CREDIT_MANAGE);
   const availableCredit = customer.creditAllowed
@@ -95,7 +106,7 @@ export default async function CustomerDetailsPage({
 
       <section className="kpis">
         <article><span>عدد الزيارات</span><b>{customer.serviceOrders.length.toLocaleString("ar-SA")}</b></article>
-        <article><span>إجمالي الفواتير</span><b>{money(totalSales)}</b></article>
+        <article><span>صافي المبيعات</span><b>{money(totalSales)}</b></article>
         <article><span>إجمالي المحصل</span><b>{money(totalPaid)}</b></article>
         <article><span>الرصيد المتبقي</span><b>{money(balance)}</b></article>
       </section>
