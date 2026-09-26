@@ -33,7 +33,7 @@ export default async function FinancialClosesPage() {
           <h1>الإقفال المالي اليومي والشهري</h1>
           <p>لقطة رقابية موحدة للمبيعات والتحصيلات والمصروفات والفروقات والمطابقات قبل الإقفال النهائي.</p>
         </div>
-        <div className="logoPlaceholder">YCD <span>OIL</span></div>
+        <img className="documentCenterLogo" src="/brand/ycd-logo-source.svg" alt="YCD OIL" />
       </div>
 
       <CloseActions
