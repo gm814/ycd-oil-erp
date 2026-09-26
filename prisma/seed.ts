@@ -193,6 +193,36 @@ async function main() {
     }
   }
 
+  const staff = [
+    { code: "YCD-001", nameAr: "أبوبكر نبيل سيف", jobTitleAr: "المدير العام" },
+    { code: "YCD-002", nameAr: "حمزة عبدالرحمن سعيد الذبحاني", jobTitleAr: "مدير الفرع / المشتريات" },
+    { code: "YCD-003", nameAr: "هاني عبدالسلام الذبحاني", jobTitleAr: "المحاسب / الموارد البشرية" },
+    { code: "YCD-004", nameAr: "ضياء فرحان المخلافي", jobTitleAr: "المحاسب العام" },
+    { code: "YCD-005", nameAr: "عمار البخيتي", jobTitleAr: "الكاشير" },
+    { code: "YCD-006", nameAr: "محمد نجيب عثمان حمادي", jobTitleAr: "المستودع / فني" },
+    { code: "YCD-007", nameAr: "عمار النابهي", jobTitleAr: "فني" },
+    { code: "YCD-008", nameAr: "محمد المهدي ازهري", jobTitleAr: "مشرف المغسلة" },
+  ] as const;
+
+  for (const employee of staff) {
+    await prisma.employee.upsert({
+      where: { code: employee.code },
+      update: {
+        branchId: branch.id,
+        nameAr: employee.nameAr,
+        jobTitleAr: employee.jobTitleAr,
+        active: true,
+      },
+      create: {
+        branchId: branch.id,
+        code: employee.code,
+        nameAr: employee.nameAr,
+        jobTitleAr: employee.jobTitleAr,
+        active: true,
+      },
+    });
+  }
+
   const adminEmail = process.env.ADMIN_EMAIL;
   const adminPassword = process.env.ADMIN_PASSWORD;
 
