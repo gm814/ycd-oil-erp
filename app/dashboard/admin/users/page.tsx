@@ -2,18 +2,12 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
+import { operationalTeam } from "@/lib/operations";
 import UserManagementActions from "./user-management-actions";
 
-const suggestedRolesByEmployeeCode: Record<string, string[]> = {
-  "YCD-001": ["GENERAL_MANAGER"],
-  "YCD-002": ["BRANCH_MANAGER", "PROCUREMENT"],
-  "YCD-003": ["ACCOUNTANT", "HR_MANAGER"],
-  "YCD-004": ["ACCOUNTANT"],
-  "YCD-005": ["CASHIER"],
-  "YCD-006": ["WAREHOUSE", "TECHNICIAN"],
-  "YCD-007": ["TECHNICIAN"],
-  "YCD-008": ["WASH_SUPERVISOR"],
-};
+const suggestedRolesByEmployeeCode = new Map(
+  operationalTeam.map((member) => [member.code, [...member.systemRoleCodes]]),
+);
 
 export default async function UserManagementPage() {
   const session = await getSession();
@@ -62,7 +56,7 @@ export default async function UserManagementPage() {
           code: employee.code,
           nameAr: employee.nameAr,
           jobTitleAr: employee.jobTitleAr,
-          suggestedRoleCodes: suggestedRolesByEmployeeCode[employee.code] ?? [],
+          suggestedRoleCodes: suggestedRolesByEmployeeCode.get(employee.code) ?? [],
           user: employee.user ? {
             id: employee.user.id,
             username: employee.user.username,
