@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { companyConfig } from "@/lib/config";
 import { getSession } from "@/lib/auth";
 import { riyadhBusinessDayRange } from "@/lib/time";
+import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import LogoutButton from "./logout-button";
 
 const modules = [
@@ -120,6 +121,9 @@ export default async function DashboardPage() {
         <nav>
           <strong>لوحة التحكم</strong>
           {modules.map(([item, href]) => <a href={href} key={item}>{item}</a>)}
+          {hasPermission(session.permissions, PERMISSIONS.USER_MANAGE) && (
+            <a href="/dashboard/admin/users">المستخدمون والصلاحيات</a>
+          )}
         </nav>
       </aside>
 
