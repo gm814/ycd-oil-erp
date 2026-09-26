@@ -10,11 +10,31 @@ const typeLabel: Record<string, string> = {
   POS_CLEARING: "تسويات شبكة / POS",
 };
 
+const transactionLabel: Record<string, string> = {
+  OPENING_BALANCE: "رصيد افتتاحي",
+  CUSTOMER_RECEIPT: "تحصيل عميل",
+  CUSTOMER_REFUND: "استرداد عميل",
+  SUPPLIER_PAYMENT: "سداد مورد",
+  EXPENSE: "مصروف تشغيلي / رسوم",
+  TRANSFER_IN: "تحويل وارد",
+  TRANSFER_OUT: "تحويل صادر",
+  CUSTODY_ISSUE: "صرف عهدة",
+  CUSTODY_SETTLEMENT: "تسوية عهدة",
+  PAYROLL_PAYMENT: "صرف رواتب",
+  ADJUSTMENT: "تسوية مالية",
+};
+
 export default async function FinancePage() {
   const session = await getSession();
   if (!session) redirect("/");
   if (!session.branchId) redirect("/dashboard");
   if (!hasPermission(session.permissions, PERMISSIONS.FINANCE_VIEW)) redirect("/dashboard");
+
+  const canManage = hasPermission(session.permissions, PERMISSIONS.FINANCE_MANAGE);
+  const canExpense = hasPermission(session.permissions, PERMISSIONS.FINANCE_EXPENSE);
+  const canTransfer = hasPermission(session.permissions, PERMISSIONS.FINANCE_TRANSFER);
+  const canPosSettle = hasPermission(session.permissions, PERMISSIONS.POS_SETTLE);
+  const canPaySupplier = hasPermission(session.permissions, PERMISSIONS.SUPPLIER_PAYMENT_EXECUTE);
 
   const [accounts, transactions, supplierInvoices] = await Promise.all([
     db.financialAccount.findMany({
@@ -49,13 +69,18 @@ export default async function FinancePage() {
         <div>
           <a href="/dashboard" className="backLink">← لوحة التحكم</a>
           <h1>المالية والبنوك</h1>
-          <p>الصناديق والحسابات البنكية، الأرصدة، وحركة سداد الموردين بعد الاعتماد.</p>
+          <p>إدارة الصندوق والبنوك، المصروفات التشغيلية، التحويلات، وتسويات مدى مع رقابة كاملة على الحركة.</p>
         </div>
         <div className="logoPlaceholder">YCD <span>OIL</span></div>
       </div>
 
       <FinanceActions
         accounts={accountRows}
+        canManage={canManage}
+        canExpense={canExpense}
+        canTransfer={canTransfer}
+        canPosSettle={canPosSettle}
+        canPaySupplier={canPaySupplier}
         invoices={supplierInvoices.map((invoice) => ({
           id: invoice.id,
           invoiceNo: invoice.invoiceNo,
@@ -93,7 +118,7 @@ export default async function FinancePage() {
                 <tr key={transaction.id}>
                   <td>{transaction.createdAt.toLocaleString("ar-SA")}</td>
                   <td>{transaction.account.nameAr}</td>
-                  <td>{transaction.type}</td>
+                  <td>{transactionLabel[transaction.type] ?? transaction.type}</td>
                   <td>{transaction.descriptionAr}</td>
                   <td>{transaction.reference || "—"}</td>
                   <td className={Number(transaction.amount) < 0 ? "moneyOut" : "moneyIn"}>{Number(transaction.amount).toFixed(2)} ر.س</td>
