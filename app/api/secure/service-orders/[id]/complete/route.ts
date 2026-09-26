@@ -7,6 +7,8 @@ import { completeServiceOrder } from "@/services/service-order";
 const schema = z.object({
   paymentMethod: z.enum(["CASH", "CARD", "TRANSFER"]),
   paymentReference: z.string().trim().max(120).optional(),
+  nextServiceKm: z.number().int().min(0).max(3_000_000).optional(),
+  nextServiceAt: z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/).optional(),
   idempotencyReference: z.string().trim().min(12).max(120),
 });
 
@@ -39,6 +41,10 @@ export async function POST(
       branchId: session.branchId,
       paymentMethod: parsed.data.paymentMethod,
       paymentReference: parsed.data.paymentReference,
+      nextServiceKm: parsed.data.nextServiceKm,
+      nextServiceAt: parsed.data.nextServiceAt
+        ? new Date(`${parsed.data.nextServiceAt}T00:00:00+03:00`)
+        : undefined,
       idempotencyReference: parsed.data.idempotencyReference,
     });
     return NextResponse.json({ invoice });
