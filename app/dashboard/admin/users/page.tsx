@@ -4,6 +4,17 @@ import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import UserManagementActions from "./user-management-actions";
 
+const suggestedRolesByEmployeeCode: Record<string, string[]> = {
+  "YCD-001": ["GENERAL_MANAGER"],
+  "YCD-002": ["BRANCH_MANAGER", "PROCUREMENT"],
+  "YCD-003": ["ACCOUNTANT", "HR_MANAGER"],
+  "YCD-004": ["ACCOUNTANT"],
+  "YCD-005": ["CASHIER"],
+  "YCD-006": ["WAREHOUSE", "TECHNICIAN"],
+  "YCD-007": ["TECHNICIAN"],
+  "YCD-008": ["WASH_SUPERVISOR"],
+};
+
 export default async function UserManagementPage() {
   const session = await getSession();
   if (!session) redirect("/");
@@ -51,6 +62,7 @@ export default async function UserManagementPage() {
           code: employee.code,
           nameAr: employee.nameAr,
           jobTitleAr: employee.jobTitleAr,
+          suggestedRoleCodes: suggestedRolesByEmployeeCode[employee.code] ?? [],
           user: employee.user ? {
             id: employee.user.id,
             email: employee.user.email,
