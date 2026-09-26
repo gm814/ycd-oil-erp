@@ -10,7 +10,7 @@ const modules = [
   ["استقبال السيارات وأوامر الخدمة", "/dashboard/service-orders"],
   ["الزيوت وخدمات السيارات", "/dashboard/service-orders"],
   ["كوبونات المغسلة", "/dashboard/coupons"],
-  ["المبيعات والعملاء", "#"],
+  ["المبيعات والعملاء", "/dashboard/customers"],
   ["المشتريات والتوريد", "/dashboard/procurement"],
   ["المخزون والزيوت والفلاتر", "/dashboard/inventory"],
   ["المالية والبنوك", "/dashboard/finance"],
