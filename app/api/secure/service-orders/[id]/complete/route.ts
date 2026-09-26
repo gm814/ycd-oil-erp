@@ -16,6 +16,7 @@ export async function POST(
 ) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+  if (!session.branchId) return NextResponse.json({ error: "BRANCH_REQUIRED" }, { status: 400 });
 
   const required = [
     PERMISSIONS.INVENTORY_ISSUE,
@@ -35,6 +36,7 @@ export async function POST(
     const invoice = await completeServiceOrder({
       serviceOrderId: id,
       actorId: session.userId,
+      branchId: session.branchId,
       paymentMethod: parsed.data.paymentMethod,
       paymentReference: parsed.data.paymentReference,
       idempotencyReference: parsed.data.idempotencyReference,
