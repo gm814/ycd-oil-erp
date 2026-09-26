@@ -93,7 +93,7 @@ export default async function ShiftsPage() {
                 <th>الفتح</th><th>الإقفال</th>
                 <th>النقد المتوقع</th><th>النقد الفعلي</th><th>فرق النقد</th>
                 <th>مدى المتوقع</th><th>مدى الفعلي</th><th>فرق مدى</th>
-                <th>التحويل المتوقع</th><th>التحويل الفعلي</th><th>فرق التحويل</th>
+                <th>التحويل المتوقع</th><th>التحويل الفعلي</th><th>فرق التحويل</th><th>التقرير</th>
               </tr>
             </thead>
             <tbody>
@@ -110,9 +110,10 @@ export default async function ShiftsPage() {
                   <td>{money(shift.expectedTransfer === null ? null : Number(shift.expectedTransfer))}</td>
                   <td>{money(shift.countedTransfer === null ? null : Number(shift.countedTransfer))}</td>
                   <td>{money(shift.transferVariance === null ? null : Number(shift.transferVariance))}</td>
+                  <td><a className="orderLink" href={`/dashboard/shifts/${shift.id}`}>عرض / طباعة</a></td>
                 </tr>
               ))}
-              {shifts.length === 0 && <tr><td colSpan={11} className="empty">لا توجد ورديات مسجلة بعد.</td></tr>}
+              {shifts.length === 0 && <tr><td colSpan={12} className="empty">لا توجد ورديات مسجلة بعد.</td></tr>}
             </tbody>
           </table>
         </div>
