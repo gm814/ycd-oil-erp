@@ -28,6 +28,7 @@ export default function GroupFinanceActions({ companies, accounts }: Props) {
         GROUP_COMPANY_CREATE_FAILED: "تعذر إضافة الشركة؛ تحقق من عدم تكرار الكود.",
         GROUP_COMPANY_NOT_FOUND: "شركة المجموعة غير موجودة.",
         GROUP_COMPANY_BANK_CREATE_FAILED: "تعذر تسجيل الحساب البنكي.",
+        GROUP_COMPANY_UPDATE_FAILED: "تعذر تحديث بيانات الشركة.",
         IBAN_ALREADY_REGISTERED: "رقم الآيبان مسجل مسبقًا لشركة أخرى.",
         FINANCIAL_ACCOUNT_NOT_FOUND: "الحساب المالي غير موجود.",
         IDEMPOTENCY_CONFLICT: "مرجع العملية مستخدم سابقًا.",
@@ -45,6 +46,17 @@ export default function GroupFinanceActions({ companies, accounts }: Props) {
     event.preventDefault();
     const form = event.currentTarget;
     void post("/api/secure/finance/group-companies", Object.fromEntries(new FormData(form).entries()), "تمت إضافة شركة المجموعة.")
+      .then((ok) => { if (ok) form.reset(); });
+  }
+
+  function updateCompany(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = Object.fromEntries(new FormData(form).entries());
+    const companyId = String(data.companyId || "");
+    if (!companyId) return;
+    const { companyId: _companyId, ...body } = data;
+    void post(`/api/secure/finance/group-companies/${companyId}`, body, "تم تحديث بيانات شركة المجموعة.")
       .then((ok) => { if (ok) form.reset(); });
   }
 
@@ -121,6 +133,35 @@ export default function GroupFinanceActions({ companies, accounts }: Props) {
           </form>
         </article>
       </section>
+      <section className="workGrid">
+        <article className="panel">
+          <h2>استكمال بيانات شركة مسجلة</h2>
+          <form className="intakeForm" onSubmit={updateCompany}>
+            <label>الشركة
+              <select name="companyId" required defaultValue="">
+                <option value="" disabled>اختر الشركة</option>
+                {companies.map((company) => <option key={company.id} value={company.id}>{company.legalNameAr}</option>)}
+              </select>
+            </label>
+            <div className="formRow">
+              <label>الرقم الوطني الموحد<input name="unifiedNumber" /></label>
+              <label>السجل التجاري<input name="crNumber" /></label>
+            </div>
+            <div className="formRow">
+              <label>الرقم الضريبي<input name="vatNumber" /></label>
+              <label>الاسم التجاري<input name="brandName" /></label>
+            </div>
+            <button disabled={busy || companies.length === 0}>تحديث بيانات الشركة</button>
+          </form>
+        </article>
+
+        <article className="panel">
+          <h2>ضبط بيانات المجموعة</h2>
+          <p>هذه الشاشة جاهزة لاستقبال السجلات التجارية والأرقام الموحدة والضريبية لكل شركة عند تزويدنا بها، دون الحاجة لتغيير هيكل النظام.</p>
+          <p className="muted">لا يتم افتراض أي رقم غير موثق؛ الحقول غير المتوفرة تبقى فارغة حتى وصول المستند الرسمي.</p>
+        </article>
+      </section>
+
       <section className="workGrid">
         <article className="panel">
           <h2>تسجيل حساب بنكي لشركة المجموعة</h2>
