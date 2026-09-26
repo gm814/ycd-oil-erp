@@ -84,7 +84,7 @@ export default async function FinancialStatementPage({
   const outflow = transactions.filter((item) => Number(item.amount) < 0)
     .reduce((sum, item) => sum + Math.abs(Number(item.amount)), 0);
   const operatingExpenses = transactions
-    .filter((item) => item.type === "EXPENSE" && item.relatedEntityType === "OperatingExpense")
+    .filter((item) => item.type === "EXPENSE" && ["OperatingExpense", "ExpenseRequest"].includes(item.relatedEntityType ?? ""))
     .reduce((sum, item) => sum + Math.abs(Number(item.amount)), 0);
   const posFees = transactions
     .filter((item) => item.type === "EXPENSE" && item.relatedEntityType === "PosSettlementFee")
