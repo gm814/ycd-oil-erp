@@ -36,6 +36,7 @@ export default async function ShiftClosingReport({ params }: { params: Promise<{
       serviceOrders: {
         select: { id: true, orderNo: true, status: true },
       },
+      varianceResolution: true,
     },
   });
   if (!shift) notFound();
@@ -175,6 +176,14 @@ export default async function ShiftClosingReport({ params }: { params: Promise<{
               </table>
             </div>
           </article>
+        )}
+
+        {shift.varianceResolution && (
+          <section className="invoicePolicy">
+            <b>حالة اعتماد فروقات الوردية</b>
+            <p>الحالة: {shift.varianceResolution.status === "APPROVED" ? "معتمد" : shift.varianceResolution.status === "REJECTED" ? "مرفوض" : "بانتظار الاعتماد"}</p>
+            <p>المبرر / الملاحظة: {shift.varianceResolution.decisionNotes || shift.varianceResolution.reason || "لم تسجل ملاحظة."}</p>
+          </section>
         )}
 
         <section className="invoicePolicy">
