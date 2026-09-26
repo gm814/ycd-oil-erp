@@ -8,6 +8,12 @@ export const companyConfig = {
   unifiedNumber: "7038822883",
   crNumber: "1009014238",
   vatNumber: "311380910800003",
+  bank: {
+    nameAr: "مصرف الراجحي",
+    accountNameAr: "شركة وجهتك الإبداعية لخدمات السيارات",
+    accountNumber: "528000010006080781162",
+    iban: "SA7180000528608010781162",
+  },
   vatRate: Number(process.env.VAT_RATE ?? "0.15"),
   washCouponValidityDays: Number(process.env.WASH_COUPON_VALIDITY_DAYS ?? "30"),
 } as const;
