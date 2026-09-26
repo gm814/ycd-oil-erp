@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { companyConfig } from "@/lib/config";
 import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
+import GoLiveControl from "./go-live-control";
 
 function statusBadge(done: boolean) {
   return <span className={done ? "okBadge" : "alertBadge"}>{done ? "مكتمل" : "مطلوب"}</span>;
@@ -15,6 +16,7 @@ export default async function ReadinessPage() {
   if (!hasPermission(session.permissions, PERMISSIONS.REPORTS_VIEW)) redirect("/dashboard");
 
   const [
+    branchState,
     employees,
     activeUsers,
     bankAccounts,
@@ -29,6 +31,10 @@ export default async function ReadinessPage() {
     shifts,
     serviceOrders,
   ] = await Promise.all([
+    db.branch.findUnique({
+      where: { id: session.branchId },
+      select: { operationalStatus: true, goLiveAt: true },
+    }),
     db.employee.count({ where: { branchId: session.branchId, active: true } }),
     db.user.count({ where: { branchId: session.branchId, status: "ACTIVE", employeeId: { not: null } } }),
     db.financialAccount.findMany({
@@ -54,6 +60,7 @@ export default async function ReadinessPage() {
     db.serviceOrder.count({ where: { branchId: session.branchId } }),
   ]);
 
+  if (!branchState) redirect("/dashboard");
   const openingBalance = Number(openingBankBalance._sum.amount ?? 0);
   const fundingTotal = Number(groupFunding._sum.amount ?? 0);
   const bankReady = bankAccounts.some((account) => account.bankName && account.accountNumber && account.iban);
@@ -87,6 +94,12 @@ export default async function ReadinessPage() {
   const completed = checklist.filter((item) => item.done).length;
   const readinessPercent = Math.round((completed / checklist.length) * 100);
   const noOperationsYet = shifts === 0 && serviceOrders === 0;
+  const canGoLive = hasPermission(session.permissions, PERMISSIONS.OPERATIONS_GO_LIVE);
+  const phaseLabel = branchState.operationalStatus === "LIVE"
+    ? "التشغيل التجاري"
+    : branchState.operationalStatus === "SUSPENDED"
+      ? "موقوف تشغيليًا"
+      : "مرحلة ما قبل التشغيل التجاري";
 
   return (
     <main className="workspace">
@@ -100,7 +113,7 @@ export default async function ReadinessPage() {
       </div>
 
       <section className="kpis reportKpis">
-        <article><span>مرحلة المشروع</span><b>{companyConfig.operationalPhaseAr}</b></article>
+        <article><span>مرحلة المشروع</span><b>{phaseLabel}</b></article>
         <article><span>نسبة اكتمال بيانات التشغيل</span><b>{readinessPercent}%</b></article>
         <article><span>الموظفون المسجلون</span><b>{employees}</b></article>
         <article><span>التمويل الافتتاحي المسجل</span><b>{fundingTotal.toFixed(2)} ر.س</b></article>
@@ -111,7 +124,9 @@ export default async function ReadinessPage() {
           <h2>حالة المركز</h2>
           <p>{statusBadge(noOperationsYet)} <b>{noOperationsYet ? "لم يبدأ التشغيل التجاري بعد" : "توجد حركات تشغيلية مسجلة"}</b></p>
           <p><span className="okBadge">المركز مجهز</span> التشطيبات والديكورات والعدد والمعدات والتراخيص مؤكدة من الإدارة.</p>
-          <p><span className="alertBadge">بوابة الإطلاق مفعلة</span> فتح وردية تشغيل حقيقية محظور أثناء PREOPENING؛ يسمح به فقط في بيئة UAT المصرح بها.</p>
+          <p><span className={branchState.operationalStatus === "LIVE" ? "okBadge" : "alertBadge"}>بوابة الإطلاق {branchState.operationalStatus === "LIVE" ? "مفتوحة" : "مقفلة"}</span> {branchState.operationalStatus === "LIVE" ? "الفرع مفعّل للتشغيل التجاري وفتح الورديات الحقيقية." : "فتح وردية تشغيل حقيقية محظور أثناء PREOPENING؛ يسمح به فقط في بيئة UAT المصرح بها."}</p>
+          {branchState.goLiveAt && <p>تاريخ التفعيل: <b>{branchState.goLiveAt.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</b></p>}
+          <GoLiveControl canGoLive={canGoLive} status={branchState.operationalStatus} />
           <p>الرصيد البنكي الافتتاحي: <b>{openingBalance.toFixed(2)} ر.س</b></p>
           <p>عمليات التمويل المسجلة: <b>{groupFunding._count}</b></p>
           <p className="muted">تم فصل تمويل الشركة الرئيسية عن إيرادات المبيعات حتى تظهر نتائج النشاط الفعلية بصورة صحيحة.</p>
@@ -169,7 +184,9 @@ export default async function ReadinessPage() {
         </div>
       </article>
 
-      <p className="formNotice">المركز مجهز ميدانيًا، لكن التشغيل التجاري سيبقى مقفلًا في النظام حتى تكتمل بيانات الأصناف والخدمات والمخزون والموردين وحسابات المستخدمين وتنجح اختبارات UAT.</p>
+      <p className="formNotice">{branchState.operationalStatus === "LIVE"
+        ? "الفرع مفعّل للتشغيل التجاري. تستمر الرقابة عبر الورديات والإقفالات والمطابقات وسجل التدقيق."
+        : "المركز مجهز ميدانيًا، لكن التشغيل التجاري سيبقى مقفلًا في النظام حتى تكتمل بيانات الأصناف والخدمات والمخزون والموردين وحسابات المستخدمين وتنجح اختبارات UAT."}</p>
     </main>
   );
 }
