@@ -159,6 +159,11 @@ export default async function ReadinessPage() {
         <article><span>التمويل الافتتاحي المسجل</span><b>{fundingTotal.toFixed(2)} ر.س</b></article>
       </section>
 
+      <div className="readinessActionBar">
+        <a className="primaryLink" href="/dashboard/readiness/import">استيراد بيانات ما قبل التشغيل</a>
+        <span className="muted">جاهز لاستقبال ملفات الأصناف والخدمات والمخزون والموردين عند وصولها.</span>
+      </div>
+
       <section className="workGrid">
         <article className="panel">
           <h2>حالة المركز</h2>
