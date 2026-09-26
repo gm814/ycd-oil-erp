@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
+import { companyConfig } from "@/lib/config";
 
 const schema = z.object({ openingCash: z.coerce.number().min(0).max(10_000_000).default(0) });
 
@@ -13,6 +14,15 @@ export async function POST(request: Request) {
   if (!session.branchId) return NextResponse.json({ error: "BRANCH_REQUIRED" }, { status: 400 });
   if (!hasPermission(session.permissions, PERMISSIONS.SHIFT_OPEN)) {
     return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  }
+  if (
+    companyConfig.operationalPhase === "PREOPENING" &&
+    process.env.ALLOW_PREOPENING_OPERATIONS !== "true"
+  ) {
+    return NextResponse.json({
+      error: "PREOPENING_OPERATION_BLOCKED",
+      phase: companyConfig.operationalPhase,
+    }, { status: 423 });
   }
 
   const parsed = schema.safeParse(await request.json().catch(() => ({})));
