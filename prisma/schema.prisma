@@ -34,6 +34,7 @@ model Branch {
   city           String?
   departments    Department[]
   employees      Employee[]
+  users          User[]
   shifts         Shift[]
   serviceOrders  ServiceOrder[]
   stockMovements StockMovement[]
@@ -48,14 +49,17 @@ model Department {
 }
 
 model User {
-  id        String     @id @default(cuid())
-  email     String     @unique
-  name      String
-  status    UserStatus @default(ACTIVE)
-  roles     UserRole[]
-  auditLogs AuditLog[] @relation("ActorAudit")
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String
+  passwordHash String?
+  status       UserStatus @default(ACTIVE)
+  branchId     String?
+  branch       Branch?    @relation(fields: [branchId], references: [id])
+  roles        UserRole[]
+  auditLogs    AuditLog[] @relation("ActorAudit")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
 
 model Role {
@@ -110,16 +114,16 @@ model Customer {
 }
 
 model Vehicle {
-  id             String          @id @default(cuid())
-  customerId     String
-  customer       Customer        @relation(fields: [customerId], references: [id])
-  plate          String          @index
-  make           String?
-  model          String?
-  year           Int?
+  id              String           @id @default(cuid())
+  customerId      String
+  customer        Customer         @relation(fields: [customerId], references: [id])
+  plate           String           @index
+  make            String?
+  model           String?
+  year            Int?
   currentOdometer Int?
-  serviceOrders  ServiceOrder[]
-  history        VehicleHistory[]
+  serviceOrders   ServiceOrder[]
+  history         VehicleHistory[]
 }
 
 model Product {
@@ -146,22 +150,22 @@ model Shift {
 }
 
 model ServiceOrder {
-  id          String             @id @default(cuid())
-  orderNo     String             @unique
-  branchId    String
-  branch      Branch             @relation(fields: [branchId], references: [id])
-  customerId  String
-  customer    Customer           @relation(fields: [customerId], references: [id])
-  vehicleId   String
-  vehicle     Vehicle            @relation(fields: [vehicleId], references: [id])
-  odometer    Int?
+  id           String             @id @default(cuid())
+  orderNo      String             @unique
+  branchId     String
+  branch       Branch             @relation(fields: [branchId], references: [id])
+  customerId   String
+  customer     Customer           @relation(fields: [customerId], references: [id])
+  vehicleId    String
+  vehicle      Vehicle            @relation(fields: [vehicleId], references: [id])
+  odometer     Int?
   technicianId String?
-  status      ServiceOrderStatus @default(DRAFT)
-  items       ServiceOrderItem[]
-  invoice     Invoice?
-  histories   VehicleHistory[]
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+  status       ServiceOrderStatus @default(DRAFT)
+  items        ServiceOrderItem[]
+  invoice      Invoice?
+  histories    VehicleHistory[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
 }
 
 model ServiceOrderItem {
@@ -208,13 +212,14 @@ model Invoice {
 }
 
 model Payment {
-  id        String        @id @default(cuid())
-  invoiceId String
-  invoice   Invoice       @relation(fields: [invoiceId], references: [id])
-  method    PaymentMethod
-  amount    Decimal       @db.Decimal(12,2)
-  reference String?
-  paidAt    DateTime      @default(now())
+  id             String        @id @default(cuid())
+  invoiceId      String
+  invoice        Invoice       @relation(fields: [invoiceId], references: [id])
+  method         PaymentMethod
+  amount         Decimal       @db.Decimal(12,2)
+  reference      String?
+  idempotencyKey String?       @unique
+  paidAt         DateTime      @default(now())
 }
 
 model VehicleHistory {
