@@ -75,3 +75,5 @@ header h1{margin:0 0 6px;font-size:28px}header p{margin:0;color:#666}.branch{bac
 .invoiceBankDetails h3{grid-column:1/-1;margin:0 0 4px}.invoiceBankDetails>div{display:grid;gap:4px}.invoiceBankDetails span{color:#777;font-size:12px}
 @media(max-width:900px){.invoiceBankDetails{grid-template-columns:1fr}.invoiceBrandLogo{width:210px}}
 @media print{.invoiceBrandLogo{width:190px}.invoiceBankDetails{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+
+.teamGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0}.teamCard{position:relative;background:#fff;border:1px solid #e2e2e2;border-top:5px solid var(--orange);border-radius:14px;padding:18px;box-shadow:0 8px 24px #00000008}.teamCard h2{margin:8px 0;font-size:18px}.teamCard>b{color:#444}.teamCode{font-size:12px;color:#777;font-weight:800}.teamResponsibilities{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}.teamResponsibilities span{background:#fff8e8;border:1px solid #f7d58c;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700}@media(max-width:900px){.teamGrid{grid-template-columns:1fr 1fr}}@media(max-width:600px){.teamGrid{grid-template-columns:1fr}}
