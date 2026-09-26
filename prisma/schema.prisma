@@ -107,6 +107,7 @@ enum FinancialTransactionType {
   TRANSFER_OUT
   CUSTODY_ISSUE
   CUSTODY_SETTLEMENT
+  PAYROLL_PAYMENT
   ADJUSTMENT
 }
 
@@ -118,6 +119,26 @@ enum CustodyStatus {
   SETTLED
   CLOSED
   REJECTED
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LEAVE
+  SICK
+  OFF
+}
+
+enum PayrollAdjustmentType {
+  EARNING
+  DEDUCTION
+}
+
+enum PayrollStatus {
+  DRAFT
+  APPROVED
+  PAID
   CANCELLED
 }
 
@@ -152,6 +173,7 @@ model Branch {
   financialAccounts FinancialAccount[]
   financialTransactions FinancialTransaction[]
   custodyRequests CustodyRequest[]
+  payrollPeriods  PayrollPeriod[]
   createdAt        DateTime          @default(now())
 }
 
@@ -207,15 +229,26 @@ model RolePermission {
 }
 
 model Employee {
-  id        String   @id @default(cuid())
-  branchId  String
-  branch    Branch   @relation(fields: [branchId], references: [id])
-  code      String   @unique
-  nameAr    String
-  phone     String?
-  active          Boolean          @default(true)
-  custodyRequests CustodyRequest[]
-  createdAt       DateTime         @default(now())
+  id                 String              @id @default(cuid())
+  branchId           String
+  branch             Branch              @relation(fields: [branchId], references: [id])
+  code               String              @unique
+  nameAr             String
+  phone              String?
+  jobTitleAr         String?
+  hireDate           DateTime?
+  baseSalary         Decimal             @default(0) @db.Decimal(12,2)
+  housingAllowance   Decimal             @default(0) @db.Decimal(12,2)
+  transportAllowance Decimal             @default(0) @db.Decimal(12,2)
+  iban               String?
+  active             Boolean             @default(true)
+  custodyRequests    CustodyRequest[]
+  attendanceRecords AttendanceRecord[]
+  payrollAdjustments PayrollAdjustment[]
+  payrollLines       PayrollLine[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  @@index([branchId, active])
 }
 
 model Customer {
@@ -627,6 +660,78 @@ model CustodySettlement {
   createdBy         String
   createdAt         DateTime       @default(now())
   @@index([custodyRequestId, createdAt])
+}
+
+model AttendanceRecord {
+  id          String           @id @default(cuid())
+  employeeId  String
+  employee    Employee         @relation(fields: [employeeId], references: [id])
+  workDate    DateTime
+  status      AttendanceStatus @default(PRESENT)
+  checkIn     DateTime?
+  checkOut    DateTime?
+  overtimeMin Int              @default(0)
+  lateMin     Int              @default(0)
+  notes       String?
+  recordedBy  String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  @@unique([employeeId, workDate])
+  @@index([workDate, status])
+}
+
+model PayrollAdjustment {
+  id          String                @id @default(cuid())
+  employeeId  String
+  employee    Employee              @relation(fields: [employeeId], references: [id])
+  year        Int
+  month       Int
+  type        PayrollAdjustmentType
+  amount      Decimal               @db.Decimal(12,2)
+  reason      String
+  reference   String?
+  createdBy   String
+  createdAt   DateTime              @default(now())
+  @@index([employeeId, year, month])
+}
+
+model PayrollPeriod {
+  id          String        @id @default(cuid())
+  branchId    String
+  branch      Branch        @relation(fields: [branchId], references: [id])
+  year        Int
+  month       Int
+  status      PayrollStatus @default(DRAFT)
+  generatedBy String
+  approvedBy  String?
+  approvedAt  DateTime?
+  paidBy      String?
+  paidAt      DateTime?
+  lines       PayrollLine[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  @@unique([branchId, year, month])
+  @@index([branchId, status])
+}
+
+model PayrollLine {
+  id                 String        @id @default(cuid())
+  payrollPeriodId    String
+  payrollPeriod      PayrollPeriod @relation(fields: [payrollPeriodId], references: [id], onDelete: Cascade)
+  employeeId         String
+  employee           Employee      @relation(fields: [employeeId], references: [id])
+  baseSalary         Decimal       @db.Decimal(12,2)
+  housingAllowance   Decimal       @default(0) @db.Decimal(12,2)
+  transportAllowance Decimal       @default(0) @db.Decimal(12,2)
+  otherEarnings      Decimal       @default(0) @db.Decimal(12,2)
+  deductions         Decimal       @default(0) @db.Decimal(12,2)
+  netSalary          Decimal       @db.Decimal(12,2)
+  attendanceDays     Int           @default(0)
+  absentDays         Int           @default(0)
+  overtimeMin        Int           @default(0)
+  lateMin            Int           @default(0)
+  @@unique([payrollPeriodId, employeeId])
+  @@index([employeeId])
 }
 
 model Approval {
