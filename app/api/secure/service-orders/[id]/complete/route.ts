@@ -5,7 +5,7 @@ import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import { completeServiceOrder } from "@/services/service-order";
 
 const schema = z.object({
-  paymentMethod: z.enum(["CASH", "CARD", "TRANSFER", "CREDIT"]),
+  paymentMethod: z.enum(["CASH", "CARD", "TRANSFER"]),
   paymentReference: z.string().trim().max(120).optional(),
   idempotencyReference: z.string().trim().min(12).max(120),
 });
