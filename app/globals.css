@@ -79,3 +79,13 @@ header h1{margin:0 0 6px;font-size:28px}header p{margin:0;color:#666}.branch{bac
 .teamGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0}.teamCard{position:relative;background:#fff;border:1px solid #e2e2e2;border-top:5px solid var(--orange);border-radius:14px;padding:18px;box-shadow:0 8px 24px #00000008}.teamCard h2{margin:8px 0;font-size:18px}.teamCard>b{color:#444}.teamCode{font-size:12px;color:#777;font-weight:800}.teamResponsibilities{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}.teamResponsibilities span{background:#fff8e8;border:1px solid #f7d58c;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700}@media(max-width:900px){.teamGrid{grid-template-columns:1fr 1fr}}@media(max-width:600px){.teamGrid{grid-template-columns:1fr}}
 
 .bankAccountCell{display:grid;gap:3px;min-width:250px}.bankAccountCell span{font-size:12px;color:#666;direction:ltr;text-align:left}
+
+.userAdminGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.userAccessForm{margin-top:16px;padding-top:14px;border-top:1px solid #eee}
+.rolePicker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;border:1px solid #ddd;border-radius:12px;padding:12px}
+.rolePicker legend{font-weight:800;padding:0 6px}
+.rolePicker label{display:flex!important;align-items:center;gap:7px!important;font-size:13px;font-weight:700!important}
+.rolePicker input{width:auto!important}
+.userEmail{direction:ltr;text-align:left;background:#fafafa;border-radius:9px;padding:9px;font-weight:800;overflow-wrap:anywhere}
+.muted{color:#777}
+@media(max-width:900px){.userAdminGrid{grid-template-columns:1fr}.rolePicker{grid-template-columns:1fr}}
