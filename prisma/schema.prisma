@@ -224,6 +224,7 @@ model Product {
   serviceItems         ServiceOrderItem[]
   stockMovements       StockMovement[]
   purchaseRequestItems PurchaseRequestItem[]
+  supplierQuoteItems   SupplierQuoteItem[]
   purchaseOrderItems   PurchaseOrderItem[]
   goodsReceiptItems    GoodsReceiptItem[]
   createdAt            DateTime              @default(now())
@@ -393,6 +394,7 @@ model PurchaseRequestItem {
   product           Product         @relation(fields: [productId], references: [id])
   quantity          Decimal         @db.Decimal(12,3)
   notes             String?
+  quoteItems         SupplierQuoteItem[]
 }
 
 model SupplierQuote {
@@ -406,9 +408,23 @@ model SupplierQuote {
   validUntil        DateTime?
   selected          Boolean         @default(false)
   notes             String?
+  items             SupplierQuoteItem[]
   createdAt         DateTime        @default(now())
   purchaseOrder     PurchaseOrder?
   @@index([purchaseRequestId, supplierId])
+}
+
+model SupplierQuoteItem {
+  id                    String              @id @default(cuid())
+  supplierQuoteId       String
+  supplierQuote         SupplierQuote       @relation(fields: [supplierQuoteId], references: [id], onDelete: Cascade)
+  purchaseRequestItemId String
+  purchaseRequestItem   PurchaseRequestItem @relation(fields: [purchaseRequestItemId], references: [id])
+  productId             String
+  product               Product             @relation(fields: [productId], references: [id])
+  quantity              Decimal             @db.Decimal(12,3)
+  unitCost              Decimal             @db.Decimal(12,2)
+  @@unique([supplierQuoteId, purchaseRequestItemId])
 }
 
 model PurchaseOrder {
