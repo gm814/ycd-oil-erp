@@ -100,6 +100,7 @@ export default async function CustomerDetailsPage({
           <a href="/dashboard/customers" className="backLink">← المبيعات والعملاء</a>
           <h1>ملف العميل: {customer.name}</h1>
           <p>الجوال: {customer.phone || "غير مسجل"} · عدد السيارات: {customer.vehicles.length.toLocaleString("ar-SA")}</p>
+          <p><a className="orderLink" href={`/dashboard/customers/${customer.id}/statement`}>كشف حساب العميل ←</a></p>
         </div>
         <div className="logoPlaceholder">YCD <span>OIL</span></div>
       </div>
