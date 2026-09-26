@@ -21,11 +21,25 @@ export default async function AssetsPage() {
   if (!session) redirect("/");
   if (!session.branchId) redirect("/dashboard");
 
-  const assets = await db.asset.findMany({
-    where: { branchId: session.branchId },
-    include: { maintenanceOrders: { orderBy: { createdAt: "desc" }, take: 10 } },
-    orderBy: { assetNo: "asc" },
-  });
+  const [assets, acquisitions] = await Promise.all([
+    db.asset.findMany({
+      where: { branchId: session.branchId },
+      include: { maintenanceOrders: { orderBy: { createdAt: "desc" }, take: 10 } },
+      orderBy: { assetNo: "asc" },
+    }),
+    db.assetAcquisition.findMany({
+      where: { branchId: session.branchId },
+      include: { items: { orderBy: [{ itemCode: "asc" }, { nameAr: "asc" }] } },
+      orderBy: { invoiceDate: "desc" },
+    }),
+  ]);
+  const setupToolLines = acquisitions.reduce((sum, acquisition) => sum + acquisition.items.length, 0);
+  const setupToolUnits = acquisitions.reduce(
+    (sum, acquisition) => sum + acquisition.items.reduce((lineSum, item) => lineSum + Number(item.quantity), 0),
+    0,
+  );
+  const setupAcquisitionTotal = acquisitions.reduce((sum, acquisition) => sum + Number(acquisition.total), 0);
+
   const openOrders = assets.flatMap((asset) =>
     asset.maintenanceOrders
       .filter((order) => order.status === "OPEN" || order.status === "IN_PROGRESS")
@@ -47,6 +61,47 @@ export default async function AssetsPage() {
         assets={assets.map((asset) => ({ id: asset.id, assetNo: asset.assetNo, nameAr: asset.nameAr, status: asset.status }))}
         openOrders={openOrders.map((order) => ({ id: order.id, workOrderNo: order.workOrderNo, assetName: order.assetName }))}
       />
+
+      <section className="kpis reportKpis">
+        <article><span>فواتير تجهيز المركز</span><b>{acquisitions.length}</b></article>
+        <article><span>بنود العدد والأدوات</span><b>{setupToolLines}</b></article>
+        <article><span>إجمالي الوحدات</span><b>{setupToolUnits}</b></article>
+        <article><span>قيمة التجهيزات المسجلة</span><b>{setupAcquisitionTotal.toFixed(2)} ر.س</b></article>
+      </section>
+
+      {acquisitions.map((acquisition) => (
+        <article className="panel inventoryPanel" key={acquisition.id}>
+          <h2>سجل تجهيزات المركز — فاتورة {acquisition.invoiceNo}</h2>
+          <p className="muted">
+            {acquisition.supplierName} · {acquisition.invoiceDate.toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" })}
+            {" · "}المشتري: {acquisition.purchaserName || "—"}
+            {" · "}جهة التمويل: {acquisition.fundingCompanyName || "—"}
+          </p>
+          <div className="kpis reportKpis">
+            <article><span>قبل الخصم والضريبة</span><b>{Number(acquisition.subtotal).toFixed(2)} ر.س</b></article>
+            <article><span>الخصم</span><b>{Number(acquisition.discount).toFixed(2)} ر.س</b></article>
+            <article><span>ضريبة القيمة المضافة</span><b>{Number(acquisition.vatAmount).toFixed(2)} ر.س</b></article>
+            <article><span>صافي الفاتورة</span><b>{Number(acquisition.total).toFixed(2)} ر.س</b></article>
+          </div>
+          <div className="tableWrap">
+            <table>
+              <thead><tr><th>الكود</th><th>العدة / الأداة</th><th>الكمية</th><th>سعر الوحدة قبل الضريبة</th><th>الإجمالي قبل الضريبة</th></tr></thead>
+              <tbody>
+                {acquisition.items.map((item) => (
+                  <tr key={item.id}>
+                    <td>{item.itemCode || "—"}</td>
+                    <td>{item.nameAr}</td>
+                    <td>{Number(item.quantity).toLocaleString("ar-SA")}</td>
+                    <td>{Number(item.unitCost).toFixed(2)} ر.س</td>
+                    <td>{Number(item.lineSubtotal).toFixed(2)} ر.س</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {acquisition.notes && <p className="formNotice">{acquisition.notes}</p>}
+        </article>
+      ))}
 
       <article className="panel inventoryPanel">
         <h2>سجل الأصول</h2>
