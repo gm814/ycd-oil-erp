@@ -316,6 +316,111 @@ async function main() {
     create: { branchId: branch.id, code: "POS-MAIN", nameAr: "تسويات مدى والشبكة", type: "POS_CLEARING" },
   });
 
+  // Accountant source ledgers received on 2026-09-27. These are preserved as reported
+  // pre-opening balances and entries; no accounting reclassification is applied by the seed.
+  const preopeningAccounts = [
+    {
+      sourceAccountNo: "11080301",
+      sourceAccountName: "كلادنج محل الزيت والبنشر",
+      sourceFileName: "كلادنج الزيت.pdf",
+      reportedBalance: 18235,
+      notes: "رصيد مصدر من كشف المحاسب حتى 2026-09-27؛ محفوظ كما ورد دون إعادة تصنيف محاسبي.",
+    },
+    {
+      sourceAccountNo: "11080302",
+      sourceAccountName: "تجهيز واجهة محل الزيت والبنشر من حديد و رفوف وغيرها",
+      sourceFileName: "تجهيز الزيت.pdf",
+      reportedBalance: 141927.71,
+      notes: "رصيد مصدر من كشف المحاسب حتى 2026-09-27؛ محفوظ كما ورد دون إعادة تصنيف محاسبي.",
+    },
+    {
+      sourceAccountNo: "11080303",
+      sourceAccountName: "مصاريف تاسيس محل الزيت والبنشر",
+      sourceFileName: "مصاريف تاسيس الزيت.pdf",
+      reportedBalance: 52170.19,
+      notes: "رصيد مصدر من كشف المحاسب حتى 2026-09-27؛ محفوظ كما ورد دون إعادة تصنيف محاسبي.",
+    },
+  ] as const;
+
+  const preopeningByNo = new Map<string, string>();
+  for (const source of preopeningAccounts) {
+    const account = await prisma.preopeningLedgerAccount.upsert({
+      where: { branchId_sourceAccountNo: { branchId: branch.id, sourceAccountNo: source.sourceAccountNo } },
+      update: {
+        sourceAccountName: source.sourceAccountName,
+        sourceFileName: source.sourceFileName,
+        sourceAsOfDate: new Date("2026-09-27T23:59:59+03:00"),
+        reportedBalance: source.reportedBalance,
+        notes: source.notes,
+      },
+      create: {
+        branchId: branch.id,
+        sourceAccountNo: source.sourceAccountNo,
+        sourceAccountName: source.sourceAccountName,
+        sourceFileName: source.sourceFileName,
+        sourceAsOfDate: new Date("2026-09-27T23:59:59+03:00"),
+        reportedBalance: source.reportedBalance,
+        notes: source.notes,
+      },
+    });
+    preopeningByNo.set(source.sourceAccountNo, account.id);
+  }
+
+  const preopeningEntries = [
+    { key: "11080301-20260531-465-17800", accountNo: "11080301", date: "2026-05-31", journal: "465", document: "162", reference: null, description: "فاتورة رقم 2026-00168 من شركة الفنون بتاريخ 23-05-2026؛ ملاحظة المصدر: فارق 1035 لم يتم احتساب رفاعة، وفك الكلادنج القديم.", debit: 17800, balance: 17800, page: 1 },
+    { key: "11080301-20260831-761-435", accountNo: "11080301", date: "2026-08-31", journal: "761", document: "259", reference: "668", description: "فاتورة رقم 668 تابع تركيب حروف شركة خطاط الحروف.", debit: 435, balance: 18235, page: 1 },
+
+    { key: "11080302-20260515-430-35000", accountNo: "11080302", date: "2026-05-15", journal: "430", document: "145", reference: "37348", description: "دفعة من أعمال تجهيز المركز شركة الوطن.", debit: 35000, balance: 35000, page: 1 },
+    { key: "11080302-20260531-465-27000", accountNo: "11080302", date: "2026-05-31", journal: "465", document: "162", reference: "37613", description: "مقابل أعمال تجهيز المركز من قبل شركة الوطن.", debit: 27000, balance: 62000, page: 1 },
+    { key: "11080302-20260614-523-32000", accountNo: "11080302", date: "2026-06-14", journal: "523", document: "178", reference: "37736", description: "دفعة من أعمال تجهيز المركز لشركة الوطن.", debit: 32000, balance: 94000, page: 1 },
+    { key: "11080302-20260630-569-3843.26", accountNo: "11080302", date: "2026-06-30", journal: "569", document: "194", reference: null, description: "فواتير حديد من شركة مصدر لمواد البناء رقم 96005+86024+99467+97892.", debit: 3843.26, balance: 97843.26, page: 1 },
+    { key: "11080302-20260630-569-2050", accountNo: "11080302", date: "2026-06-30", journal: "569", document: "194", reference: "106", description: "رفوف للمحل فاتورة رقم 106.", debit: 2050, balance: 99893.26, page: 1 },
+    { key: "11080302-20260630-569-1846.55", accountNo: "11080302", date: "2026-06-30", journal: "569", document: "194", reference: null, description: "إجمالي فواتير مشتريات لتجهيز المحل حسب كشف المحاسب.", debit: 1846.55, balance: 101739.81, page: 1 },
+    { key: "11080302-20260630-569-397.8", accountNo: "11080302", date: "2026-06-30", journal: "569", document: "194", reference: null, description: "شراء رمان كويو + كفرات للباب الحديد + توصيلات.", debit: 397.8, balance: 102137.61, page: 1 },
+    { key: "11080302-20260630-569-824", accountNo: "11080302", date: "2026-06-30", journal: "569", document: "194", reference: null, description: "شراء صاج خرم + دسك قص استيل + قرص قطع + خوابير مسامير.", debit: 824, balance: 102961.61, page: 1 },
+    { key: "11080302-20260630-569-18500", accountNo: "11080302", date: "2026-06-30", journal: "569", document: "194", reference: "37805", description: "دفعة من قيمة أعمال تجهيز المركز لشركة الوطن.", debit: 18500, balance: 121461.61, page: 2 },
+    { key: "11080302-20260731-663-2450", accountNo: "11080302", date: "2026-07-31", journal: "663", document: "227", reference: "112", description: "فاتورة زجاج رقم 112.", debit: 2450, balance: 123911.61, page: 2 },
+    { key: "11080302-20260731-663-2880", accountNo: "11080302", date: "2026-07-31", journal: "663", document: "227", reference: "2199", description: "لوحة دعائية للمحل فاتورة رقم 2199.", debit: 2880, balance: 126791.61, page: 2 },
+    { key: "11080302-20260731-663-2530", accountNo: "11080302", date: "2026-07-31", journal: "663", document: "227", reference: null, description: "فواتير منوعة لتجهيز المحل حسب كشف المحاسب.", debit: 2530, balance: 129321.61, page: 2 },
+    { key: "11080302-20260810-695-2372", accountNo: "11080302", date: "2026-08-10", journal: "695", document: "237", reference: "25673", description: "شراء أدوات من مؤسسة بندر سيف فاتورة رقم 25673.", debit: 2372, balance: 131693.61, page: 2 },
+    { key: "11080302-20260831-760-450", accountNo: "11080302", date: "2026-08-31", journal: "760", document: "258", reference: null, description: "300 مقابل تنظيف المحل + 150 نت للكاميرات حسب المرفقات.", debit: 450, balance: 132143.61, page: 2 },
+    { key: "11080302-20260920-823-4333", accountNo: "11080302", date: "2026-09-20", journal: "823", document: "281", reference: "127933", description: "شراء كاميرات من شركة إنماء أمن التجارية.", debit: 4333, balance: 136476.61, page: 2 },
+    { key: "11080302-20260920-823-5451.1", accountNo: "11080302", date: "2026-09-20", journal: "823", document: "281", reference: "20610", description: "شراء كمبروسر وسلم من شركة الفانوس.", debit: 5451.1, balance: 141927.71, page: 2 },
+
+    { key: "11080303-20260228-134-6666", accountNo: "11080303", date: "2026-02-28", journal: "134", document: "61", reference: null, description: "إيجار شهر فبراير 2026 من شركة سهود حسب عقد الإيجار.", debit: 6666, balance: 6666, page: 1 },
+    { key: "11080303-20260331-280-6667", accountNo: "11080303", date: "2026-03-31", journal: "280", document: "93", reference: null, description: "إيجار المحل لشهر مارس 2026 من شركة سهود حسب العقد.", debit: 6667, balance: 13333, page: 1 },
+    { key: "11080303-20260430-382-6667", accountNo: "11080303", date: "2026-04-30", journal: "382", document: "127", reference: null, description: "إيجار المحل لشهر أبريل 2026 من شركة سهود.", debit: 6667, balance: 20000, page: 1 },
+    { key: "11080303-20260531-464-6666", accountNo: "11080303", date: "2026-05-31", journal: "464", document: "161", reference: null, description: "إيجار شهر مايو 2026 من شركة سهود حسب العقد.", debit: 6666, balance: 26666, page: 1 },
+    { key: "11080303-20260630-569-499.2", accountNo: "11080303", date: "2026-06-30", journal: "569", document: "194", reference: null, description: "محروقات بموجب فواتير رقم 166602+5534+35201+607151+107177+127981.", debit: 499.2, balance: 27165.2, page: 1 },
+    { key: "11080303-20260630-569-695.7", accountNo: "11080303", date: "2026-06-30", journal: "569", document: "194", reference: null, description: "مصاريف تغذية بموجب فواتير حسب كشف المحاسب.", debit: 695.7, balance: 27860.9, page: 1 },
+    { key: "11080303-20260630-569-24.4", accountNo: "11080303", date: "2026-06-30", journal: "569", document: "194", reference: null, description: "مصاريف تغذية.", debit: 24.4, balance: 27885.3, page: 1 },
+    { key: "11080303-20260630-569-356.6", accountNo: "11080303", date: "2026-06-30", journal: "569", document: "194", reference: null, description: "مجموعة فواتير ديزل محمد نبيل.", debit: 356.6, balance: 28241.9, page: 1 },
+    { key: "11080303-20260630-574-2340", accountNo: "11080303", date: "2026-06-30", journal: "574", document: "195", reference: null, description: "مقابل مستحقات عمالة يومية / علي نبيل.", debit: 2340, balance: 30581.9, page: 1 },
+    { key: "11080303-20260630-574-6667", accountNo: "11080303", date: "2026-06-30", journal: "574", document: "195", reference: null, description: "إيجار المحل لشهر يونيو 2026 من شركة سهود حسب العقد.", debit: 6667, balance: 37248.9, page: 2 },
+    { key: "11080303-20260731-662-947", accountNo: "11080303", date: "2026-07-31", journal: "662", document: "226", reference: null, description: "سداد رخصة البلدية.", debit: 947, balance: 38195.9, page: 2 },
+    { key: "11080303-20260731-662-6667", accountNo: "11080303", date: "2026-07-31", journal: "662", document: "226", reference: null, description: "إيجار المحل لشهر يوليو 2026 من شركة سهود.", debit: 6667, balance: 44862.9, page: 2 },
+    { key: "11080303-20260731-663-282.6", accountNo: "11080303", date: "2026-07-31", journal: "663", document: "227", reference: null, description: "فواتير محروقات رقم 740+179950+202020+179512.", debit: 282.6, balance: 45145.5, page: 2 },
+    { key: "11080303-20260731-663-358.69", accountNo: "11080303", date: "2026-07-31", journal: "663", document: "227", reference: null, description: "فواتير تغذية للعمال حسب كشف المحاسب.", debit: 358.69, balance: 45504.19, page: 2 },
+    { key: "11080303-20260831-760-6666", accountNo: "11080303", date: "2026-08-31", journal: "760", document: "258", reference: null, description: "إيجار المحل لشهر أغسطس 2026 من شركة سهود.", debit: 6666, balance: 52170.19, page: 2 },
+  ] as const;
+
+  await prisma.preopeningLedgerEntry.createMany({
+    data: preopeningEntries.map((entry) => ({
+      sourceEntryKey: entry.key,
+      accountId: preopeningByNo.get(entry.accountNo)!,
+      entryDate: new Date(`${entry.date}T12:00:00+03:00`),
+      journalNo: entry.journal,
+      documentNo: entry.document,
+      reference: entry.reference,
+      descriptionAr: entry.description,
+      debit: entry.debit,
+      credit: 0,
+      runningBalance: entry.balance,
+      sourcePage: entry.page,
+    })),
+    skipDuplicates: true,
+  });
+
   const permissionByCode = new Map<string, { id: string }>();
   for (const code of permissionCodes) {
     const permission = await prisma.permission.upsert({
