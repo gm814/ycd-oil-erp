@@ -30,7 +30,7 @@ export default async function GroupFinancePage() {
     }),
     db.groupFunding.findMany({
       where: { branchId: session.branchId },
-      include: { sourceCompany: true, account: true },
+      include: { sourceCompany: true, sourceBankAccount: true, account: true },
       orderBy: { fundedAt: "desc" },
       take: 100,
     }),
@@ -62,6 +62,12 @@ export default async function GroupFinancePage() {
             legalNameAr: company.legalNameAr,
             relationType: company.relationType,
             bankAccountCount: company.bankAccounts.length,
+            bankAccounts: company.bankAccounts.map((account) => ({
+              id: account.id,
+              bankName: account.bankName,
+              accountNumber: account.accountNumber,
+              iban: account.iban,
+            })),
           }))}
           accounts={accounts.map((account) => ({
             id: account.id,
@@ -108,18 +114,19 @@ export default async function GroupFinancePage() {
           <h2>سجل تمويل YCD OIL</h2>
           <div className="tableWrap">
             <table>
-              <thead><tr><th>التاريخ</th><th>المصدر</th><th>الحساب المستلم</th><th>المرجع</th><th>المبلغ</th></tr></thead>
+              <thead><tr><th>التاريخ</th><th>المصدر</th><th>حساب المصدر</th><th>الحساب المستلم</th><th>المرجع</th><th>المبلغ</th></tr></thead>
               <tbody>
                 {fundings.map((funding) => (
                   <tr key={funding.id}>
                     <td>{funding.fundedAt.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</td>
                     <td>{funding.sourceCompany.legalNameAr}</td>
+                    <td>{funding.sourceBankAccount ? `${funding.sourceBankAccount.bankName} · ${funding.sourceBankAccount.iban ? "IBAN " + funding.sourceBankAccount.iban.slice(-4) : funding.sourceBankAccount.accountNumber || "—"}` : "غير محدد / تمويل افتتاحي"}</td>
                     <td>{funding.account.nameAr}</td>
                     <td>{funding.reference || "—"}</td>
                     <td className="moneyIn"><b>{Number(funding.amount).toFixed(2)} ر.س</b></td>
                   </tr>
                 ))}
-                {fundings.length === 0 && <tr><td colSpan={5} className="empty">لا توجد عمليات تمويل مسجلة.</td></tr>}
+                {fundings.length === 0 && <tr><td colSpan={6} className="empty">لا توجد عمليات تمويل مسجلة.</td></tr>}
               </tbody>
             </table>
           </div>
