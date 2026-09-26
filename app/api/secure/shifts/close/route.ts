@@ -32,7 +32,7 @@ export async function POST(request: Request) {
       const cashPayments = await tx.payment.findMany({
         where: {
           method: "CASH",
-          invoice: { serviceOrder: { shiftId: open.id } },
+          shiftId: open.id,
         },
         select: { amount: true },
       });
