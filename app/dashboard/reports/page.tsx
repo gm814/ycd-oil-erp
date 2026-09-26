@@ -209,9 +209,17 @@ export default async function ReportsPage({
   ).length;
   const openShifts = shifts.filter((shift) => !shift.closedAt).length;
 
-  const financialIn = financialTransactions.filter((item) => Number(item.amount) > 0)
+  const financingIn = financialTransactions
+    .filter((item) => ["OPENING_BALANCE", "GROUP_FUNDING"].includes(item.type) && Number(item.amount) > 0)
     .reduce((sum, item) => sum + Number(item.amount), 0);
-  const financialOut = financialTransactions.filter((item) => Number(item.amount) < 0)
+  const operatingIn = financialTransactions
+    .filter((item) => ["CUSTOMER_RECEIPT", "CUSTODY_SETTLEMENT"].includes(item.type) && Number(item.amount) > 0)
+    .reduce((sum, item) => sum + Number(item.amount), 0);
+  const operatingOut = financialTransactions
+    .filter((item) => ["CUSTOMER_REFUND", "SUPPLIER_PAYMENT", "EXPENSE", "CUSTODY_ISSUE", "PAYROLL_PAYMENT", "ADJUSTMENT"].includes(item.type) && Number(item.amount) < 0)
+    .reduce((sum, item) => sum + Math.abs(Number(item.amount)), 0);
+  const internalTransfers = financialTransactions
+    .filter((item) => item.type === "TRANSFER_OUT")
     .reduce((sum, item) => sum + Math.abs(Number(item.amount)), 0);
 
   const accountRows = accounts.map((account) => ({
@@ -238,7 +246,7 @@ export default async function ReportsPage({
           <h1>التقارير والرقابة الإدارية</h1>
           <p>مؤشرات تشغيلية ومالية ورقابية مجمعة للفرع مع تتبع مصادر التنبيه.</p>
         </div>
-        <div className="logoPlaceholder">YCD <span>OIL</span></div>
+        <img className="documentCenterLogo" src="/brand/ycd-logo-source.svg" alt="YCD OIL" />
       </div>
 
       <article className="panel reportFilter">
@@ -286,8 +294,10 @@ export default async function ReportsPage({
           </div>
           <hr />
           <div className="reportList">
-            <div><span>الحركات المالية الداخلة</span><b>{money(financialIn)}</b></div>
-            <div><span>الحركات المالية الخارجة</span><b>{money(financialOut)}</b></div>
+            <div><span>التمويل والأرصدة الافتتاحية</span><b>{money(financingIn)}</b></div>
+            <div><span>التدفقات التشغيلية الداخلة</span><b>{money(operatingIn)}</b></div>
+            <div><span>التدفقات التشغيلية الخارجة</span><b>{money(operatingOut)}</b></div>
+            <div><span>التحويلات الداخلية بين الحسابات</span><b>{money(internalTransfers)}</b></div>
           </div>
         </article>
       </section>
