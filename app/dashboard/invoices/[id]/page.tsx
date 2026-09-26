@@ -4,6 +4,7 @@ import { companyConfig } from "@/lib/config";
 import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import PrintButton from "./print-button";
+import CollectionForm from "./collection-form";
 
 function money(value: number) {
   return value.toLocaleString("ar-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
@@ -46,6 +47,7 @@ export default async function InvoicePage({
 
   const paid = invoice.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
   const remaining = Math.max(Number(invoice.total) - paid, 0);
+  const canCollect = hasPermission(session.permissions, PERMISSIONS.PAYMENT_RECEIVE);
 
   return (
     <main className="workspace invoiceWorkspace">
@@ -66,6 +68,8 @@ export default async function InvoicePage({
             <span>فاتورة ضريبية</span>
             <h1>{invoice.invoiceNo}</h1>
             <p>{invoice.createdAt.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</p>
+            <p><b>الحالة:</b> {invoice.status === "PAID" ? "مسددة" : invoice.status === "PARTIALLY_PAID" ? "مسددة جزئيًا" : invoice.status === "ISSUED" ? "مستحقة" : invoice.status}</p>
+            {invoice.dueAt && <p><b>تاريخ الاستحقاق:</b> {invoice.dueAt.toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" })}</p>}
           </div>
         </header>
 
@@ -151,6 +155,12 @@ export default async function InvoicePage({
             <div><span>المتبقي</span><b>{money(remaining)}</b></div>
           </div>
         </section>
+
+        {remaining > 0 && canCollect && (
+          <section className="noPrint invoiceCollection">
+            <CollectionForm invoiceId={invoice.id} remaining={remaining} />
+          </section>
+        )}
 
         <footer className="invoiceFooter">
           <p>شكرًا لاختياركم YCD OIL — وجهتك الإبداعية لزيوت وخدمات السيارات.</p>
