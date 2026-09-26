@@ -104,6 +104,20 @@ enum FinancialAccountType {
   POS_CLEARING
 }
 
+enum ExpenseRequestStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  PAID
+  CANCELLED
+}
+
+enum BankReconciliationStatus {
+  DRAFT
+  REVIEWED
+  CLOSED
+}
+
 enum FinancialTransactionType {
   OPENING_BALANCE
   CUSTOMER_RECEIPT
@@ -199,6 +213,8 @@ model Branch {
   supplierInvoices SupplierInvoice[]
   financialAccounts FinancialAccount[]
   financialTransactions FinancialTransaction[]
+  expenseRequests ExpenseRequest[]
+  bankReconciliations BankReconciliation[]
   custodyRequests CustodyRequest[]
   payrollPeriods  PayrollPeriod[]
   assets          Asset[]
@@ -676,11 +692,67 @@ model FinancialAccount {
   iban         String?
   active       Boolean                @default(true)
   transactions FinancialTransaction[]
+  expenseRequests ExpenseRequest[]
+  bankReconciliations BankReconciliation[]
   custodyRequests CustodyRequest[]
   createdAt    DateTime               @default(now())
   updatedAt    DateTime               @updatedAt
   @@unique([branchId, code])
   @@index([branchId, type, active])
+}
+
+model ExpenseRequest {
+  id             String               @id @default(cuid())
+  requestNo      String               @unique
+  branchId       String
+  branch         Branch               @relation(fields: [branchId], references: [id])
+  accountId      String
+  account        FinancialAccount     @relation(fields: [accountId], references: [id])
+  category       String
+  descriptionAr  String
+  amount         Decimal              @db.Decimal(12,2)
+  recipientName  String?
+  recipientPhone String?
+  reference      String?
+  status         ExpenseRequestStatus @default(REQUESTED)
+  requestedBy    String
+  approvedBy     String?
+  approvedAt     DateTime?
+  rejectedBy     String?
+  rejectedAt     DateTime?
+  decisionNotes  String?
+  paidBy         String?
+  paidAt         DateTime?
+  transactionId  String?              @unique
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  @@index([branchId, status, createdAt])
+  @@index([accountId, status])
+}
+
+model BankReconciliation {
+  id               String                   @id @default(cuid())
+  reconciliationNo String                   @unique
+  branchId         String
+  branch           Branch                   @relation(fields: [branchId], references: [id])
+  accountId        String
+  account          FinancialAccount         @relation(fields: [accountId], references: [id])
+  statementDate    DateTime
+  systemBalance    Decimal                  @db.Decimal(12,2)
+  statementBalance Decimal                  @db.Decimal(12,2)
+  difference       Decimal                  @db.Decimal(12,2)
+  reference        String?
+  notes            String?
+  status           BankReconciliationStatus @default(DRAFT)
+  preparedBy       String
+  reviewedBy       String?
+  reviewedAt       DateTime?
+  closedBy         String?
+  closedAt         DateTime?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  @@index([branchId, accountId, statementDate])
+  @@index([branchId, status, createdAt])
 }
 
 model FinancialTransaction {
