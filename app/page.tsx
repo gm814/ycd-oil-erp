@@ -18,18 +18,19 @@ export default function LoginPage() {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        email: form.get("email"),
+        identifier: form.get("identifier"),
         password: form.get("password"),
       }),
     });
 
     setLoading(false);
+    const result = await response.json().catch(() => ({}));
     if (!response.ok) {
-      setError("تعذر تسجيل الدخول. تحقق من البريد الإلكتروني وكلمة المرور.");
+      setError("تعذر تسجيل الدخول. تحقق من اسم المستخدم أو البريد وكلمة المرور.");
       return;
     }
 
-    router.replace("/dashboard");
+    router.replace(result.mustChangePassword ? "/change-password" : "/dashboard");
     router.refresh();
   }
 
@@ -41,8 +42,8 @@ export default function LoginPage() {
         <h1>تسجيل الدخول</h1>
         <form onSubmit={submit}>
           <label>
-            البريد الإلكتروني
-            <input name="email" type="email" autoComplete="username" required />
+            اسم المستخدم أو البريد الإلكتروني
+            <input name="identifier" type="text" autoComplete="username" required placeholder="مثال: YCD-005" />
           </label>
           <label>
             كلمة المرور
