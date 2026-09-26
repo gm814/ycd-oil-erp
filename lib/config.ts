@@ -8,6 +8,10 @@ export const companyConfig = {
   unifiedNumber: "7038822883",
   crNumber: "1009014238",
   vatNumber: "311380910800003",
+  group: {
+    parentCompanyNameAr: "شركة الواجهات الإبداعية للمقاولات",
+    relationshipAr: "الشركة الرئيسية الممولة للمشروع",
+  },
   bank: {
     nameAr: "مصرف الراجحي",
     accountNameAr: "شركة وجهتك الإبداعية لخدمات السيارات",
