@@ -1,5 +1,6 @@
 export const PERMISSIONS = {
   DASHBOARD_VIEW: "dashboard.view",
+  USER_MANAGE: "user.manage",
   SERVICE_ORDER_CREATE: "service_order.create",
   SERVICE_ORDER_APPROVE: "service_order.approve",
   INVENTORY_MANAGE: "inventory.manage",
