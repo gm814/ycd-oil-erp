@@ -11,7 +11,7 @@ const modules = [
   ["الزيوت وخدمات السيارات", "/dashboard/service-orders"],
   ["كوبونات المغسلة", "/dashboard/coupons"],
   ["المبيعات والعملاء", "#"],
-  ["المشتريات والتوريد", "#"],
+  ["المشتريات والتوريد", "/dashboard/procurement"],
   ["المخزون والزيوت والفلاتر", "/dashboard/inventory"],
   ["المالية والبنوك", "#"],
   ["العهد", "#"],
@@ -27,7 +27,7 @@ export default async function DashboardPage() {
 
   const { start, end } = riyadhBusinessDayRange();
 
-  const [invoices, serviceOrderCount, openShift, activeCoupons, products] = await Promise.all([
+  const [invoices, serviceOrderCount, openShift, activeCoupons, products, pendingPurchases, invoiceMismatches] = await Promise.all([
     db.invoice.findMany({
       where: {
         createdAt: { gte: start, lt: end },
@@ -52,6 +52,12 @@ export default async function DashboardPage() {
           select: { quantity: true },
         },
       },
+    }),
+    db.purchaseRequest.count({
+      where: { branchId: session.branchId, status: "PENDING_APPROVAL" },
+    }),
+    db.supplierInvoice.count({
+      where: { branchId: session.branchId, status: "MISMATCH" },
     }),
   ]);
 
@@ -118,11 +124,11 @@ export default async function DashboardPage() {
             <p>أوامر الخدمة اليوم: <b>{serviceOrderCount.toLocaleString("ar-SA")}</b></p>
           </article>
           <article className="panel">
-            <h3>تنبيهات المخزون</h3>
-            <p className={lowStockCount > 0 ? "" : "empty"}>
-              {lowStockCount > 0 ? <>يوجد <b>{lowStockCount.toLocaleString("ar-SA")}</b> صنف عند الحد الأدنى أو أقل.</> : "لا توجد تنبيهات مخزون حالية."}
-            </p>
-            <a className="orderLink" href="/dashboard/inventory">فتح المخزون</a>
+            <h3>تنبيهات الإدارة</h3>
+            <p>مخزون عند الحد الأدنى: <b>{lowStockCount.toLocaleString("ar-SA")}</b></p>
+            <p>طلبات شراء تنتظر الاعتماد: <b>{pendingPurchases.toLocaleString("ar-SA")}</b></p>
+            <p className={invoiceMismatches > 0 ? "" : "empty"}>فواتير موردين غير متطابقة: <b>{invoiceMismatches.toLocaleString("ar-SA")}</b></p>
+            <a className="orderLink" href="/dashboard/procurement">فتح المشتريات</a>
           </article>
         </section>
       </section>
