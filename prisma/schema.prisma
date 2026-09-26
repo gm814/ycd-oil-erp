@@ -141,24 +141,26 @@ model Employee {
 model Customer {
   id            String         @id @default(cuid())
   name          String
-  phone         String?        @index
+  phone         String?
   vehicles      Vehicle[]
   serviceOrders ServiceOrder[]
   invoices      Invoice[]
   createdAt     DateTime       @default(now())
+  @@index([phone])
 }
 
 model Vehicle {
   id              String           @id @default(cuid())
   customerId      String
   customer        Customer         @relation(fields: [customerId], references: [id])
-  plate           String           @index
+  plate           String
   make            String?
   model           String?
   year            Int?
   currentOdometer Int?
   serviceOrders   ServiceOrder[]
   history         VehicleHistory[]
+  @@index([plate])
 }
 
 model Product {
