@@ -69,7 +69,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         tx.shift.findMany({
           where: {
             branchId: session.branchId!,
-            openedAt: { gte: close.periodStart, lt: close.periodEnd },
+            openedAt: { lt: close.periodEnd },
+            OR: [{ closedAt: null }, { closedAt: { gte: close.periodStart } }],
           },
           select: {
             closedAt: true,
@@ -84,15 +85,32 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
             branchId: session.branchId!,
             statementDate: { gte: close.periodStart, lt: close.periodEnd },
           },
-          select: { status: true, difference: true },
+          select: { accountId: true, status: true, difference: true },
         }),
       ]);
 
-      const openShifts = shifts.filter((shift) => !shift.closedAt).length;
-      const unresolvedShiftVariances = shifts.filter(hasVariance).length;
-      const unresolvedBankReconciliations = bankReconciliations.filter((item) =>
+      const openShifts = shifts.filter((shift) => !shift.closedAt || shift.closedAt >= close.periodEnd).length;
+      const unresolvedShiftVariances = shifts.filter((shift) =>
+        shift.closedAt && shift.closedAt >= close.periodStart && shift.closedAt < close.periodEnd && hasVariance(shift)
+      ).length;
+      const activeBankAccounts = close.type === "MONTHLY"
+        ? await tx.financialAccount.findMany({
+            where: { branchId: session.branchId!, active: true, type: "BANK" },
+            select: { id: true },
+          })
+        : [];
+      const closedReconciledAccounts = new Set(
+        bankReconciliations
+          .filter((item) => item.status === "CLOSED" && Math.abs(Number(item.difference)) <= 0.01)
+          .map((item) => item.accountId),
+      );
+      const pendingBankReconciliations = bankReconciliations.filter((item) =>
         item.status !== "CLOSED" || Math.abs(Number(item.difference)) > 0.01
       ).length;
+      const missingMonthlyBankReconciliations = close.type === "MONTHLY"
+        ? activeBankAccounts.filter((account) => !closedReconciledAccounts.has(account.id)).length
+        : 0;
+      const unresolvedBankReconciliations = pendingBankReconciliations + missingMonthlyBankReconciliations;
 
       if (openShifts > 0) throw new Error("OPEN_SHIFTS_REMAIN");
       if (unresolvedShiftVariances > 0) throw new Error("SHIFT_VARIANCES_UNRESOLVED");
