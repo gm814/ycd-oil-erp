@@ -17,6 +17,7 @@ const typeLabel: Record<string, string> = {
   CUSTODY_SETTLEMENT: "تسوية عهدة",
   PAYROLL_PAYMENT: "صرف رواتب",
   ADJUSTMENT: "تسوية مالية",
+  GROUP_FUNDING: "تمويل من شركات المجموعة",
 };
 
 function money(value: number) {
