@@ -2,6 +2,8 @@ export const companyConfig = {
   legalNameAr: "شركة وجهتك الإبداعية لزيوت وخدمات السيارات",
   brand: "YCD OIL",
   branch: "الرياض - حي طويق",
+  operationalPhase: "PREOPENING",
+  operationalPhaseAr: "مرحلة التجهيز قبل التشغيل",
   phone: "0535898340",
   email: "info@ycdoil.sa",
   website: "www.ycdoil.sa",
