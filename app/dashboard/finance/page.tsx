@@ -76,6 +76,9 @@ export default async function FinancePage() {
     code: account.code,
     nameAr: account.nameAr,
     type: account.type,
+    bankName: account.bankName,
+    accountNumber: account.accountNumber,
+    iban: account.iban,
     balance: account.transactions.reduce((sum, transaction) => sum + Number(transaction.amount), 0),
   }));
   const cashBalance = accountRows.filter((account) => account.type === "CASH").reduce((sum, account) => sum + account.balance, 0);
@@ -151,15 +154,24 @@ export default async function FinancePage() {
         <h2>الحسابات والأرصدة</h2>
         <div className="tableWrap">
           <table>
-            <thead><tr><th>الكود</th><th>الحساب</th><th>النوع</th><th>الرصيد</th></tr></thead>
+            <thead><tr><th>الكود</th><th>الحساب</th><th>النوع</th><th>بيانات البنك</th><th>الرصيد</th></tr></thead>
             <tbody>
               {accountRows.map((account) => (
                 <tr key={account.id}>
                   <td>{account.code}</td><td>{account.nameAr}</td><td>{typeLabel[account.type] ?? account.type}</td>
+                  <td>
+                    {account.type === "BANK" ? (
+                      <div className="bankAccountCell">
+                        <b>{account.bankName || "—"}</b>
+                        <span dir="ltr">A/C {account.accountNumber || "—"}</span>
+                        <span dir="ltr">IBAN {account.iban || "—"}</span>
+                      </div>
+                    ) : "—"}
+                  </td>
                   <td><b>{account.balance.toFixed(2)} ر.س</b></td>
                 </tr>
               ))}
-              {accountRows.length === 0 && <tr><td colSpan={4} className="empty">لا توجد حسابات مالية.</td></tr>}
+              {accountRows.length === 0 && <tr><td colSpan={5} className="empty">لا توجد حسابات مالية.</td></tr>}
             </tbody>
           </table>
         </div>
