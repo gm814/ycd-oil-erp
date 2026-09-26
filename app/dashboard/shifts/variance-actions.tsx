@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, MouseEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Variance = {
@@ -23,9 +23,7 @@ export default function VarianceActions({ items }: { items: Variance[] }) {
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
 
-  async function decide(event: FormEvent<HTMLFormElement>, id: string, decision: "APPROVE" | "REJECT") {
-    event.preventDefault();
-    const form = event.currentTarget;
+  async function decide(form: HTMLFormElement, id: string, decision: "APPROVE" | "REJECT") {
     const notes = String(new FormData(form).get("notes") || "").trim();
     if (notes.length < 3) {
       setMessage("سجل مبررًا واضحًا قبل اتخاذ القرار.");
@@ -54,6 +52,16 @@ export default function VarianceActions({ items }: { items: Variance[] }) {
     router.refresh();
   }
 
+  function approve(event: FormEvent<HTMLFormElement>, id: string) {
+    event.preventDefault();
+    void decide(event.currentTarget, id, "APPROVE");
+  }
+
+  function reject(event: MouseEvent<HTMLButtonElement>, id: string) {
+    const form = event.currentTarget.form;
+    if (form) void decide(form, id, "REJECT");
+  }
+
   if (items.length === 0) return null;
 
   return (
@@ -61,7 +69,7 @@ export default function VarianceActions({ items }: { items: Variance[] }) {
       <h2>فروقات ورديات تنتظر الاعتماد</h2>
       <p className="muted">أي فرق غير معتمد يمنع الإقفال المالي للفترة المرتبطة به.</p>
       {items.map((item) => (
-        <form key={item.id} className="intakeForm paymentCard" data-variance={item.id} onSubmit={(event) => void decide(event, item.id, "APPROVE")}>
+        <form key={item.id} className="intakeForm paymentCard" onSubmit={(event) => approve(event, item.id)}>
           <div>
             <b>وردية {item.shiftId.slice(0, 8).toUpperCase()} · {item.closedAt ? new Date(item.closedAt).toLocaleString("ar-SA") : "—"}</b>
             <span>النقد: {money(item.cashVariance)} · مدى: {money(item.cardVariance)} · التحويل: {money(item.transferVariance)}</span>
@@ -76,15 +84,7 @@ export default function VarianceActions({ items }: { items: Variance[] }) {
               </label>
               <div className="formRow">
                 <button disabled={busy === item.id} type="submit">اعتماد الفرق</button>
-                <button
-                  className="secondaryButton"
-                  disabled={busy === item.id}
-                  type="button"
-                  onClick={() => {
-                    const form = document.querySelector<HTMLFormElement>(`form[data-variance="${item.id}"]`);
-                    if (form) void decide({ preventDefault() {}, currentTarget: form } as FormEvent<HTMLFormElement>, item.id, "REJECT");
-                  }}
-                >رفض الفرق</button>
+                <button className="secondaryButton" disabled={busy === item.id} type="button" onClick={(event) => reject(event, item.id)}>رفض الفرق</button>
               </div>
             </>
           )}
