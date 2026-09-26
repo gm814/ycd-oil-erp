@@ -135,25 +135,6 @@ export async function POST(request: Request) {
         });
       }
 
-      const hasVariance =
-        cashVariance.abs().greaterThan("0.01") ||
-        cardVariance.abs().greaterThan("0.01") ||
-        transferVariance.abs().greaterThan("0.01");
-
-      if (hasVariance) {
-        await tx.shiftVarianceResolution.create({
-          data: {
-            shiftId: closed.id,
-            branchId: session.branchId!,
-            cashVariance,
-            cardVariance,
-            transferVariance,
-            reason: parsed.data.notes || "فرق ناتج عن مطابقة قنوات التحصيل عند إقفال الوردية.",
-            requestedBy: session.userId,
-          },
-        });
-      }
-
       await tx.auditLog.create({
         data: {
           actorId: session.userId,
