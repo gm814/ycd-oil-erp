@@ -256,6 +256,8 @@ model User {
   status       UserStatus @default(ACTIVE)
   branchId     String?
   branch       Branch?    @relation(fields: [branchId], references: [id])
+  employeeId   String?    @unique
+  employee     Employee?  @relation(fields: [employeeId], references: [id])
   roles        UserRole[]
   auditLogs    AuditLog[] @relation("ActorAudit")
   createdAt    DateTime   @default(now())
@@ -306,6 +308,7 @@ model Employee {
   transportAllowance Decimal             @default(0) @db.Decimal(12,2)
   iban               String?
   active             Boolean             @default(true)
+  user               User?
   custodyRequests    CustodyRequest[]
   attendanceRecords AttendanceRecord[]
   payrollAdjustments PayrollAdjustment[]
