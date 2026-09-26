@@ -44,7 +44,10 @@ export default async function ServiceOrderPage({
           <h1>{order.orderNo}</h1>
           <p><a className="orderLink" href={`/dashboard/customers/${order.customerId}`}>{order.customer.name}</a> · {order.vehicle.plate} · العداد {order.odometer?.toLocaleString("ar-SA") ?? "—"}</p>
         </div>
-        <span className="statusBadge">{order.status}</span>
+        <div className="actionStack">
+          <span className="statusBadge">{order.status}</span>
+          {order.status === "COMPLETED" && <a className="secondaryLink" href={`/dashboard/service-orders/${order.id}/reminder`}>طباعة تذكير الخدمة</a>}
+        </div>
       </div>
 
       <section className="workGrid">
