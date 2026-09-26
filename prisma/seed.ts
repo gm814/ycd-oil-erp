@@ -35,6 +35,9 @@ const permissionCodes = [
   "payroll.prepare",
   "payroll.approve",
   "payroll.pay",
+  "asset.view",
+  "asset.manage",
+  "maintenance.manage",
   "audit.view",
 ] as const;
 
@@ -46,11 +49,11 @@ const roleDefinitions: Record<string, { nameAr: string; permissions: readonly st
   },
   OPERATIONS_MANAGER: {
     nameAr: "مدير العمليات",
-    permissions: ["dashboard.view", "service_order.create", "service_order.approve", "inventory.issue", "shift.open", "shift.close", "coupon.redeem", "procurement.request", "procurement.approve", "custody.request", "custody.approve", "custody.settle", "hr.view", "attendance.manage", "audit.view"],
+    permissions: ["dashboard.view", "service_order.create", "service_order.approve", "inventory.issue", "shift.open", "shift.close", "coupon.redeem", "procurement.request", "procurement.approve", "custody.request", "custody.approve", "custody.settle", "hr.view", "attendance.manage", "asset.view", "asset.manage", "maintenance.manage", "audit.view"],
   },
   BRANCH_MANAGER: {
     nameAr: "مدير الفرع",
-    permissions: ["dashboard.view", "service_order.create", "service_order.approve", "inventory.manage", "inventory.issue", "invoice.issue", "payment.receive", "shift.open", "shift.close", "coupon.redeem", "procurement.request", "procurement.quote", "procurement.approve", "procurement.order", "procurement.receive", "supplier_invoice.create", "finance.view", "custody.request", "custody.approve", "custody.settle", "hr.view", "attendance.manage", "audit.view"],
+    permissions: ["dashboard.view", "service_order.create", "service_order.approve", "inventory.manage", "inventory.issue", "invoice.issue", "payment.receive", "shift.open", "shift.close", "coupon.redeem", "procurement.request", "procurement.quote", "procurement.approve", "procurement.order", "procurement.receive", "supplier_invoice.create", "finance.view", "custody.request", "custody.approve", "custody.settle", "hr.view", "attendance.manage", "asset.view", "asset.manage", "maintenance.manage", "audit.view"],
   },
   ACCOUNTANT: {
     nameAr: "المحاسب",
@@ -78,7 +81,7 @@ const roleDefinitions: Record<string, { nameAr: string; permissions: readonly st
   },
   TECHNICIAN: {
     nameAr: "الفني",
-    permissions: ["dashboard.view", "service_order.create", "procurement.request", "custody.request"],
+    permissions: ["dashboard.view", "service_order.create", "procurement.request", "custody.request", "asset.view", "maintenance.manage"],
   },
   WORKER: {
     nameAr: "العامل",
