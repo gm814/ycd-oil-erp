@@ -62,6 +62,10 @@ export default async function FinancePage() {
     type: account.type,
     balance: account.transactions.reduce((sum, transaction) => sum + Number(transaction.amount), 0),
   }));
+  const cashBalance = accountRows.filter((account) => account.type === "CASH").reduce((sum, account) => sum + account.balance, 0);
+  const bankBalance = accountRows.filter((account) => account.type === "BANK").reduce((sum, account) => sum + account.balance, 0);
+  const posBalance = accountRows.filter((account) => account.type === "POS_CLEARING").reduce((sum, account) => sum + account.balance, 0);
+  const liquidBalance = cashBalance + bankBalance + posBalance;
 
   return (
     <main className="workspace">
@@ -76,6 +80,13 @@ export default async function FinancePage() {
           <div className="logoPlaceholder">YCD <span>OIL</span></div>
         </div>
       </div>
+
+      <section className="kpis reportKpis">
+        <article><span>رصيد الصناديق</span><b>{cashBalance.toFixed(2)} ر.س</b></article>
+        <article><span>رصيد البنوك</span><b>{bankBalance.toFixed(2)} ر.س</b></article>
+        <article><span>مبالغ مدى قيد التسوية</span><b>{posBalance.toFixed(2)} ر.س</b></article>
+        <article><span>إجمالي الأرصدة التشغيلية</span><b>{liquidBalance.toFixed(2)} ر.س</b></article>
+      </section>
 
       <FinanceActions
         accounts={accountRows}
