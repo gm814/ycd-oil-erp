@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import ShiftControls from "./shift-controls";
+import VarianceActions from "./variance-actions";
 import VarianceAction from "./variance-action";
 
 function money(value: number | null) {
@@ -86,6 +87,23 @@ export default async function ShiftsPage() {
           expectedTransfer: expected.transfer,
         } : null}
       />
+
+      {canApproveVariance && (
+        <VarianceActions
+          items={shifts
+            .filter((shift) => shift.varianceResolution?.status === "PENDING")
+            .map((shift) => ({
+              id: shift.varianceResolution!.id,
+              shiftId: shift.id,
+              closedAt: shift.closedAt?.toISOString() ?? null,
+              cashVariance: Number(shift.varianceResolution!.cashVariance),
+              cardVariance: Number(shift.varianceResolution!.cardVariance),
+              transferVariance: Number(shift.varianceResolution!.transferVariance),
+              reason: shift.varianceResolution!.reason,
+              isOwn: shift.varianceResolution!.requestedBy === session.userId,
+            }))}
+        />
+      )}
 
       <article className="panel inventoryPanel">
         <h2>سجل الورديات والتسويات</h2>
