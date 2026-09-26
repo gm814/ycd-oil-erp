@@ -39,6 +39,7 @@ export async function POST(
         where: { id },
         include: {
           payments: { select: { amount: true } },
+          returns: { where: { status: "COMPLETED" }, select: { total: true, refundAmount: true } },
           serviceOrder: { select: { branchId: true } },
         },
       });
@@ -52,7 +53,17 @@ export async function POST(
         (sum, payment) => sum.plus(payment.amount),
         new Prisma.Decimal(0),
       );
-      const outstanding = invoice.total.minus(paid);
+      const returnedTotal = invoice.returns.reduce(
+        (sum, item) => sum.plus(item.total),
+        new Prisma.Decimal(0),
+      );
+      const refunded = invoice.returns.reduce(
+        (sum, item) => sum.plus(item.refundAmount),
+        new Prisma.Decimal(0),
+      );
+      const effectiveTotal = Prisma.Decimal.max(invoice.total.minus(returnedTotal), new Prisma.Decimal(0));
+      const netPaid = Prisma.Decimal.max(paid.minus(refunded), new Prisma.Decimal(0));
+      const outstanding = Prisma.Decimal.max(effectiveTotal.minus(netPaid), new Prisma.Decimal(0));
       const amount = new Prisma.Decimal(parsed.data.amount);
       if (amount.greaterThan(outstanding)) throw new Error("PAYMENT_EXCEEDS_BALANCE");
 
@@ -88,8 +99,8 @@ export async function POST(
         },
       });
 
-      const newPaid = paid.plus(amount);
-      const newStatus = newPaid.greaterThanOrEqualTo(invoice.total) ? "PAID" : "PARTIALLY_PAID";
+      const newNetPaid = netPaid.plus(amount);
+      const newStatus = newNetPaid.greaterThanOrEqualTo(effectiveTotal) ? "PAID" : "PARTIALLY_PAID";
       const updatedInvoice = await tx.invoice.update({
         where: { id: invoice.id },
         data: { status: newStatus },
@@ -121,7 +132,7 @@ export async function POST(
             method: payment.method,
             amount: payment.amount.toString(),
             invoiceStatus: newStatus,
-            outstandingAfter: invoice.total.minus(newPaid).toString(),
+            outstandingAfter: Prisma.Decimal.max(effectiveTotal.minus(newNetPaid), new Prisma.Decimal(0)).toString(),
           },
         },
       });
