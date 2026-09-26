@@ -9,6 +9,7 @@ export const companyConfig = {
   crNumber: "1009014238",
   vatNumber: "311380910800003",
   vatRate: Number(process.env.VAT_RATE ?? "0.15"),
+  washCouponValidityDays: Number(process.env.WASH_COUPON_VALIDITY_DAYS ?? "30"),
 } as const;
 
 export const brandColors = {
