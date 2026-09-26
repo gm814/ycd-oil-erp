@@ -16,7 +16,7 @@ const modules = [
   ["المالية والبنوك", "/dashboard/finance"],
   ["العهد", "/dashboard/custody"],
   ["الموظفون والرواتب", "/dashboard/hr"],
-  ["الأصول والصيانة", "#"],
+  ["الأصول والصيانة", "/dashboard/assets"],
   ["التقارير والرقابة", "#"],
 ];
 
@@ -27,7 +27,7 @@ export default async function DashboardPage() {
 
   const { start, end } = riyadhBusinessDayRange();
 
-  const [invoices, serviceOrderCount, openShift, activeCoupons, products, pendingPurchases, invoiceMismatches, openCustodies, draftPayrolls] = await Promise.all([
+  const [invoices, serviceOrderCount, openShift, activeCoupons, products, pendingPurchases, invoiceMismatches, openCustodies, draftPayrolls, maintenanceAlerts] = await Promise.all([
     db.invoice.findMany({
       where: {
         createdAt: { gte: start, lt: end },
@@ -67,6 +67,16 @@ export default async function DashboardPage() {
     }),
     db.payrollPeriod.count({
       where: { branchId: session.branchId, status: { in: ["DRAFT", "APPROVED"] } },
+    }),
+    db.asset.count({
+      where: {
+        branchId: session.branchId,
+        status: { not: "DISPOSED" },
+        OR: [
+          { status: "MAINTENANCE" },
+          { nextMaintenanceAt: { lte: new Date() } },
+        ],
+      },
     }),
   ]);
 
@@ -139,7 +149,8 @@ export default async function DashboardPage() {
             <p className={invoiceMismatches > 0 ? "" : "empty"}>فواتير موردين غير متطابقة: <b>{invoiceMismatches.toLocaleString("ar-SA")}</b></p>
             <p className={openCustodies > 0 ? "" : "empty"}>عهد غير مقفلة: <b>{openCustodies.toLocaleString("ar-SA")}</b></p>
             <p className={draftPayrolls > 0 ? "" : "empty"}>مسيرات رواتب تنتظر الاعتماد/الصرف: <b>{draftPayrolls.toLocaleString("ar-SA")}</b></p>
-            <a className="orderLink" href="/dashboard/hr">فتح الموظفين والرواتب</a>
+            <p className={maintenanceAlerts > 0 ? "" : "empty"}>أصول تحتاج متابعة صيانة: <b>{maintenanceAlerts.toLocaleString("ar-SA")}</b></p>
+            <a className="orderLink" href="/dashboard/assets">فتح الأصول والصيانة</a>
           </article>
         </section>
       </section>
