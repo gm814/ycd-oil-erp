@@ -57,6 +57,7 @@ export default async function ReportsPage({
 
   const [
     invoices,
+    periodPayments,
     serviceOrders,
     shifts,
     financialTransactions,
@@ -77,6 +78,14 @@ export default async function ReportsPage({
       },
       include: { payments: true },
       orderBy: { createdAt: "asc" },
+    }),
+    db.payment.findMany({
+      where: {
+        paidAt: { gte: range.start, lt: range.end },
+        invoice: { serviceOrder: { branchId: session.branchId } },
+      },
+      select: { method: true, amount: true, paidAt: true },
+      orderBy: { paidAt: "asc" },
     }),
     db.serviceOrder.findMany({
       where: { branchId: session.branchId, createdAt: { gte: range.start, lt: range.end } },
@@ -141,13 +150,12 @@ export default async function ReportsPage({
 
   const sales = invoices.reduce((sum, invoice) => sum + Number(invoice.total), 0);
   const vat = invoices.reduce((sum, invoice) => sum + Number(invoice.vatAmount), 0);
-  const collections = invoices.flatMap((invoice) => invoice.payments)
-    .reduce((sum, payment) => sum + Number(payment.amount), 0);
+  const collections = periodPayments.reduce((sum, payment) => sum + Number(payment.amount), 0);
   const averageInvoice = invoices.length ? sales / invoices.length : 0;
   const completedOrders = serviceOrders.filter((order) => order.status === "COMPLETED").length;
 
   const paymentTotals = new Map<string, number>();
-  for (const payment of invoices.flatMap((invoice) => invoice.payments)) {
+  for (const payment of periodPayments) {
     paymentTotals.set(payment.method, (paymentTotals.get(payment.method) ?? 0) + Number(payment.amount));
   }
 
