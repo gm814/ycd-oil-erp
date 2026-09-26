@@ -156,7 +156,7 @@ async function main() {
     },
   });
 
-  await prisma.financialTransaction.upsert({
+  const openingBankTransaction = await prisma.financialTransaction.upsert({
     where: { idempotencyKey: "opening-bank-main-2026-09-26" },
     update: {
       branchId: branch.id,
@@ -164,7 +164,7 @@ async function main() {
       type: "OPENING_BALANCE",
       amount: 17000,
       reference: "OPENING-2026-09-26",
-      descriptionAr: "الرصيد الافتتاحي لحساب مصرف الراجحي",
+      descriptionAr: "الرصيد الافتتاحي لحساب مصرف الراجحي — تمويل من شركة الواجهات الإبداعية للمقاولات",
       performedBy: "SYSTEM-SEED",
     },
     create: {
@@ -173,9 +173,52 @@ async function main() {
       type: "OPENING_BALANCE",
       amount: 17000,
       reference: "OPENING-2026-09-26",
-      descriptionAr: "الرصيد الافتتاحي لحساب مصرف الراجحي",
+      descriptionAr: "الرصيد الافتتاحي لحساب مصرف الراجحي — تمويل من شركة الواجهات الإبداعية للمقاولات",
       performedBy: "SYSTEM-SEED",
       idempotencyKey: "opening-bank-main-2026-09-26",
+    },
+  });
+
+  const parentCompany = await prisma.groupCompany.upsert({
+    where: { code: "CREATIVE-FACADES-CONTRACTING" },
+    update: {
+      organizationId: organization.id,
+      legalNameAr: "شركة الواجهات الإبداعية للمقاولات",
+      relationType: "PARENT",
+      active: true,
+    },
+    create: {
+      organizationId: organization.id,
+      code: "CREATIVE-FACADES-CONTRACTING",
+      legalNameAr: "شركة الواجهات الإبداعية للمقاولات",
+      relationType: "PARENT",
+    },
+  });
+
+  await prisma.groupFunding.upsert({
+    where: { fundingNo: "FUND-OPENING-20260926" },
+    update: {
+      branchId: branch.id,
+      sourceCompanyId: parentCompany.id,
+      accountId: bankAccount.id,
+      amount: 17000,
+      reference: "OPENING-2026-09-26",
+      notes: "الرصيد البنكي الافتتاحي قبل بدء التشغيل الفعلي للمركز.",
+      fundedAt: new Date("2026-09-26T00:00:00+03:00"),
+      transactionId: openingBankTransaction.id,
+      createdBy: "SYSTEM-SEED",
+    },
+    create: {
+      fundingNo: "FUND-OPENING-20260926",
+      branchId: branch.id,
+      sourceCompanyId: parentCompany.id,
+      accountId: bankAccount.id,
+      amount: 17000,
+      reference: "OPENING-2026-09-26",
+      notes: "الرصيد البنكي الافتتاحي قبل بدء التشغيل الفعلي للمركز.",
+      fundedAt: new Date("2026-09-26T00:00:00+03:00"),
+      transactionId: openingBankTransaction.id,
+      createdBy: "SYSTEM-SEED",
     },
   });
 
