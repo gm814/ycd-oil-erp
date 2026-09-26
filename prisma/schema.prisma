@@ -246,6 +246,7 @@ model Branch {
   custodyRequests CustodyRequest[]
   payrollPeriods  PayrollPeriod[]
   assets          Asset[]
+  assetAcquisitions AssetAcquisition[]
   salesReturns    SalesReturn[]
   createdAt        DateTime          @default(now())
 }
@@ -1019,6 +1020,43 @@ model PayrollLine {
   lateMin            Int           @default(0)
   @@unique([payrollPeriodId, employeeId])
   @@index([employeeId])
+}
+
+model AssetAcquisition {
+  id                 String                 @id @default(cuid())
+  acquisitionNo      String                 @unique
+  branchId           String
+  branch             Branch                 @relation(fields: [branchId], references: [id])
+  supplierName       String
+  supplierVatNumber  String?
+  invoiceNo          String
+  invoiceDate        DateTime
+  purchaserName      String?
+  purchaserVatNumber String?
+  fundingCompanyName String?
+  subtotal           Decimal                @db.Decimal(12,2)
+  discount           Decimal                @default(0) @db.Decimal(12,2)
+  vatAmount          Decimal                @db.Decimal(12,2)
+  total              Decimal                @db.Decimal(12,2)
+  notes              String?
+  items              AssetAcquisitionItem[]
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  @@index([branchId, invoiceDate])
+  @@index([supplierName, invoiceNo])
+}
+
+model AssetAcquisitionItem {
+  id            String           @id @default(cuid())
+  acquisitionId String
+  acquisition   AssetAcquisition @relation(fields: [acquisitionId], references: [id], onDelete: Cascade)
+  itemCode      String?
+  nameAr        String
+  quantity      Decimal          @db.Decimal(12,3)
+  unitCost      Decimal          @db.Decimal(12,2)
+  lineSubtotal  Decimal          @db.Decimal(12,2)
+  @@index([acquisitionId])
+  @@index([itemCode])
 }
 
 model Asset {
