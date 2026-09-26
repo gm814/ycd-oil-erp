@@ -45,6 +45,8 @@ const actionLabels: Record<string, string> = {
   BANK_RECONCILIATION_CLOSED: "إقفال مطابقة بنكية",
   FINANCIAL_TRANSFER_POSTED: "تحويل مالي داخلي",
   POS_SETTLEMENT_POSTED: "تسوية مدى / الشبكة",
+  GROUP_COMPANY_REGISTERED: "تسجيل شركة ضمن المجموعة",
+  GROUP_FUNDING_RECEIVED: "استلام تمويل من شركات المجموعة",
   MAINTENANCE_WORK_ORDER_OPENED: "فتح أمر صيانة",
   MAINTENANCE_COMPLETED: "إقفال أمر صيانة",
 };
