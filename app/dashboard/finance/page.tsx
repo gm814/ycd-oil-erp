@@ -93,6 +93,7 @@ export default async function FinancePage() {
         </div>
         <div className="actionStack noPrint">
           <a className="secondaryButton" href="/dashboard/finance/closes">الإقفال اليومي والشهري</a>
+          <a className="secondaryButton" href="/dashboard/finance/close">الإقفال المالي</a>
           <a className="secondaryButton" href="/dashboard/finance/statement">كشف الحركة والقيود</a>
           <div className="logoPlaceholder">YCD <span>OIL</span></div>
         </div>
