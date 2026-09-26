@@ -22,6 +22,7 @@ const transactionLabel: Record<string, string> = {
   CUSTODY_SETTLEMENT: "تسوية عهدة",
   PAYROLL_PAYMENT: "صرف رواتب",
   ADJUSTMENT: "تسوية مالية",
+  GROUP_FUNDING: "تمويل من شركات المجموعة",
 };
 
 export default async function FinancePage() {
@@ -95,6 +96,7 @@ export default async function FinancePage() {
           <p>إدارة الصندوق والبنوك، المصروفات التشغيلية، التحويلات، وتسويات مدى مع رقابة كاملة على الحركة.</p>
         </div>
         <div className="actionStack noPrint">
+          <a className="secondaryButton" href="/dashboard/finance/group">شركات المجموعة والتمويل</a>
           <a className="secondaryButton" href="/dashboard/finance/closes">الإقفال اليومي والشهري</a>
           <a className="secondaryButton" href="/dashboard/finance/statement">كشف الحركة والقيود</a>
           <img className="documentCenterLogo" src="/brand/ycd-logo-source.svg" alt="YCD OIL" />
