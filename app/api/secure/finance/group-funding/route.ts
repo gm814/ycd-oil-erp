@@ -36,7 +36,13 @@ export async function POST(request: Request) {
       }
 
       const [sourceCompany, account] = await Promise.all([
-        tx.groupCompany.findFirst({ where: { id: parsed.data.sourceCompanyId, active: true } }),
+        tx.groupCompany.findFirst({
+          where: {
+            id: parsed.data.sourceCompanyId,
+            active: true,
+            organization: { branches: { some: { id: session.branchId! } } },
+          },
+        }),
         tx.financialAccount.findFirst({
           where: {
             id: parsed.data.accountId,
