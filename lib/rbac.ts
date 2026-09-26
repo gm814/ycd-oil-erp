@@ -33,6 +33,7 @@ export const PERMISSIONS = {
   ASSET_VIEW: "asset.view",
   ASSET_MANAGE: "asset.manage",
   MAINTENANCE_MANAGE: "maintenance.manage",
+  REPORTS_VIEW: "reports.view",
   AUDIT_VIEW: "audit.view",
 } as const;
 
