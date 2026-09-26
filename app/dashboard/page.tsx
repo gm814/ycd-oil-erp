@@ -17,7 +17,7 @@ const modules = [
   ["العهد", "/dashboard/custody"],
   ["الموظفون والرواتب", "/dashboard/hr"],
   ["الأصول والصيانة", "/dashboard/assets"],
-  ["التقارير والرقابة", "#"],
+  ["التقارير والرقابة", "/dashboard/reports"],
 ];
 
 export default async function DashboardPage() {
