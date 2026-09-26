@@ -76,7 +76,7 @@ export default async function InvoicePage({
       <article className="invoiceDocument">
         <header className="invoiceHeader">
           <div>
-            <div className="logoPlaceholder">YCD <span>OIL</span></div>
+            <img className="invoiceBrandLogo" src="/brand/ycd-logo-source.svg" alt="YCD OIL" />
             <b>{companyConfig.legalNameAr}</b>
             <p>{companyConfig.branch} · {companyConfig.phone}</p>
             <p>{companyConfig.email} · {companyConfig.website}</p>
@@ -208,6 +208,16 @@ export default async function InvoicePage({
                 productCategory: item.product?.category ?? null,
               }))}
             />
+          </section>
+        )}
+
+        {remaining > 0 && (
+          <section className="invoiceBankDetails">
+            <h3>بيانات السداد البنكي</h3>
+            <div><span>البنك</span><b>{companyConfig.bank.nameAr}</b></div>
+            <div><span>اسم الحساب</span><b>{companyConfig.bank.accountNameAr}</b></div>
+            <div><span>رقم الحساب</span><b dir="ltr">{companyConfig.bank.accountNumber}</b></div>
+            <div><span>IBAN</span><b dir="ltr">{companyConfig.bank.iban}</b></div>
           </section>
         )}
 
