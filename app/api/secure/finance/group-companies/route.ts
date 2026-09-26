@@ -17,6 +17,7 @@ const schema = z.object({
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+  if (!session.branchId) return NextResponse.json({ error: "BRANCH_REQUIRED" }, { status: 400 });
   if (!hasPermission(session.permissions, PERMISSIONS.GROUP_FUNDING_MANAGE)) {
     return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
@@ -24,12 +25,15 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "INVALID_INPUT" }, { status: 400 });
 
   try {
-    const organization = await db.organization.findFirst({ orderBy: { createdAt: "asc" } });
-    if (!organization) return NextResponse.json({ error: "ORGANIZATION_NOT_FOUND" }, { status: 404 });
+    const branchRecord = await db.branch.findUnique({
+      where: { id: session.branchId },
+      select: { organizationId: true },
+    });
+    if (!branchRecord) return NextResponse.json({ error: "ORGANIZATION_NOT_FOUND" }, { status: 404 });
 
     const company = await db.groupCompany.create({
       data: {
-        organizationId: organization.id,
+        organizationId: branchRecord.organizationId,
         code: parsed.data.code.toUpperCase(),
         legalNameAr: parsed.data.legalNameAr,
         brandName: parsed.data.brandName || null,
