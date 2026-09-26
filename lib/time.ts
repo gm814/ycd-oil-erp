@@ -52,3 +52,23 @@ export function riyadhMonthToDateStrings(now = new Date()) {
   const day = String(riyadh.getUTCDate()).padStart(2, "0");
   return { from: `${year}-${month}-01`, to: `${year}-${month}-${day}` };
 }
+
+
+export function riyadhFinancialPeriodRange(type: "DAILY" | "MONTHLY", period: string) {
+  if (type === "DAILY") {
+    const range = riyadhDateRange(period, period);
+    return range ? { ...range, label: period } : null;
+  }
+
+  const match = /^(\d{4})-(\d{2})$/.exec(period);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  if (month < 1 || month > 12) return null;
+
+  const start = new Date(Date.UTC(year, month - 1, 1) - RIYADH_OFFSET_MS);
+  const nextYear = month === 12 ? year + 1 : year;
+  const nextMonthIndex = month === 12 ? 0 : month;
+  const end = new Date(Date.UTC(nextYear, nextMonthIndex, 1) - RIYADH_OFFSET_MS);
+  return { start, end, label: period };
+}
