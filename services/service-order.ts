@@ -8,6 +8,8 @@ type CompleteServiceInput = {
   branchId: string;
   paymentMethod: "CASH" | "CARD" | "TRANSFER";
   paymentReference?: string;
+  nextServiceKm?: number;
+  nextServiceAt?: Date;
   idempotencyReference: string;
 };
 
@@ -109,6 +111,8 @@ export async function completeServiceOrder(input: CompleteServiceInput) {
         serviceOrderId: order.id,
         odometer: order.odometer,
         summaryAr: "تم إكمال أمر الخدمة وإصدار الفاتورة.",
+        nextServiceKm: input.nextServiceKm,
+        nextServiceAt: input.nextServiceAt,
       },
     });
 
@@ -133,6 +137,8 @@ export async function completeServiceOrder(input: CompleteServiceInput) {
           total: total.toString(),
           paymentMethod: input.paymentMethod,
           couponSerial,
+          nextServiceKm: input.nextServiceKm ?? null,
+          nextServiceAt: input.nextServiceAt?.toISOString() ?? null,
         },
       },
     });
