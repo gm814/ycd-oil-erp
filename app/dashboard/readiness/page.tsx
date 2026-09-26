@@ -198,7 +198,7 @@ export default async function ReadinessPage() {
                 <tr key={member.code}>
                   <td><b>{member.nameAr}</b><br /><small>{member.code}</small></td>
                   <td>{member.responsibilitiesAr.join(" · ")}</td>
-                  <td>{member.systemRoleCodes.join(" + ")}</td>
+                  <td>{member.systemRolesAr.join(" + ")}</td>
                   <td>{accountReady ? <span className="okBadge">نشط ومؤمّن</span> : <span className="alertBadge">بانتظار إنشاء الحساب</span>}</td>
                   <td>{rolesReady ? <span className="okBadge">مطابق</span> : <span className="alertBadge">يحتاج استكمال الأدوار</span>}</td>
                 </tr>
