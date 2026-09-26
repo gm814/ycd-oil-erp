@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
+import { operationalTeam } from "@/lib/operations";
 
 export async function POST() {
   const session = await getSession();
@@ -26,7 +27,19 @@ export async function POST() {
     openShifts,
   ] = await Promise.all([
     db.branch.findUnique({ where: { id: session.branchId } }),
-    db.employee.count({ where: { branchId: session.branchId, active: true } }),
+    db.employee.findMany({
+      where: { branchId: session.branchId, active: true },
+      select: {
+        code: true,
+        user: {
+          select: {
+            status: true,
+            passwordHash: true,
+            roles: { select: { role: { select: { code: true } } } },
+          },
+        },
+      },
+    }),
     db.user.count({ where: { branchId: session.branchId, status: "ACTIVE", employeeId: { not: null } } }),
     db.financialAccount.findMany({
       where: { branchId: session.branchId, active: true, type: "BANK" },
@@ -65,10 +78,24 @@ export async function POST() {
   const openingBalance = Number(openingBankBalance._sum.amount ?? 0);
   const fundingTotal = Number(groupFunding._sum.amount ?? 0);
   const bankReady = bankAccounts.some((account) => account.bankName && account.accountNumber && account.iban);
+  const employeeByCode = new Map(employees.map((employee) => [employee.code, employee]));
+  const accountPlan = operationalTeam.map((member) => {
+    const employee = employeeByCode.get(member.code);
+    const user = employee?.user;
+    const actualRoles = new Set(user?.roles.map((entry) => entry.role.code) ?? []);
+    return {
+      code: member.code,
+      accountReady: Boolean(user?.status === "ACTIVE" && user.passwordHash),
+      rolesReady: member.systemRoleCodes.every((roleCode) => actualRoles.has(roleCode)),
+    };
+  });
+  const activeUsers = accountPlan.filter((item) => item.accountReady).length;
+  const roleReadyUsers = accountPlan.filter((item) => item.accountReady && item.rolesReady).length;
 
   const missing: string[] = [];
-  if (employees <= 0) missing.push("EMPLOYEES");
-  if (activeUsers < employees) missing.push("USER_ACCOUNTS");
+  if (employees.length < operationalTeam.length) missing.push("EMPLOYEES");
+  if (activeUsers < operationalTeam.length) missing.push("USER_ACCOUNTS");
+  if (activeUsers === operationalTeam.length && roleReadyUsers < operationalTeam.length) missing.push("USER_ROLE_PLAN");
   if (!bankReady) missing.push("BANK_ACCOUNT");
   if (openingBalance <= 0) missing.push("OPENING_BANK_BALANCE");
   if (parentCompanies <= 0 || fundingTotal < openingBalance) missing.push("FUNDING_SOURCE");
@@ -83,8 +110,9 @@ export async function POST() {
       error: "GO_LIVE_REQUIREMENTS_INCOMPLETE",
       missing,
       summary: {
-        employees,
+        employees: employees.length,
         activeUsers,
+        roleReadyUsers,
         openingBalance,
         fundingTotal,
         physicalProducts,
@@ -116,8 +144,9 @@ export async function POST() {
           operationalStatus: "LIVE",
           goLiveAt: live.goLiveAt?.toISOString() ?? null,
           readiness: {
-            employees,
+            employees: employees.length,
             activeUsers,
+            roleReadyUsers,
             openingBalance,
             fundingTotal,
             physicalProducts,
