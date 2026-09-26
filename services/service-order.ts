@@ -6,7 +6,7 @@ type CompleteServiceInput = {
   serviceOrderId: string;
   actorId: string;
   branchId: string;
-  paymentMethod: "CASH" | "CARD" | "TRANSFER";
+  paymentMethod: "CASH" | "CARD" | "TRANSFER" | "CREDIT";
   paymentReference?: string;
   nextServiceKm?: number;
   nextServiceAt?: Date;
@@ -26,6 +26,7 @@ export async function completeServiceOrder(input: CompleteServiceInput) {
       include: {
         items: { include: { product: true } },
         vehicle: true,
+        customer: true,
         invoice: { include: { coupons: true } },
       },
     });
@@ -53,6 +54,53 @@ export async function completeServiceOrder(input: CompleteServiceInput) {
     const vatAmount = subtotal.mul(vatRate).toDecimalPlaces(2);
     const total = subtotal.plus(vatAmount);
 
+    let dueAt: Date | null = null;
+    if (input.paymentMethod === "CREDIT") {
+      if (!order.customer.creditAllowed || order.customer.creditLimit.lessThanOrEqualTo(0)) {
+        throw new Error("CREDIT_NOT_ALLOWED");
+      }
+      const openInvoices = await tx.invoice.findMany({
+        where: {
+          customerId: order.customerId,
+          status: { in: ["ISSUED", "PARTIALLY_PAID"] },
+          serviceOrder: { branchId: input.branchId },
+        },
+        include: { payments: { select: { amount: true } } },
+      });
+      const outstanding = openInvoices.reduce(
+        (sum, invoice) => sum.plus(
+          invoice.total.minus(invoice.payments.reduce(
+            (paid, payment) => paid.plus(payment.amount),
+            new Prisma.Decimal(0),
+          )),
+        ),
+        new Prisma.Decimal(0),
+      );
+      if (outstanding.plus(total).greaterThan(order.customer.creditLimit)) {
+        throw new Error("CREDIT_LIMIT_EXCEEDED");
+      }
+      dueAt = new Date();
+      dueAt.setDate(dueAt.getDate() + order.customer.creditDays);
+    }
+
+    const financialAccount = input.paymentMethod === "CREDIT"
+      ? null
+      : await tx.financialAccount.findFirst({
+          where: {
+            branchId: input.branchId,
+            active: true,
+            type: input.paymentMethod === "CASH"
+              ? "CASH"
+              : input.paymentMethod === "CARD"
+                ? "POS_CLEARING"
+                : "BANK",
+          },
+          orderBy: { createdAt: "asc" },
+        });
+    if (input.paymentMethod !== "CREDIT" && !financialAccount) {
+      throw new Error("FINANCIAL_ACCOUNT_REQUIRED");
+    }
+
     for (const item of order.items) {
       if (!item.productId || item.product?.category === "SERVICE") continue;
       await tx.stockMovement.create({
@@ -77,18 +125,38 @@ export async function completeServiceOrder(input: CompleteServiceInput) {
         vatRate,
         vatAmount,
         total,
-        status: "PAID",
-        payments: {
-          create: {
-            method: input.paymentMethod,
-            amount: total,
-            reference: input.paymentReference || null,
-            idempotencyKey: input.idempotencyReference,
-          },
-        },
+        dueAt,
+        status: input.paymentMethod === "CREDIT" ? "ISSUED" : "PAID",
+        payments: input.paymentMethod === "CREDIT"
+          ? undefined
+          : {
+              create: {
+                method: input.paymentMethod,
+                amount: total,
+                reference: input.paymentReference || null,
+                idempotencyKey: input.idempotencyReference,
+              },
+            },
       },
       include: { coupons: true },
     });
+
+    if (financialAccount) {
+      await tx.financialTransaction.create({
+        data: {
+          branchId: input.branchId,
+          accountId: financialAccount.id,
+          type: "CUSTOMER_RECEIPT",
+          amount: total,
+          reference: input.paymentReference || invoice.invoiceNo,
+          descriptionAr: `تحصيل فاتورة عميل ${invoice.invoiceNo}`,
+          relatedEntityType: "Invoice",
+          relatedEntityId: invoice.id,
+          performedBy: input.actorId,
+          idempotencyKey: `customer-receipt:${input.idempotencyReference}`,
+        },
+      });
+    }
 
     const grantsWashCoupon = order.items.some((item) => item.product?.grantsWashCoupon);
     let couponSerial: string | null = null;
