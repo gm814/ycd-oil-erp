@@ -21,6 +21,9 @@ const permissionCodes = [
   "procurement.receive",
   "supplier_invoice.create",
   "supplier_invoice.approve_payment",
+  "finance.view",
+  "finance.manage",
+  "supplier_payment.execute",
   "audit.view",
 ] as const;
 
@@ -28,7 +31,7 @@ const roleDefinitions: Record<string, { nameAr: string; permissions: readonly st
   GENERAL_MANAGER: { nameAr: "المدير العام", permissions: permissionCodes },
   FINANCE_MANAGER: {
     nameAr: "مدير المالية",
-    permissions: ["dashboard.view", "invoice.issue", "payment.receive", "shift.close", "supplier_invoice.create", "supplier_invoice.approve_payment", "audit.view"],
+    permissions: ["dashboard.view", "invoice.issue", "payment.receive", "shift.close", "supplier_invoice.create", "supplier_invoice.approve_payment", "finance.view", "finance.manage", "supplier_payment.execute", "audit.view"],
   },
   OPERATIONS_MANAGER: {
     nameAr: "مدير العمليات",
@@ -36,11 +39,11 @@ const roleDefinitions: Record<string, { nameAr: string; permissions: readonly st
   },
   BRANCH_MANAGER: {
     nameAr: "مدير الفرع",
-    permissions: ["dashboard.view", "service_order.create", "service_order.approve", "inventory.manage", "inventory.issue", "invoice.issue", "payment.receive", "shift.open", "shift.close", "coupon.redeem", "procurement.request", "procurement.quote", "procurement.approve", "procurement.order", "procurement.receive", "supplier_invoice.create", "audit.view"],
+    permissions: ["dashboard.view", "service_order.create", "service_order.approve", "inventory.manage", "inventory.issue", "invoice.issue", "payment.receive", "shift.open", "shift.close", "coupon.redeem", "procurement.request", "procurement.quote", "procurement.approve", "procurement.order", "procurement.receive", "supplier_invoice.create", "finance.view", "audit.view"],
   },
   ACCOUNTANT: {
     nameAr: "المحاسب",
-    permissions: ["dashboard.view", "invoice.issue", "payment.receive", "shift.close", "supplier_invoice.create", "audit.view"],
+    permissions: ["dashboard.view", "invoice.issue", "payment.receive", "shift.close", "supplier_invoice.create", "finance.view", "finance.manage", "audit.view"],
   },
   PROCUREMENT: {
     nameAr: "المشتريات",
@@ -90,6 +93,18 @@ async function main() {
       nameAr: "الفرع الأول – الرياض - حي طويق",
       city: "الرياض",
     },
+  });
+
+  await prisma.financialAccount.upsert({
+    where: { branchId_code: { branchId: branch.id, code: "CASH-MAIN" } },
+    update: { nameAr: "الصندوق الرئيسي", type: "CASH", active: true },
+    create: { branchId: branch.id, code: "CASH-MAIN", nameAr: "الصندوق الرئيسي", type: "CASH" },
+  });
+
+  await prisma.financialAccount.upsert({
+    where: { branchId_code: { branchId: branch.id, code: "BANK-MAIN" } },
+    update: { nameAr: "الحساب البنكي الرئيسي", type: "BANK", active: true },
+    create: { branchId: branch.id, code: "BANK-MAIN", nameAr: "الحساب البنكي الرئيسي", type: "BANK" },
   });
 
   const permissionByCode = new Map<string, { id: string }>();
