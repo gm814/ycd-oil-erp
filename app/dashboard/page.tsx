@@ -14,7 +14,7 @@ const modules = [
   ["المشتريات والتوريد", "/dashboard/procurement"],
   ["المخزون والزيوت والفلاتر", "/dashboard/inventory"],
   ["المالية والبنوك", "/dashboard/finance"],
-  ["العهد", "#"],
+  ["العهد", "/dashboard/custody"],
   ["الموظفون والرواتب", "#"],
   ["الأصول والصيانة", "#"],
   ["التقارير والرقابة", "#"],
@@ -27,7 +27,7 @@ export default async function DashboardPage() {
 
   const { start, end } = riyadhBusinessDayRange();
 
-  const [invoices, serviceOrderCount, openShift, activeCoupons, products, pendingPurchases, invoiceMismatches] = await Promise.all([
+  const [invoices, serviceOrderCount, openShift, activeCoupons, products, pendingPurchases, invoiceMismatches, openCustodies] = await Promise.all([
     db.invoice.findMany({
       where: {
         createdAt: { gte: start, lt: end },
@@ -58,6 +58,12 @@ export default async function DashboardPage() {
     }),
     db.supplierInvoice.count({
       where: { branchId: session.branchId, status: "MISMATCH" },
+    }),
+    db.custodyRequest.count({
+      where: {
+        branchId: session.branchId,
+        status: { in: ["REQUESTED", "APPROVED", "DISBURSED", "PARTIALLY_SETTLED", "SETTLED"] },
+      },
     }),
   ]);
 
@@ -128,7 +134,8 @@ export default async function DashboardPage() {
             <p>مخزون عند الحد الأدنى: <b>{lowStockCount.toLocaleString("ar-SA")}</b></p>
             <p>طلبات شراء تنتظر الاعتماد: <b>{pendingPurchases.toLocaleString("ar-SA")}</b></p>
             <p className={invoiceMismatches > 0 ? "" : "empty"}>فواتير موردين غير متطابقة: <b>{invoiceMismatches.toLocaleString("ar-SA")}</b></p>
-            <a className="orderLink" href="/dashboard/procurement">فتح المشتريات</a>
+            <p className={openCustodies > 0 ? "" : "empty"}>عهد غير مقفلة: <b>{openCustodies.toLocaleString("ar-SA")}</b></p>
+            <a className="orderLink" href="/dashboard/custody">فتح العهد</a>
           </article>
         </section>
       </section>
