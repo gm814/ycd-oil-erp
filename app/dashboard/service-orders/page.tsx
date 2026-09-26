@@ -53,7 +53,7 @@ export default async function ServiceOrdersPage() {
               <tbody>
                 {orders.map((order) => (
                   <tr key={order.id}>
-                    <td>{order.orderNo}</td>
+                    <td><a className="orderLink" href={`/dashboard/service-orders/${order.id}`}>{order.orderNo}</a></td>
                     <td>{order.customer.name}</td>
                     <td>{order.vehicle.plate}</td>
                     <td>{order.odometer?.toLocaleString("ar-SA") ?? "—"}</td>
