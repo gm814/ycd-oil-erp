@@ -31,7 +31,11 @@ export default async function DashboardPage() {
 
   const { start, end } = riyadhBusinessDayRange();
 
-  const [invoices, serviceOrderCount, openShift, activeCoupons, products, pendingPurchases, invoiceMismatches, openCustodies, draftPayrolls, maintenanceAlerts, pendingShiftVariances, pendingFinancialCloses] = await Promise.all([
+  const [branchState, invoices, serviceOrderCount, openShift, activeCoupons, products, pendingPurchases, invoiceMismatches, openCustodies, draftPayrolls, maintenanceAlerts, pendingShiftVariances, pendingFinancialCloses] = await Promise.all([
+    db.branch.findUnique({
+      where: { id: session.branchId },
+      select: { operationalStatus: true },
+    }),
     db.invoice.findMany({
       where: {
         createdAt: { gte: start, lt: end },
@@ -96,6 +100,13 @@ export default async function DashboardPage() {
     }),
   ]);
 
+  if (!branchState) redirect("/");
+  const phaseLabel = branchState.operationalStatus === "LIVE"
+    ? "التشغيل التجاري"
+    : branchState.operationalStatus === "SUSPENDED"
+      ? "موقوف تشغيليًا"
+      : companyConfig.operationalPhaseAr;
+
   const salesToday = invoices.reduce((sum, invoice) => sum + Number(invoice.total), 0);
   const cashToday = invoices.flatMap((invoice) => invoice.payments)
     .filter((payment) => payment.method === "CASH")
@@ -145,7 +156,7 @@ export default async function DashboardPage() {
             <span className="eyebrow">YCD OIL ERP & Operations</span>
             <h2>تشغيل منظم، رقابة لحظية، وقرار مبني على البيانات.</h2>
             <p>الواجهة التشغيلية للفرع الأول – الرياض - حي طويق.</p>
-            <p><span className="alertBadge">{companyConfig.operationalPhaseAr}</span></p>
+            <p><span className={branchState.operationalStatus === "LIVE" ? "okBadge" : "alertBadge"}>{phaseLabel}</span></p>
           </div>
           <a className="primaryLink" href="/dashboard/readiness">متابعة جاهزية الافتتاح</a>
         </section>
