@@ -330,8 +330,8 @@ async function main() {
       sourceAccountNo: "11080302",
       sourceAccountName: "تجهيز واجهة محل الزيت والبنشر من حديد و رفوف وغيرها",
       sourceFileName: "تجهيز الزيت.pdf",
-      reportedBalance: 141927.71,
-      notes: "رصيد مصدر من كشف المحاسب حتى 2026-09-27؛ محفوظ كما ورد دون إعادة تصنيف محاسبي.",
+      reportedBalance: 29427.71,
+      notes: "الرصيد المعتمد 29,427.71 ريال بناءً على تصحيح المالك بتاريخ 2026-09-27؛ الرصيد السابق 141,927.71 ملغي، مع إبقاء حركات المصدر التاريخية وسجل التصحيح لأغراض التدقيق.",
     },
     {
       sourceAccountNo: "11080303",
@@ -386,6 +386,7 @@ async function main() {
     { key: "11080302-20260831-760-450", accountNo: "11080302", date: "2026-08-31", journal: "760", document: "258", reference: null, description: "300 مقابل تنظيف المحل + 150 نت للكاميرات حسب المرفقات.", debit: 450, balance: 132143.61, page: 2 },
     { key: "11080302-20260920-823-4333", accountNo: "11080302", date: "2026-09-20", journal: "823", document: "281", reference: "127933", description: "شراء كاميرات من شركة إنماء أمن التجارية.", debit: 4333, balance: 136476.61, page: 2 },
     { key: "11080302-20260920-823-5451.1", accountNo: "11080302", date: "2026-09-20", journal: "823", document: "281", reference: "20610", description: "شراء كمبروسر وسلم من شركة الفانوس.", debit: 5451.1, balance: 141927.71, page: 2 },
+    { key: "11080302-20260927-OWNER-CORRECTION-112500", accountNo: "11080302", date: "2026-09-27", journal: null, document: null, reference: "OWNER-CORRECTION", description: "تصحيح رصيد بتوجيه المالك: إلغاء الرصيد السابق 141,927.71 ريال واعتماد الرصيد 29,427.71 ريال؛ فرق التصحيح 112,500.00 ريال محفوظ كسجل تدقيق.", debit: 0, credit: 112500, balance: 29427.71, page: null },
 
     { key: "11080303-20260228-134-6666", accountNo: "11080303", date: "2026-02-28", journal: "134", document: "61", reference: null, description: "إيجار شهر فبراير 2026 من شركة سهود حسب عقد الإيجار.", debit: 6666, balance: 6666, page: 1 },
     { key: "11080303-20260331-280-6667", accountNo: "11080303", date: "2026-03-31", journal: "280", document: "93", reference: null, description: "إيجار المحل لشهر مارس 2026 من شركة سهود حسب العقد.", debit: 6667, balance: 13333, page: 1 },
