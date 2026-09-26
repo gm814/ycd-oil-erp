@@ -65,14 +65,22 @@ export async function completeServiceOrder(input: CompleteServiceInput) {
           status: { in: ["ISSUED", "PARTIALLY_PAID"] },
           serviceOrder: { branchId: input.branchId },
         },
-        include: { payments: { select: { amount: true } } },
+        include: {
+          payments: { select: { amount: true } },
+          returns: { where: { status: "COMPLETED" }, select: { total: true, refundAmount: true } },
+        },
       });
       const outstanding = openInvoices.reduce(
         (sum, invoice) => sum.plus(
-          invoice.total.minus(invoice.payments.reduce(
-            (paid, payment) => paid.plus(payment.amount),
+          Prisma.Decimal.max(
+            invoice.total
+              .minus(invoice.returns.reduce((returned, item) => returned.plus(item.total), new Prisma.Decimal(0)))
+              .minus(
+                invoice.payments.reduce((paid, payment) => paid.plus(payment.amount), new Prisma.Decimal(0))
+                  .minus(invoice.returns.reduce((refunded, item) => refunded.plus(item.refundAmount), new Prisma.Decimal(0))),
+              ),
             new Prisma.Decimal(0),
-          )),
+          ),
         ),
         new Prisma.Decimal(0),
       );
