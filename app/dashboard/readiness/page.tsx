@@ -67,6 +67,11 @@ export default async function ReadinessPage() {
   const suppliersReady = suppliers > 0;
 
   const checklist = [
+    { label: "التشطيبات وتجهيز الموقع", done: companyConfig.preopening.fitOutReady, detail: companyConfig.preopening.readinessSourceAr },
+    { label: "الديكورات وتجهيز بيئة الاستقبال", done: companyConfig.preopening.decorationsReady, detail: companyConfig.preopening.readinessSourceAr },
+    { label: "العدد والأدوات التشغيلية", done: companyConfig.preopening.toolsReady, detail: companyConfig.preopening.readinessSourceAr },
+    { label: "المعدات التشغيلية", done: companyConfig.preopening.equipmentReady, detail: companyConfig.preopening.readinessSourceAr },
+    { label: "التراخيص اللازمة للمركز", done: companyConfig.preopening.licensesReady, detail: "مؤكد إداريًا؛ تفاصيل وأرقام التراخيص تضاف عند تزويد النظام بالمستندات" },
     { label: "الهيكل الوظيفي الأساسي", done: staffReady, detail: `${employees} موظفين مسجلين` },
     { label: "هوية YCD OIL وبيانات المنشأة", done: identityReady, detail: "الهوية والألوان وبيانات الشركة مثبتة بالنظام" },
     { label: "الحساب البنكي الرئيسي", done: bankReady, detail: bankReady ? `${bankAccounts[0]?.bankName ?? "بنك"} · IBAN ينتهي بـ ${bankAccounts[0]?.iban?.slice(-4) ?? "—"}` : "بانتظار بيانات البنك" },
@@ -105,6 +110,8 @@ export default async function ReadinessPage() {
         <article className="panel">
           <h2>حالة المركز</h2>
           <p>{statusBadge(noOperationsYet)} <b>{noOperationsYet ? "لم يبدأ التشغيل التجاري بعد" : "توجد حركات تشغيلية مسجلة"}</b></p>
+          <p><span className="okBadge">المركز مجهز</span> التشطيبات والديكورات والعدد والمعدات والتراخيص مؤكدة من الإدارة.</p>
+          <p><span className="alertBadge">بوابة الإطلاق مفعلة</span> فتح وردية تشغيل حقيقية محظور أثناء PREOPENING؛ يسمح به فقط في بيئة UAT المصرح بها.</p>
           <p>الرصيد البنكي الافتتاحي: <b>{openingBalance.toFixed(2)} ر.س</b></p>
           <p>عمليات التمويل المسجلة: <b>{groupFunding._count}</b></p>
           <p className="muted">تم فصل تمويل الشركة الرئيسية عن إيرادات المبيعات حتى تظهر نتائج النشاط الفعلية بصورة صحيحة.</p>
@@ -162,7 +169,7 @@ export default async function ReadinessPage() {
         </div>
       </article>
 
-      <p className="formNotice">لن نعتبر المركز جاهزًا للإطلاق التشغيلي الكامل حتى تكتمل البنود المطلوبة أعلاه وتنجح اختبارات UAT.</p>
+      <p className="formNotice">المركز مجهز ميدانيًا، لكن التشغيل التجاري سيبقى مقفلًا في النظام حتى تكتمل بيانات الأصناف والخدمات والمخزون والموردين وحسابات المستخدمين وتنجح اختبارات UAT.</p>
     </main>
   );
 }
