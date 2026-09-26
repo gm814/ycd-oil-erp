@@ -19,6 +19,11 @@ export const PERMISSIONS = {
   FINANCE_VIEW: "finance.view",
   FINANCE_MANAGE: "finance.manage",
   SUPPLIER_PAYMENT_EXECUTE: "supplier_payment.execute",
+  CUSTODY_REQUEST: "custody.request",
+  CUSTODY_APPROVE: "custody.approve",
+  CUSTODY_DISBURSE: "custody.disburse",
+  CUSTODY_SETTLE: "custody.settle",
+  CUSTODY_CLOSE: "custody.close",
   AUDIT_VIEW: "audit.view",
 } as const;
 
