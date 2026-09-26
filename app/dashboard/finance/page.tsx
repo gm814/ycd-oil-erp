@@ -71,7 +71,10 @@ export default async function FinancePage() {
           <h1>المالية والبنوك</h1>
           <p>إدارة الصندوق والبنوك، المصروفات التشغيلية، التحويلات، وتسويات مدى مع رقابة كاملة على الحركة.</p>
         </div>
-        <div className="logoPlaceholder">YCD <span>OIL</span></div>
+        <div className="actionStack noPrint">
+          <a className="secondaryButton" href="/dashboard/finance/statement">كشف الحركة والقيود</a>
+          <div className="logoPlaceholder">YCD <span>OIL</span></div>
+        </div>
       </div>
 
       <FinanceActions
