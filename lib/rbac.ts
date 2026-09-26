@@ -9,6 +9,13 @@ export const PERMISSIONS = {
   SHIFT_OPEN: "shift.open",
   SHIFT_CLOSE: "shift.close",
   COUPON_REDEEM: "coupon.redeem",
+  PROCUREMENT_REQUEST: "procurement.request",
+  PROCUREMENT_QUOTE: "procurement.quote",
+  PROCUREMENT_APPROVE: "procurement.approve",
+  PROCUREMENT_ORDER: "procurement.order",
+  PROCUREMENT_RECEIVE: "procurement.receive",
+  SUPPLIER_INVOICE_CREATE: "supplier_invoice.create",
+  SUPPLIER_INVOICE_APPROVE_PAYMENT: "supplier_invoice.approve_payment",
   AUDIT_VIEW: "audit.view",
 } as const;
 
