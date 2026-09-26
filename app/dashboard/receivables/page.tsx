@@ -27,6 +27,7 @@ export default async function ReceivablesPage() {
     include: {
       customer: true,
       payments: { select: { amount: true } },
+      returns: { where: { status: "COMPLETED" }, select: { total: true, refundAmount: true } },
       serviceOrder: { select: { orderNo: true, vehicle: { select: { plate: true } } } },
     },
     orderBy: [{ dueAt: "asc" }, { createdAt: "asc" }],
@@ -34,7 +35,9 @@ export default async function ReceivablesPage() {
 
   const rows = invoices.map((invoice) => {
     const paid = invoice.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
-    const outstanding = Math.max(Number(invoice.total) - paid, 0);
+    const returned = invoice.returns.reduce((sum, item) => sum + Number(item.total), 0);
+    const refunded = invoice.returns.reduce((sum, item) => sum + Number(item.refundAmount), 0);
+    const outstanding = Math.max(Number(invoice.total) - returned - (paid - refunded), 0);
     const lateDays = daysPastDue(invoice.dueAt);
     return { invoice, paid, outstanding, lateDays };
   }).filter((row) => row.outstanding > 0);
