@@ -132,6 +132,7 @@ export default function PreopeningImportClient({ canCatalog, canSuppliers }: Pro
             <h2>الأصناف والخدمات والجرد الافتتاحي</h2>
             <p className="muted">الأعمدة المطلوبة بالترتيب أو بأي ترتيب يحمل نفس الأسماء:</p>
             <code className="importColumns">sku,nameAr,category,unit,salePrice,costPrice,minStock,grantsWashCoupon,openingQty</code>
+            <a className="orderLink" href="/templates/ycd-preopening-catalog.csv" download>تنزيل قالب الأصناف والخدمات والجرد CSV</a>
             <p className="muted">التصنيف: OIL / FILTER / BATTERY / PART / WASH_SUPPLY / SERVICE / OTHER. الخدمة SERVICE يجب أن يكون openingQty لها صفرًا.</p>
             <label className="filePicker">ملف CSV / TSV
               <input type="file" accept=".csv,.tsv,text/csv,text/tab-separated-values" onChange={(event) => void readFile(event, "catalog")} />
@@ -156,6 +157,7 @@ export default function PreopeningImportClient({ canCatalog, canSuppliers }: Pro
             <h2>الموردون</h2>
             <p className="muted">الأعمدة المطلوبة:</p>
             <code className="importColumns">code,nameAr,vatNumber,crNumber,phone,email</code>
+            <a className="orderLink" href="/templates/ycd-preopening-suppliers.csv" download>تنزيل قالب الموردين CSV</a>
             <label className="filePicker">ملف CSV / TSV
               <input type="file" accept=".csv,.tsv,text/csv,text/tab-separated-values" onChange={(event) => void readFile(event, "suppliers")} />
             </label>
