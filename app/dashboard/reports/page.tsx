@@ -29,6 +29,9 @@ const actionLabels: Record<string, string> = {
   PAYROLL_APPROVED: "اعتماد مسير رواتب",
   PAYROLL_PAID: "صرف مسير رواتب",
   ASSET_CREATED: "تسجيل أصل",
+  OPERATING_EXPENSE_POSTED: "تسجيل مصروف تشغيلي",
+  FINANCIAL_TRANSFER_POSTED: "تحويل مالي داخلي",
+  POS_SETTLEMENT_POSTED: "تسوية مدى / الشبكة",
   MAINTENANCE_WORK_ORDER_OPENED: "فتح أمر صيانة",
   MAINTENANCE_COMPLETED: "إقفال أمر صيانة",
 };
