@@ -66,6 +66,32 @@ enum CouponStatus {
   CANCELLED
 }
 
+enum PurchaseRequestStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  ORDERED
+  CANCELLED
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  APPROVED
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CANCELLED
+}
+
+enum SupplierInvoiceStatus {
+  DRAFT
+  MATCHED
+  MISMATCH
+  APPROVED_FOR_PAYMENT
+  PAID
+  VOID
+}
+
 model Organization {
   id        String   @id @default(cuid())
   nameAr    String
@@ -78,19 +104,23 @@ model Organization {
 }
 
 model Branch {
-  id             String          @id @default(cuid())
-  organizationId String
-  organization   Organization    @relation(fields: [organizationId], references: [id])
-  nameAr         String
-  city           String?
-  departments    Department[]
-  employees      Employee[]
-  users          User[]
-  shifts         Shift[]
-  serviceOrders  ServiceOrder[]
-  stockMovements StockMovement[]
-  redeemedCoupons Coupon[]       @relation("CouponRedemptionBranch")
-  createdAt      DateTime        @default(now())
+  id               String            @id @default(cuid())
+  organizationId   String
+  organization     Organization      @relation(fields: [organizationId], references: [id])
+  nameAr           String
+  city             String?
+  departments      Department[]
+  employees        Employee[]
+  users            User[]
+  shifts           Shift[]
+  serviceOrders    ServiceOrder[]
+  stockMovements   StockMovement[]
+  redeemedCoupons  Coupon[]          @relation("CouponRedemptionBranch")
+  purchaseRequests PurchaseRequest[]
+  purchaseOrders   PurchaseOrder[]
+  goodsReceipts    GoodsReceipt[]
+  supplierInvoices SupplierInvoice[]
+  createdAt        DateTime          @default(now())
 }
 
 model Department {
@@ -181,35 +211,38 @@ model Vehicle {
 }
 
 model Product {
-  id               String             @id @default(cuid())
-  sku              String             @unique
-  nameAr           String
-  category         ProductCategory    @default(OTHER)
-  unit             String
-  salePrice        Decimal            @db.Decimal(12,2)
-  costPrice        Decimal            @db.Decimal(12,2)
-  minStock         Decimal            @default(0) @db.Decimal(12,3)
-  grantsWashCoupon Boolean            @default(false)
-  active           Boolean            @default(true)
-  serviceItems     ServiceOrderItem[]
-  stockMovements   StockMovement[]
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  id                   String                @id @default(cuid())
+  sku                  String                @unique
+  nameAr               String
+  category             ProductCategory       @default(OTHER)
+  unit                 String
+  salePrice            Decimal               @db.Decimal(12,2)
+  costPrice            Decimal               @db.Decimal(12,2)
+  minStock             Decimal               @default(0) @db.Decimal(12,3)
+  grantsWashCoupon     Boolean               @default(false)
+  active               Boolean               @default(true)
+  serviceItems         ServiceOrderItem[]
+  stockMovements       StockMovement[]
+  purchaseRequestItems PurchaseRequestItem[]
+  purchaseOrderItems   PurchaseOrderItem[]
+  goodsReceiptItems    GoodsReceiptItem[]
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
 }
 
 model Shift {
-  id           String         @id @default(cuid())
-  branchId     String
-  branch       Branch         @relation(fields: [branchId], references: [id])
-  openedAt     DateTime       @default(now())
-  closedAt     DateTime?
-  openedBy     String
-  closedBy     String?
-  openingCash  Decimal        @default(0) @db.Decimal(12,2)
-  expectedCash Decimal?       @db.Decimal(12,2)
-  countedCash  Decimal?       @db.Decimal(12,2)
-  cashVariance Decimal?       @db.Decimal(12,2)
-  notes        String?
+  id            String         @id @default(cuid())
+  branchId      String
+  branch        Branch         @relation(fields: [branchId], references: [id])
+  openedAt      DateTime       @default(now())
+  closedAt      DateTime?
+  openedBy      String
+  closedBy      String?
+  openingCash   Decimal        @default(0) @db.Decimal(12,2)
+  expectedCash  Decimal?       @db.Decimal(12,2)
+  countedCash   Decimal?       @db.Decimal(12,2)
+  cashVariance  Decimal?       @db.Decimal(12,2)
+  notes         String?
   serviceOrders ServiceOrder[]
   @@index([branchId, closedAt])
 }
@@ -318,6 +351,151 @@ model Coupon {
   redeemedBranch   Branch?      @relation("CouponRedemptionBranch", fields: [redeemedBranchId], references: [id])
   redeemedBy       String?
   @@index([status, expiresAt])
+}
+
+model Supplier {
+  id        String            @id @default(cuid())
+  code      String            @unique
+  nameAr    String
+  vatNumber String?
+  crNumber  String?
+  phone     String?
+  email     String?
+  active    Boolean           @default(true)
+  quotes    SupplierQuote[]
+  orders    PurchaseOrder[]
+  invoices  SupplierInvoice[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+}
+
+model PurchaseRequest {
+  id          String                @id @default(cuid())
+  requestNo   String                @unique
+  branchId    String
+  branch      Branch                @relation(fields: [branchId], references: [id])
+  requestedBy String
+  reason      String?
+  status      PurchaseRequestStatus @default(PENDING_APPROVAL)
+  items       PurchaseRequestItem[]
+  quotes      SupplierQuote[]
+  order       PurchaseOrder?
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  @@index([branchId, status, createdAt])
+}
+
+model PurchaseRequestItem {
+  id                String          @id @default(cuid())
+  purchaseRequestId String
+  purchaseRequest   PurchaseRequest @relation(fields: [purchaseRequestId], references: [id])
+  productId         String
+  product           Product         @relation(fields: [productId], references: [id])
+  quantity          Decimal         @db.Decimal(12,3)
+  notes             String?
+}
+
+model SupplierQuote {
+  id                String          @id @default(cuid())
+  purchaseRequestId String
+  purchaseRequest   PurchaseRequest @relation(fields: [purchaseRequestId], references: [id])
+  supplierId        String
+  supplier          Supplier        @relation(fields: [supplierId], references: [id])
+  quoteNo           String?
+  totalAmount       Decimal         @db.Decimal(12,2)
+  validUntil        DateTime?
+  selected          Boolean         @default(false)
+  notes             String?
+  createdAt         DateTime        @default(now())
+  purchaseOrder     PurchaseOrder?
+  @@index([purchaseRequestId, supplierId])
+}
+
+model PurchaseOrder {
+  id                String              @id @default(cuid())
+  orderNo           String              @unique
+  branchId          String
+  branch            Branch              @relation(fields: [branchId], references: [id])
+  purchaseRequestId String              @unique
+  purchaseRequest   PurchaseRequest     @relation(fields: [purchaseRequestId], references: [id])
+  supplierId        String
+  supplier          Supplier            @relation(fields: [supplierId], references: [id])
+  supplierQuoteId   String?             @unique
+  supplierQuote     SupplierQuote?      @relation(fields: [supplierQuoteId], references: [id])
+  status            PurchaseOrderStatus @default(APPROVED)
+  subtotal          Decimal             @db.Decimal(12,2)
+  vatRate           Decimal             @db.Decimal(5,4)
+  vatAmount         Decimal             @db.Decimal(12,2)
+  total             Decimal             @db.Decimal(12,2)
+  createdBy         String
+  items             PurchaseOrderItem[]
+  receipts          GoodsReceipt[]
+  supplierInvoices  SupplierInvoice[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  @@index([branchId, status, createdAt])
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(cuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  productId       String
+  product         Product       @relation(fields: [productId], references: [id])
+  quantity        Decimal       @db.Decimal(12,3)
+  unitCost        Decimal       @db.Decimal(12,2)
+  receiptItems    GoodsReceiptItem[]
+}
+
+model GoodsReceipt {
+  id              String             @id @default(cuid())
+  receiptNo       String             @unique
+  branchId        String
+  branch          Branch             @relation(fields: [branchId], references: [id])
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id])
+  receivedBy      String
+  supplierDeliveryRef String?
+  items           GoodsReceiptItem[]
+  createdAt       DateTime           @default(now())
+  @@index([purchaseOrderId, createdAt])
+}
+
+model GoodsReceiptItem {
+  id                  String            @id @default(cuid())
+  goodsReceiptId      String
+  goodsReceipt        GoodsReceipt      @relation(fields: [goodsReceiptId], references: [id])
+  purchaseOrderItemId String
+  purchaseOrderItem   PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id])
+  productId           String
+  product             Product           @relation(fields: [productId], references: [id])
+  quantity            Decimal           @db.Decimal(12,3)
+}
+
+model SupplierInvoice {
+  id                   String                @id @default(cuid())
+  invoiceNo            String
+  supplierId           String
+  supplier             Supplier              @relation(fields: [supplierId], references: [id])
+  branchId             String
+  branch               Branch                @relation(fields: [branchId], references: [id])
+  purchaseOrderId      String
+  purchaseOrder        PurchaseOrder         @relation(fields: [purchaseOrderId], references: [id])
+  subtotal             Decimal               @db.Decimal(12,2)
+  vatAmount            Decimal               @db.Decimal(12,2)
+  total                Decimal               @db.Decimal(12,2)
+  status               SupplierInvoiceStatus @default(DRAFT)
+  threeWayMatched      Boolean               @default(false)
+  matchedAt            DateTime?
+  approvedForPaymentAt DateTime?
+  approvedForPaymentBy String?
+  paidAt               DateTime?
+  paymentReference     String?
+  createdBy            String
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  @@unique([supplierId, invoiceNo])
+  @@index([branchId, status, createdAt])
 }
 
 model Approval {
