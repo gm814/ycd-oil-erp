@@ -30,6 +30,9 @@ export const PERMISSIONS = {
   PAYROLL_PREPARE: "payroll.prepare",
   PAYROLL_APPROVE: "payroll.approve",
   PAYROLL_PAY: "payroll.pay",
+  ASSET_VIEW: "asset.view",
+  ASSET_MANAGE: "asset.manage",
+  MAINTENANCE_MANAGE: "maintenance.manage",
   AUDIT_VIEW: "audit.view",
 } as const;
 
