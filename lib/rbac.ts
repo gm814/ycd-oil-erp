@@ -26,6 +26,7 @@ export const PERMISSIONS = {
   SUPPLIER_INVOICE_APPROVE_PAYMENT: "supplier_invoice.approve_payment",
   FINANCE_VIEW: "finance.view",
   FINANCE_MANAGE: "finance.manage",
+  GROUP_FUNDING_MANAGE: "finance.group_funding",
   FINANCE_EXPENSE: "finance.expense",
   FINANCE_EXPENSE_APPROVE: "finance.expense.approve",
   FINANCE_EXPENSE_PAY: "finance.expense.pay",
