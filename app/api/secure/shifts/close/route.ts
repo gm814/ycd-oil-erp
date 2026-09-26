@@ -7,6 +7,8 @@ import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 
 const schema = z.object({
   countedCash: z.coerce.number().min(0).max(10_000_000),
+  countedCard: z.coerce.number().min(-10_000_000).max(10_000_000),
+  countedTransfer: z.coerce.number().min(-10_000_000).max(10_000_000),
   notes: z.string().trim().max(500).optional(),
 });
 
@@ -29,18 +31,47 @@ export async function POST(request: Request) {
       });
       if (!open) throw new Error("NO_OPEN_SHIFT");
 
-      const cashPayments = await tx.payment.findMany({
-        where: {
-          method: "CASH",
-          shiftId: open.id,
-        },
-        select: { amount: true },
-      });
+      const [payments, refunds] = await Promise.all([
+        tx.payment.findMany({
+          where: {
+            shiftId: open.id,
+            method: { in: ["CASH", "CARD", "TRANSFER"] },
+          },
+          select: { method: true, amount: true },
+        }),
+        tx.salesReturn.findMany({
+          where: {
+            branchId: session.branchId!,
+            status: "COMPLETED",
+            createdAt: { gte: open.openedAt },
+            refundMethod: { in: ["CASH", "CARD", "TRANSFER"] },
+            refundAmount: { gt: 0 },
+          },
+          select: { refundMethod: true, refundAmount: true },
+        }),
+      ]);
 
-      const cashSales = cashPayments.reduce((sum, payment) => sum.plus(payment.amount), new Prisma.Decimal(0));
-      const expectedCash = open.openingCash.plus(cashSales);
+      const receiptTotal = (method: "CASH" | "CARD" | "TRANSFER") =>
+        payments
+          .filter((payment) => payment.method === method)
+          .reduce((sum, payment) => sum.plus(payment.amount), new Prisma.Decimal(0));
+
+      const refundTotal = (method: "CASH" | "CARD" | "TRANSFER") =>
+        refunds
+          .filter((refund) => refund.refundMethod === method)
+          .reduce((sum, refund) => sum.plus(refund.refundAmount), new Prisma.Decimal(0));
+
+      const expectedCash = open.openingCash.plus(receiptTotal("CASH")).minus(refundTotal("CASH"));
+      const expectedCard = receiptTotal("CARD").minus(refundTotal("CARD"));
+      const expectedTransfer = receiptTotal("TRANSFER").minus(refundTotal("TRANSFER"));
+
       const countedCash = new Prisma.Decimal(parsed.data.countedCash);
+      const countedCard = new Prisma.Decimal(parsed.data.countedCard);
+      const countedTransfer = new Prisma.Decimal(parsed.data.countedTransfer);
+
       const cashVariance = countedCash.minus(expectedCash);
+      const cardVariance = countedCard.minus(expectedCard);
+      const transferVariance = countedTransfer.minus(expectedTransfer);
 
       const closed = await tx.shift.update({
         where: { id: open.id },
@@ -50,6 +81,12 @@ export async function POST(request: Request) {
           expectedCash,
           countedCash,
           cashVariance,
+          expectedCard,
+          countedCard,
+          cardVariance,
+          expectedTransfer,
+          countedTransfer,
+          transferVariance,
           notes: parsed.data.notes || null,
         },
       });
@@ -64,6 +101,12 @@ export async function POST(request: Request) {
             expectedCash: expectedCash.toString(),
             countedCash: countedCash.toString(),
             cashVariance: cashVariance.toString(),
+            expectedCard: expectedCard.toString(),
+            countedCard: countedCard.toString(),
+            cardVariance: cardVariance.toString(),
+            expectedTransfer: expectedTransfer.toString(),
+            countedTransfer: countedTransfer.toString(),
+            transferVariance: transferVariance.toString(),
           },
         },
       });
