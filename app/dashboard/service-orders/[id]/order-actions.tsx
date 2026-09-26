@@ -11,7 +11,7 @@ type ProductOption = {
   category: string;
 };
 
-type PaymentMethod = "CASH" | "CARD" | "TRANSFER";
+type PaymentMethod = "CASH" | "CARD" | "TRANSFER" | "CREDIT";
 
 export default function OrderActions({
   orderId,
@@ -80,6 +80,9 @@ export default function OrderActions({
         SHIFT_REQUIRED: "أمر الخدمة غير مرتبط بورديّة مفتوحة.",
         SERVICE_ORDER_EMPTY: "أضف بندًا واحدًا على الأقل قبل الإقفال.",
         INVALID_INPUT: "راجع بيانات الدفع والخدمة القادمة.",
+        CREDIT_NOT_ALLOWED: "البيع الآجل غير مفعّل لهذا العميل.",
+        CREDIT_LIMIT_EXCEEDED: "قيمة الفاتورة تتجاوز حد الائتمان المتاح للعميل.",
+        FINANCIAL_ACCOUNT_REQUIRED: "لا يوجد حساب مالي مناسب لطريقة الدفع.",
       };
       setMessage(errors[result.error] || "تعذر إقفال أمر الخدمة.");
       return;
@@ -137,10 +140,11 @@ export default function OrderActions({
             <option value="CASH">نقدًا</option>
             <option value="CARD">مدى / شبكة / بطاقة</option>
             <option value="TRANSFER">تحويل بنكي</option>
+            <option value="CREDIT">آجل / ذمم عميل</option>
           </select>
         </label>
 
-        {paymentMethod !== "CASH" && (
+        {paymentMethod !== "CASH" && paymentMethod !== "CREDIT" && (
           <label>مرجع عملية الدفع
             <input
               value={paymentReference}
