@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { createSessionToken, SESSION_COOKIE } from "@/lib/auth";
 
 const inputSchema = z.object({
-  email: z.string().email(),
+  identifier: z.string().trim().min(2).max(200),
   password: z.string().min(8).max(200),
 });
 
@@ -15,8 +15,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "INVALID_INPUT" }, { status: 400 });
   }
 
-  const user = await db.user.findUnique({
-    where: { email: parsed.data.email.toLowerCase() },
+  const identifier = parsed.data.identifier.toLowerCase();
+  const user = await db.user.findFirst({
+    where: {
+      OR: [
+        { username: identifier },
+        { email: identifier },
+      ],
+    },
     include: {
       roles: {
         include: {
@@ -49,13 +55,18 @@ export async function POST(request: Request) {
   const token = await createSessionToken({
     userId: user.id,
     name: user.name,
-    email: user.email,
+    username: user.username,
+    email: user.email ?? undefined,
+    mustChangePassword: user.mustChangePassword,
     branchId: user.branchId ?? undefined,
     roles,
     permissions,
   });
 
-  const response = NextResponse.json({ ok: true });
+  const response = NextResponse.json({
+    ok: true,
+    mustChangePassword: user.mustChangePassword,
+  });
   response.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
