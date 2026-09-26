@@ -48,7 +48,11 @@ export async function POST(request: Request) {
             status: { not: "VOID" },
             serviceOrder: { branchId: session.branchId! },
           },
-          select: { total: true },
+          select: {
+            total: true,
+            payments: { select: { amount: true } },
+            returns: { where: { status: "COMPLETED" }, select: { total: true } },
+          },
         }),
         tx.payment.findMany({
           where: {
@@ -75,7 +79,8 @@ export async function POST(request: Request) {
         tx.shift.findMany({
           where: {
             branchId: session.branchId!,
-            openedAt: { gte: range.start, lt: range.end },
+            openedAt: { lt: range.end },
+            OR: [{ closedAt: null }, { closedAt: { gte: range.start } }],
           },
           select: {
             closedAt: true,
@@ -90,13 +95,18 @@ export async function POST(request: Request) {
             branchId: session.branchId!,
             statementDate: { gte: range.start, lt: range.end },
           },
-          select: { status: true, difference: true },
+          select: { accountId: true, status: true, difference: true },
         }),
       ]);
 
       const salesTotal = sumDecimal(invoices, (item) => item.total);
-      const paymentTotal = (method: "CASH" | "CARD" | "TRANSFER" | "CREDIT") =>
+      const paymentTotal = (method: "CASH" | "CARD" | "TRANSFER") =>
         sumDecimal(payments.filter((item) => item.method === method), (item) => item.amount);
+      const creditSales = sumDecimal(invoices, (invoice) => {
+        const paid = sumDecimal(invoice.payments, (payment) => payment.amount);
+        const returned = sumDecimal(invoice.returns, (item) => item.total);
+        return Prisma.Decimal.max(invoice.total.minus(paid).minus(returned), zero());
+      });
       const refundsTotal = sumDecimal(returns, (item) => item.total);
       const outflow = (type: "EXPENSE" | "SUPPLIER_PAYMENT" | "PAYROLL_PAYMENT" | "CUSTODY_ISSUE") =>
         sumDecimal(financialTransactions.filter((item) => item.type === type), (item) => item.amount.abs());
@@ -110,13 +120,29 @@ export async function POST(request: Request) {
         Math.abs(Number(shift.cardVariance ?? 0)) > 0.01 ||
         Math.abs(Number(shift.transferVariance ?? 0)) > 0.01;
 
-      const openShifts = shifts.filter((shift) => !shift.closedAt).length;
+      const openShifts = shifts.filter((shift) => !shift.closedAt || shift.closedAt >= range.end).length;
       const unresolvedShiftVariances = shifts.filter((shift) =>
+        shift.closedAt && shift.closedAt >= range.start && shift.closedAt < range.end &&
         hasVariance(shift) && shift.varianceResolution?.status !== "APPROVED"
       ).length;
-      const unresolvedBankReconciliations = bankReconciliations.filter((item) =>
+      const activeBankAccounts = parsed.data.type === "MONTHLY"
+        ? await tx.financialAccount.findMany({
+            where: { branchId: session.branchId!, active: true, type: "BANK" },
+            select: { id: true },
+          })
+        : [];
+      const closedReconciledAccounts = new Set(
+        bankReconciliations
+          .filter((item) => item.status === "CLOSED" && Math.abs(Number(item.difference)) <= 0.01)
+          .map((item) => item.accountId),
+      );
+      const pendingBankReconciliations = bankReconciliations.filter((item) =>
         item.status !== "CLOSED" || Math.abs(Number(item.difference)) > 0.01
       ).length;
+      const missingMonthlyBankReconciliations = parsed.data.type === "MONTHLY"
+        ? activeBankAccounts.filter((account) => !closedReconciledAccounts.has(account.id)).length
+        : 0;
+      const unresolvedBankReconciliations = pendingBankReconciliations + missingMonthlyBankReconciliations;
 
       const closeNo = `FC-${parsed.data.type === "DAILY" ? "D" : "M"}-${parsed.data.period.replaceAll("-", "")}-${session.branchId!.slice(-6).toUpperCase()}`;
       const data = {
@@ -129,7 +155,7 @@ export async function POST(request: Request) {
         cashCollections: paymentTotal("CASH"),
         cardCollections: paymentTotal("CARD"),
         transferCollections: paymentTotal("TRANSFER"),
-        creditSales: paymentTotal("CREDIT"),
+        creditSales,
         refundsTotal,
         operatingExpenses: outflow("EXPENSE"),
         supplierPayments: outflow("SUPPLIER_PAYMENT"),
