@@ -1,6 +1,7 @@
 import { jwtVerify } from "jose";
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@/lib/auth";
+
+const SESSION_COOKIE = "ycd_session";
 
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
