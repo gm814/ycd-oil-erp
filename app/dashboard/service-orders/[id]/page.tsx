@@ -12,15 +12,22 @@ export default async function ServiceOrderPage({
   if (!session) redirect("/");
 
   const { id } = await params;
-  const order = await db.serviceOrder.findUnique({
-    where: { id },
-    include: {
-      customer: true,
-      vehicle: true,
-      items: { include: { product: true }, orderBy: { id: "asc" } },
-      invoice: { include: { payments: true } },
-    },
-  });
+  const [order, products] = await Promise.all([
+    db.serviceOrder.findUnique({
+      where: { id },
+      include: {
+        customer: true,
+        vehicle: true,
+        items: { include: { product: true }, orderBy: { id: "asc" } },
+        invoice: { include: { payments: true, coupons: true } },
+      },
+    }),
+    db.product.findMany({
+      where: { active: true },
+      select: { id: true, sku: true, nameAr: true, salePrice: true, category: true },
+      orderBy: { nameAr: "asc" },
+    }),
+  ]);
 
   if (!order || order.branchId !== session.branchId) notFound();
 
@@ -43,7 +50,14 @@ export default async function ServiceOrderPage({
       <section className="workGrid">
         <article className="panel">
           <h2>إضافة خدمة / مادة</h2>
-          <OrderActions orderId={order.id} locked={Boolean(order.invoice) || order.status === "CANCELLED"} />
+          <OrderActions
+            orderId={order.id}
+            locked={Boolean(order.invoice) || order.status === "CANCELLED"}
+            products={products.map((product) => ({
+              ...product,
+              salePrice: Number(product.salePrice),
+            }))}
+          />
         </article>
 
         <article className="panel">
@@ -71,8 +85,8 @@ export default async function ServiceOrderPage({
           <div className="orderTotal"><span>الإجمالي قبل الضريبة</span><b>{subtotal.toFixed(2)} ر.س</b></div>
           {order.invoice && (
             <div className="invoiceBox">
-              <b>الفاتورة: {order.invoice.invoiceNo}</b>
-              <span>الإجمالي شامل الضريبة: {Number(order.invoice.total).toFixed(2)} ر.س</span>
+              <div><b>الفاتورة: {order.invoice.invoiceNo}</b><span>الإجمالي شامل الضريبة: {Number(order.invoice.total).toFixed(2)} ر.س</span></div>
+              {order.invoice.coupons[0] && <div><b>كوبون الغسيل</b><span>{order.invoice.coupons[0].serial}</span></div>}
             </div>
           )}
         </article>
