@@ -7,6 +7,7 @@ import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import LogoutButton from "./logout-button";
 
 const modules = [
+  ["جاهزية الافتتاح والتشغيل", "/dashboard/readiness"],
   ["الورديات والإقفال اليومي", "/dashboard/shifts"],
   ["استقبال السيارات وأوامر الخدمة", "/dashboard/service-orders"],
   ["الزيوت وخدمات السيارات", "/dashboard/service-orders"],
@@ -144,8 +145,9 @@ export default async function DashboardPage() {
             <span className="eyebrow">YCD OIL ERP & Operations</span>
             <h2>تشغيل منظم، رقابة لحظية، وقرار مبني على البيانات.</h2>
             <p>الواجهة التشغيلية للفرع الأول – الرياض - حي طويق.</p>
+            <p><span className="alertBadge">{companyConfig.operationalPhaseAr}</span></p>
           </div>
-          <a className="primaryLink" href="/dashboard/shifts">{openShift ? "متابعة الوردية" : "فتح وردية جديدة"}</a>
+          <a className="primaryLink" href="/dashboard/readiness">متابعة جاهزية الافتتاح</a>
         </section>
 
         <section className="kpis">
