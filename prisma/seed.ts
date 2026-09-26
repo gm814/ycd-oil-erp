@@ -136,8 +136,23 @@ async function main() {
 
   await prisma.financialAccount.upsert({
     where: { branchId_code: { branchId: branch.id, code: "BANK-MAIN" } },
-    update: { nameAr: "الحساب البنكي الرئيسي", type: "BANK", active: true },
-    create: { branchId: branch.id, code: "BANK-MAIN", nameAr: "الحساب البنكي الرئيسي", type: "BANK" },
+    update: {
+      nameAr: "مصرف الراجحي - شركة وجهتك الإبداعية لخدمات السيارات",
+      type: "BANK",
+      bankName: "مصرف الراجحي",
+      accountNumber: "528000010006080781162",
+      iban: "SA7180000528608010781162",
+      active: true,
+    },
+    create: {
+      branchId: branch.id,
+      code: "BANK-MAIN",
+      nameAr: "مصرف الراجحي - شركة وجهتك الإبداعية لخدمات السيارات",
+      type: "BANK",
+      bankName: "مصرف الراجحي",
+      accountNumber: "528000010006080781162",
+      iban: "SA7180000528608010781162",
+    },
   });
 
   await prisma.financialAccount.upsert({
