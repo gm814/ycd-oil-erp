@@ -92,6 +92,24 @@ enum SupplierInvoiceStatus {
   VOID
 }
 
+enum FinancialAccountType {
+  CASH
+  BANK
+  POS_CLEARING
+}
+
+enum FinancialTransactionType {
+  OPENING_BALANCE
+  CUSTOMER_RECEIPT
+  SUPPLIER_PAYMENT
+  EXPENSE
+  TRANSFER_IN
+  TRANSFER_OUT
+  CUSTODY_ISSUE
+  CUSTODY_SETTLEMENT
+  ADJUSTMENT
+}
+
 model Organization {
   id        String   @id @default(cuid())
   nameAr    String
@@ -120,6 +138,8 @@ model Branch {
   purchaseOrders   PurchaseOrder[]
   goodsReceipts    GoodsReceipt[]
   supplierInvoices SupplierInvoice[]
+  financialAccounts FinancialAccount[]
+  financialTransactions FinancialTransaction[]
   createdAt        DateTime          @default(now())
 }
 
@@ -512,6 +532,45 @@ model SupplierInvoice {
   updatedAt            DateTime              @updatedAt
   @@unique([supplierId, invoiceNo])
   @@index([branchId, status, createdAt])
+}
+
+model FinancialAccount {
+  id           String                 @id @default(cuid())
+  branchId     String
+  branch       Branch                 @relation(fields: [branchId], references: [id])
+  code         String
+  nameAr       String
+  type         FinancialAccountType
+  bankName     String?
+  iban         String?
+  active       Boolean                @default(true)
+  transactions FinancialTransaction[]
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  @@unique([branchId, code])
+  @@index([branchId, type, active])
+}
+
+model FinancialTransaction {
+  id                String                   @id @default(cuid())
+  branchId          String
+  branch            Branch                   @relation(fields: [branchId], references: [id])
+  accountId         String
+  account           FinancialAccount         @relation(fields: [accountId], references: [id])
+  type              FinancialTransactionType
+  amount            Decimal                  @db.Decimal(12,2)
+  reference         String?
+  descriptionAr     String
+  recipientName     String?
+  recipientPhone    String?
+  relatedEntityType String?
+  relatedEntityId   String?
+  performedBy       String
+  idempotencyKey    String?                  @unique
+  createdAt         DateTime                 @default(now())
+  @@index([branchId, createdAt])
+  @@index([accountId, createdAt])
+  @@index([relatedEntityType, relatedEntityId])
 }
 
 model Approval {
