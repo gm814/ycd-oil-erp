@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -16,16 +15,6 @@ const schema = z.object({
   idempotencyReference: z.string().trim().min(12).max(120),
 });
 
-const categoryLabel: Record<string, string> = {
-  RENT: "إيجار",
-  UTILITIES: "خدمات ومرافق",
-  FUEL: "وقود ونقل",
-  MAINTENANCE: "صيانة",
-  SUPPLIES: "مستلزمات تشغيل",
-  ADMIN: "مصروفات إدارية",
-  OTHER: "أخرى",
-};
-
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
@@ -38,77 +27,76 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "INVALID_INPUT" }, { status: 400 });
 
   try {
-    const transaction = await db.$transaction(async (tx) => {
-      const key = `expense:${parsed.data.idempotencyReference}`;
-      const amount = new Prisma.Decimal(parsed.data.amount);
-      const existing = await tx.financialTransaction.findUnique({ where: { idempotencyKey: key } });
-      if (existing) {
-        if (existing.accountId !== parsed.data.accountId || !existing.amount.abs().equals(amount)) {
-          throw new Error("IDEMPOTENCY_CONFLICT");
-        }
-        return existing;
-      }
+    const requestNo = `EXP-${parsed.data.idempotencyReference}`;
+    const existing = await db.expenseRequest.findUnique({ where: { requestNo } });
+    if (existing) {
+      if (
+        existing.branchId !== session.branchId ||
+        existing.accountId !== parsed.data.accountId ||
+        Number(existing.amount) !== parsed.data.amount
+      ) return NextResponse.json({ error: "IDEMPOTENCY_CONFLICT" }, { status: 409 });
+      return NextResponse.json({ expenseRequest: existing }, { status: 200 });
+    }
 
-      const account = await tx.financialAccount.findFirst({
-        where: {
-          id: parsed.data.accountId,
-          branchId: session.branchId!,
-          active: true,
-          type: { in: ["CASH", "BANK"] },
-        },
-      });
-      if (!account) throw new Error("FINANCIAL_ACCOUNT_NOT_FOUND");
+    const account = await db.financialAccount.findFirst({
+      where: {
+        id: parsed.data.accountId,
+        branchId: session.branchId,
+        active: true,
+        type: { in: ["CASH", "BANK"] },
+      },
+    });
+    if (!account) return NextResponse.json({ error: "FINANCIAL_ACCOUNT_NOT_FOUND" }, { status: 404 });
 
-      const balanceResult = await tx.financialTransaction.aggregate({
-        where: { accountId: account.id },
-        _sum: { amount: true },
-      });
-      const balance = balanceResult._sum.amount ?? new Prisma.Decimal(0);
-      if (balance.lessThan(amount)) throw new Error("INSUFFICIENT_FINANCIAL_BALANCE");
-
-      const created = await tx.financialTransaction.create({
+    const expenseRequest = await db.$transaction(async (tx) => {
+      const created = await tx.expenseRequest.create({
         data: {
+          requestNo,
           branchId: session.branchId!,
           accountId: account.id,
-          type: "EXPENSE",
-          amount: amount.negated(),
-          reference: parsed.data.reference || null,
-          descriptionAr: `${categoryLabel[parsed.data.category]} — ${parsed.data.descriptionAr}`,
+          category: parsed.data.category,
+          descriptionAr: parsed.data.descriptionAr,
+          amount: parsed.data.amount,
           recipientName: parsed.data.recipientName || null,
           recipientPhone: parsed.data.recipientPhone || null,
-          relatedEntityType: "OperatingExpense",
-          relatedEntityId: parsed.data.idempotencyReference,
-          performedBy: session.userId,
-          idempotencyKey: key,
+          reference: parsed.data.reference || null,
+          requestedBy: session.userId,
+        },
+      });
+
+      await tx.approval.create({
+        data: {
+          entityType: "ExpenseRequest",
+          entityId: created.id,
+          step: "EXPENSE_APPROVAL",
+          requestedBy: session.userId,
+          status: "PENDING",
         },
       });
 
       await tx.auditLog.create({
         data: {
           actorId: session.userId,
-          action: "OPERATING_EXPENSE_POSTED",
-          entityType: "FinancialTransaction",
+          action: "OPERATING_EXPENSE_REQUESTED",
+          entityType: "ExpenseRequest",
           entityId: created.id,
           afterJson: {
+            requestNo: created.requestNo,
             accountId: account.id,
-            accountCode: account.code,
-            amount: amount.toString(),
-            category: parsed.data.category,
-            reference: parsed.data.reference || null,
-            recipientName: parsed.data.recipientName || null,
+            amount: created.amount.toString(),
+            category: created.category,
+            recipientName: created.recipientName,
+            reference: created.reference,
           },
         },
       });
 
       return created;
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    });
 
-    return NextResponse.json({ transaction }, { status: 201 });
+    return NextResponse.json({ expenseRequest }, { status: 201 });
   } catch (error) {
-    const code = error instanceof Error ? error.message : "EXPENSE_POST_FAILED";
-    const status = code === "INSUFFICIENT_FINANCIAL_BALANCE" ? 409
-      : code === "FINANCIAL_ACCOUNT_NOT_FOUND" ? 404
-        : code === "IDEMPOTENCY_CONFLICT" ? 409 : 400;
-    return NextResponse.json({ error: code }, { status });
+    const code = error instanceof Error ? error.message : "EXPENSE_REQUEST_FAILED";
+    return NextResponse.json({ error: code }, { status: 400 });
   }
 }
