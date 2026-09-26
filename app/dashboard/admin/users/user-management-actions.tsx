@@ -9,6 +9,7 @@ type Employee = {
   code: string;
   nameAr: string;
   jobTitleAr: string | null;
+  suggestedRoleCodes: string[];
   user: null | {
     id: string;
     email: string;
@@ -108,10 +109,10 @@ export default function UserManagementActions({
                   <input name="password" type="password" minLength={10} autoComplete="new-password" required />
                 </label>
                 <fieldset className="rolePicker">
-                  <legend>الأدوار</legend>
+                  <legend>الأدوار المقترحة حسب المسؤوليات المعتمدة</legend>
                   {roles.map((role) => (
                     <label key={role.code}>
-                      <input type="checkbox" name="roleCodes" value={role.code} />
+                      <input type="checkbox" name="roleCodes" value={role.code} defaultChecked={employee.suggestedRoleCodes.includes(role.code)} />
                       <span>{role.nameAr}</span>
                     </label>
                   ))}
