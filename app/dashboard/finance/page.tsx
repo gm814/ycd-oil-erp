@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import FinanceActions from "./finance-actions";
 
 const typeLabel: Record<string, string> = {
@@ -13,6 +14,7 @@ export default async function FinancePage() {
   const session = await getSession();
   if (!session) redirect("/");
   if (!session.branchId) redirect("/dashboard");
+  if (!hasPermission(session.permissions, PERMISSIONS.FINANCE_VIEW)) redirect("/dashboard");
 
   const [accounts, transactions, supplierInvoices] = await Promise.all([
     db.financialAccount.findMany({
