@@ -97,6 +97,7 @@ export default async function FinancePage() {
         </div>
         <div className="actionStack noPrint">
           <a className="secondaryButton" href="/dashboard/finance/group">شركات المجموعة والتمويل</a>
+          <a className="secondaryButton" href="/dashboard/finance/preopening">تكاليف وأصول ما قبل التشغيل</a>
           <a className="secondaryButton" href="/dashboard/finance/closes">الإقفال اليومي والشهري</a>
           <a className="secondaryButton" href="/dashboard/finance/statement">كشف الحركة والقيود</a>
           <img className="documentCenterLogo" src="/brand/ycd-logo-source.svg" alt="YCD OIL" />
