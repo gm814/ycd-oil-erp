@@ -57,7 +57,7 @@ export async function POST(request: Request) {
             ? existingFee && existingFee.accountId === parsed.data.posAccountId && existingFee.amount.abs().equals(fee)
             : !existingFee);
         if (!valid) throw new Error("IDEMPOTENCY_CONFLICT");
-        return { out: existingOut, fee: existingFee, incoming: existingIn, gross, net };
+        return { out: existingOut!, fee: existingFee, incoming: existingIn!, gross, net };
       }
 
       const [posAccount, bankAccount] = await Promise.all([
