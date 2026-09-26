@@ -760,6 +760,7 @@ model FinancialClose {
   payrollPayments               Decimal              @db.Decimal(12,2)
   custodyIssues                 Decimal              @db.Decimal(12,2)
   netFinancialMovement          Decimal              @db.Decimal(12,2)
+  openShifts                     Int                  @default(0)
   unresolvedShiftVariances      Int                  @default(0)
   unresolvedBankReconciliations Int                  @default(0)
   status                        FinancialCloseStatus @default(DRAFT)
