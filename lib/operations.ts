@@ -5,6 +5,7 @@ export const operationalTeam = [
     primaryRoleAr: "المدير العام",
     responsibilitiesAr: ["الإدارة العامة", "الرقابة والإشراف العام"],
     systemRoleCodes: ["GENERAL_MANAGER"],
+    systemRolesAr: ["المدير العام"],
   },
   {
     code: "YCD-002",
@@ -12,6 +13,7 @@ export const operationalTeam = [
     primaryRoleAr: "مدير الفرع",
     responsibilitiesAr: ["إدارة الفرع", "المشتريات"],
     systemRoleCodes: ["BRANCH_MANAGER", "PROCUREMENT"],
+    systemRolesAr: ["مدير الفرع", "المشتريات"],
   },
   {
     code: "YCD-003",
@@ -19,6 +21,7 @@ export const operationalTeam = [
     primaryRoleAr: "المحاسب",
     responsibilitiesAr: ["المحاسبة", "الموارد البشرية"],
     systemRoleCodes: ["ACCOUNTANT", "HR_MANAGER"],
+    systemRolesAr: ["المحاسب", "مدير الموارد البشرية"],
   },
   {
     code: "YCD-004",
@@ -26,6 +29,7 @@ export const operationalTeam = [
     primaryRoleAr: "المحاسب العام",
     responsibilitiesAr: ["المحاسبة العامة"],
     systemRoleCodes: ["ACCOUNTANT"],
+    systemRolesAr: ["المحاسب"],
   },
   {
     code: "YCD-005",
@@ -33,6 +37,7 @@ export const operationalTeam = [
     primaryRoleAr: "الكاشير",
     responsibilitiesAr: ["الكاشير والتحصيل"],
     systemRoleCodes: ["CASHIER"],
+    systemRolesAr: ["الكاشير"],
   },
   {
     code: "YCD-006",
@@ -40,6 +45,7 @@ export const operationalTeam = [
     primaryRoleAr: "مسؤول المستودع / فني",
     responsibilitiesAr: ["المستودع", "الخدمات الفنية"],
     systemRoleCodes: ["WAREHOUSE", "TECHNICIAN"],
+    systemRolesAr: ["المستودع", "الفني"],
   },
   {
     code: "YCD-007",
@@ -47,6 +53,7 @@ export const operationalTeam = [
     primaryRoleAr: "فني",
     responsibilitiesAr: ["الخدمات الفنية"],
     systemRoleCodes: ["TECHNICIAN"],
+    systemRolesAr: ["الفني"],
   },
   {
     code: "YCD-008",
@@ -54,5 +61,6 @@ export const operationalTeam = [
     primaryRoleAr: "مشرف المغسلة",
     responsibilitiesAr: ["الإشراف على المغسلة"],
     systemRoleCodes: ["WASH_SUPERVISOR"],
+    systemRolesAr: ["مشرف المغسلة"],
   },
 ] as const;
