@@ -339,10 +339,16 @@ model Shift {
   openedBy      String
   closedBy      String?
   openingCash   Decimal        @default(0) @db.Decimal(12,2)
-  expectedCash  Decimal?       @db.Decimal(12,2)
-  countedCash   Decimal?       @db.Decimal(12,2)
-  cashVariance  Decimal?       @db.Decimal(12,2)
-  notes         String?
+  expectedCash      Decimal?       @db.Decimal(12,2)
+  countedCash       Decimal?       @db.Decimal(12,2)
+  cashVariance      Decimal?       @db.Decimal(12,2)
+  expectedCard      Decimal?       @db.Decimal(12,2)
+  countedCard       Decimal?       @db.Decimal(12,2)
+  cardVariance      Decimal?       @db.Decimal(12,2)
+  expectedTransfer  Decimal?       @db.Decimal(12,2)
+  countedTransfer   Decimal?       @db.Decimal(12,2)
+  transferVariance  Decimal?       @db.Decimal(12,2)
+  notes             String?
   serviceOrders ServiceOrder[]
   payments      Payment[]
   @@index([branchId, closedAt])
