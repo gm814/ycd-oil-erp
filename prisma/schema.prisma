@@ -11,6 +11,7 @@ enum UserStatus {
   ACTIVE
   SUSPENDED
 }
+
 enum ServiceOrderStatus {
   DRAFT
   OPEN
@@ -18,18 +19,21 @@ enum ServiceOrderStatus {
   COMPLETED
   CANCELLED
 }
+
 enum InvoiceStatus {
   DRAFT
   ISSUED
   PAID
   VOID
 }
+
 enum PaymentMethod {
   CASH
   CARD
   TRANSFER
   CREDIT
 }
+
 enum StockMovementType {
   RECEIPT
   ISSUE
@@ -37,12 +41,24 @@ enum StockMovementType {
   RETURN
   TRANSFER
 }
+
+enum ProductCategory {
+  OIL
+  FILTER
+  BATTERY
+  PART
+  WASH_SUPPLY
+  SERVICE
+  OTHER
+}
+
 enum ApprovalStatus {
   PENDING
   APPROVED
   REJECTED
   CANCELLED
 }
+
 enum CouponStatus {
   ACTIVE
   USED
@@ -62,9 +78,9 @@ model Organization {
 }
 
 model Branch {
-  id             String         @id @default(cuid())
+  id             String          @id @default(cuid())
   organizationId String
-  organization   Organization   @relation(fields: [organizationId], references: [id])
+  organization   Organization    @relation(fields: [organizationId], references: [id])
   nameAr         String
   city           String?
   departments    Department[]
@@ -73,7 +89,8 @@ model Branch {
   shifts         Shift[]
   serviceOrders  ServiceOrder[]
   stockMovements StockMovement[]
-  createdAt      DateTime       @default(now())
+  redeemedCoupons Coupon[]       @relation("CouponRedemptionBranch")
+  createdAt      DateTime        @default(now())
 }
 
 model Department {
@@ -164,26 +181,37 @@ model Vehicle {
 }
 
 model Product {
-  id             String             @id @default(cuid())
-  sku            String             @unique
-  nameAr         String
-  unit           String
-  salePrice      Decimal            @db.Decimal(12,2)
-  costPrice      Decimal            @db.Decimal(12,2)
-  active         Boolean            @default(true)
-  serviceItems   ServiceOrderItem[]
-  stockMovements StockMovement[]
+  id               String             @id @default(cuid())
+  sku              String             @unique
+  nameAr           String
+  category         ProductCategory    @default(OTHER)
+  unit             String
+  salePrice        Decimal            @db.Decimal(12,2)
+  costPrice        Decimal            @db.Decimal(12,2)
+  minStock         Decimal            @default(0) @db.Decimal(12,3)
+  grantsWashCoupon Boolean            @default(false)
+  active           Boolean            @default(true)
+  serviceItems     ServiceOrderItem[]
+  stockMovements   StockMovement[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 }
 
 model Shift {
-  id        String   @id @default(cuid())
-  branchId  String
-  branch    Branch   @relation(fields: [branchId], references: [id])
-  openedAt  DateTime @default(now())
-  closedAt  DateTime?
-  openedBy  String
-  closedBy  String?
-  notes     String?
+  id           String         @id @default(cuid())
+  branchId     String
+  branch       Branch         @relation(fields: [branchId], references: [id])
+  openedAt     DateTime       @default(now())
+  closedAt     DateTime?
+  openedBy     String
+  closedBy     String?
+  openingCash  Decimal        @default(0) @db.Decimal(12,2)
+  expectedCash Decimal?       @db.Decimal(12,2)
+  countedCash  Decimal?       @db.Decimal(12,2)
+  cashVariance Decimal?       @db.Decimal(12,2)
+  notes        String?
+  serviceOrders ServiceOrder[]
+  @@index([branchId, closedAt])
 }
 
 model ServiceOrder {
@@ -191,6 +219,8 @@ model ServiceOrder {
   orderNo      String             @unique
   branchId     String
   branch       Branch             @relation(fields: [branchId], references: [id])
+  shiftId      String?
+  shift        Shift?             @relation(fields: [shiftId], references: [id])
   customerId   String
   customer     Customer           @relation(fields: [customerId], references: [id])
   vehicleId    String
@@ -203,6 +233,7 @@ model ServiceOrder {
   histories    VehicleHistory[]
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
+  @@index([branchId, shiftId])
 }
 
 model ServiceOrderItem {
@@ -228,6 +259,7 @@ model StockMovement {
   reference   String?
   performedBy String
   createdAt   DateTime          @default(now())
+  @@index([branchId, productId, createdAt])
 }
 
 model Invoice {
@@ -257,6 +289,7 @@ model Payment {
   reference      String?
   idempotencyKey String?       @unique
   paidAt         DateTime      @default(now())
+  @@index([method, paidAt])
 }
 
 model VehicleHistory {
@@ -273,14 +306,18 @@ model VehicleHistory {
 }
 
 model Coupon {
-  id        String       @id @default(cuid())
-  serial    String       @unique
-  invoiceId String
-  invoice   Invoice      @relation(fields: [invoiceId], references: [id])
-  status    CouponStatus @default(ACTIVE)
-  issuedAt  DateTime     @default(now())
-  usedAt    DateTime?
-  expiresAt DateTime?
+  id               String       @id @default(cuid())
+  serial           String       @unique
+  invoiceId        String
+  invoice          Invoice      @relation(fields: [invoiceId], references: [id])
+  status           CouponStatus @default(ACTIVE)
+  issuedAt         DateTime     @default(now())
+  usedAt           DateTime?
+  expiresAt        DateTime?
+  redeemedBranchId String?
+  redeemedBranch   Branch?      @relation("CouponRedemptionBranch", fields: [redeemedBranchId], references: [id])
+  redeemedBy       String?
+  @@index([status, expiresAt])
 }
 
 model Approval {
