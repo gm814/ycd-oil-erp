@@ -23,6 +23,7 @@ enum ServiceOrderStatus {
 enum InvoiceStatus {
   DRAFT
   ISSUED
+  PARTIALLY_PAID
   PAID
   VOID
 }
@@ -276,6 +277,9 @@ model Customer {
   id            String         @id @default(cuid())
   name          String
   phone         String?
+  creditAllowed Boolean        @default(false)
+  creditLimit   Decimal        @default(0) @db.Decimal(12,2)
+  creditDays    Int            @default(0)
   vehicles      Vehicle[]
   serviceOrders ServiceOrder[]
   invoices      Invoice[]
@@ -398,7 +402,9 @@ model Invoice {
   status         InvoiceStatus @default(DRAFT)
   payments       Payment[]
   coupons        Coupon[]
+  dueAt          DateTime?
   createdAt      DateTime      @default(now())
+  @@index([customerId, status, dueAt])
 }
 
 model Payment {
