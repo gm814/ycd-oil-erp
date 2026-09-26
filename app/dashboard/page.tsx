@@ -18,6 +18,7 @@ const modules = [
   ["الموظفون والرواتب", "/dashboard/hr"],
   ["الأصول والصيانة", "/dashboard/assets"],
   ["التقارير والرقابة", "/dashboard/reports"],
+  ["المستندات والنماذج", "/dashboard/documents"],
 ];
 
 export default async function DashboardPage() {
@@ -112,7 +113,7 @@ export default async function DashboardPage() {
     <main className="shell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="logoPlaceholder">YCD <span>OIL</span></div>
+          <img className="sidebarBrandLogo" src="/brand/ycd-logo-source.svg" alt="YCD OIL" />
           <small>ERP & Operations</small>
         </div>
         <nav>
