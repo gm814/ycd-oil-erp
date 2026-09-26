@@ -52,7 +52,7 @@ export default async function FinancialCloseReport({ params }: { params: Promise
       <article className="invoiceDocument">
         <header className="invoiceHeader">
           <div>
-            <div className="logoPlaceholder">YCD <span>OIL</span></div>
+            <img className="invoiceBrandLogo" src="/brand/ycd-logo-source.svg" alt="YCD OIL" />
             <b>{companyConfig.legalNameAr}</b>
             <p>{companyConfig.branch} · {companyConfig.phone}</p>
             <p>الرقم الضريبي: {companyConfig.vatNumber}</p>
@@ -100,7 +100,7 @@ export default async function FinancialCloseReport({ params }: { params: Promise
         </section>
 
         <footer className="invoiceFooter">
-          <p>تقرير رقابي صادر من نظام YCD OIL ERP · لا يسمح بالإقفال النهائي مع فروقات ورديات أو مطابقات بنكية غير معالجة.</p>
+          <p>تقرير رقابي صادر من نظام YCD OIL ERP · لا يسمح بالإقفال النهائي مع فروقات ورديات أو مطابقات بنكية غير معالجة، ويشترط للإقفال الشهري اكتمال الإقفالات اليومية التابعة للشهر.</p>
         </footer>
       </article>
     </main>
