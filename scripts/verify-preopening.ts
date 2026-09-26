@@ -46,7 +46,7 @@ async function main() {
 
   const expectedPreopening = new Map([
     ["11080301", 18235],
-    ["11080302", 141927.71],
+    ["11080302", 29427.71],
     ["11080303", 52170.19],
   ]);
   const preopeningAccounts = await prisma.preopeningLedgerAccount.findMany({
@@ -60,9 +60,9 @@ async function main() {
     0,
   );
   const preopeningEntryCount = preopeningAccounts.reduce((sum, account) => sum + account.entries.length, 0);
-  assert(Math.abs(reportedPreopeningTotal - 212332.9) < 0.01, "إجمالي كشوف ما قبل التشغيل يجب أن يكون 212,332.90 ر.س");
+  assert(Math.abs(reportedPreopeningTotal - 99832.9) < 0.01, "إجمالي كشوف ما قبل التشغيل بعد تصحيح المالك يجب أن يكون 99,832.90 ر.س");
   assert(Math.abs(importedPreopeningTotal - reportedPreopeningTotal) < 0.01, "تفاصيل قيود ما قبل التشغيل لا تطابق الأرصدة المصدرية");
-  assert(preopeningEntryCount === 33, "عدد قيود ما قبل التشغيل المستوردة يجب أن يكون 33");
+  assert(preopeningEntryCount === 34, "عدد قيود ما قبل التشغيل المستوردة، شاملاً قيد تصحيح المالك، يجب أن يكون 34");
   for (const account of preopeningAccounts) {
     const expected = expectedPreopening.get(account.sourceAccountNo);
     assert(expected !== undefined, `حساب مصدر غير متوقع: ${account.sourceAccountNo}`);
