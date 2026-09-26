@@ -16,6 +16,9 @@ export const PERMISSIONS = {
   PROCUREMENT_RECEIVE: "procurement.receive",
   SUPPLIER_INVOICE_CREATE: "supplier_invoice.create",
   SUPPLIER_INVOICE_APPROVE_PAYMENT: "supplier_invoice.approve_payment",
+  FINANCE_VIEW: "finance.view",
+  FINANCE_MANAGE: "finance.manage",
+  SUPPLIER_PAYMENT_EXECUTE: "supplier_payment.execute",
   AUDIT_VIEW: "audit.view",
 } as const;
 
