@@ -379,6 +379,7 @@ async function main() {
   }
 
   const adminEmail = process.env.ADMIN_EMAIL;
+  const adminUsername = (process.env.ADMIN_USERNAME || "admin").trim().toLowerCase();
   const adminPassword = process.env.ADMIN_PASSWORD;
 
   if (adminEmail && adminPassword) {
@@ -386,15 +387,19 @@ async function main() {
     const admin = await prisma.user.upsert({
       where: { email: adminEmail.toLowerCase() },
       update: {
+        username: adminUsername,
         name: "مدير النظام",
         passwordHash,
+        mustChangePassword: false,
         branchId: branch.id,
         status: "ACTIVE",
       },
       create: {
+        username: adminUsername,
         email: adminEmail.toLowerCase(),
         name: "مدير النظام",
         passwordHash,
+        mustChangePassword: false,
         branchId: branch.id,
       },
     });
