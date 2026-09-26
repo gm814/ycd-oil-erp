@@ -40,7 +40,10 @@ export default async function PurchaseOrderPage({ params }: { params: Promise<{ 
           <h1>{order.orderNo}</h1>
           <p>{order.supplier.nameAr} · إجمالي {Number(order.total).toFixed(2)} ر.س</p>
         </div>
-        <span className="statusBadge">{order.status}</span>
+        <div className="actionStack">
+          <span className="statusBadge">{order.status}</span>
+          <a className="secondaryLink" href={`/dashboard/procurement/orders/${order.id}/print`}>طباعة أمر الشراء</a>
+        </div>
       </div>
 
       <section className="workGrid">
@@ -82,7 +85,7 @@ export default async function PurchaseOrderPage({ params }: { params: Promise<{ 
 
           <h3>سندات الاستلام</h3>
           {order.receipts.map((receipt) => (
-            <p key={receipt.id} className="receiptLine"><b>{receipt.receiptNo}</b><span>{receipt.createdAt.toLocaleString("ar-SA")}</span></p>
+            <p key={receipt.id} className="receiptLine"><b>{receipt.receiptNo}</b><span>{receipt.createdAt.toLocaleString("ar-SA")}</span><a className="orderLink" href={`/dashboard/procurement/orders/${order.id}/receipts/${receipt.id}/print`}>طباعة محضر الاستلام</a></p>
           ))}
           {order.receipts.length === 0 && <p className="empty">لم يتم تسجيل استلام بعد.</p>}
 
