@@ -9,6 +9,7 @@ export const PERMISSIONS = {
   CUSTOMER_VIEW: "customer.view",
   CREDIT_MANAGE: "credit.manage",
   CREDIT_SALE: "credit.sale",
+  SALES_RETURN_PROCESS: "sales_return.process",
   SHIFT_OPEN: "shift.open",
   SHIFT_CLOSE: "shift.close",
   COUPON_REDEEM: "coupon.redeem",
