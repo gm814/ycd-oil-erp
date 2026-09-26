@@ -4,7 +4,13 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Props = {
-  companies: { id: string; legalNameAr: string; relationType: string; bankAccountCount: number }[];
+  companies: {
+    id: string;
+    legalNameAr: string;
+    relationType: string;
+    bankAccountCount: number;
+    bankAccounts: { id: string; bankName: string; accountNumber: string | null; iban: string | null }[];
+  }[];
   accounts: { id: string; nameAr: string; type: string; balance: number }[];
 };
 
@@ -30,6 +36,7 @@ export default function GroupFinanceActions({ companies, accounts }: Props) {
         GROUP_COMPANY_BANK_CREATE_FAILED: "تعذر تسجيل الحساب البنكي.",
         GROUP_COMPANY_UPDATE_FAILED: "تعذر تحديث بيانات الشركة.",
         IBAN_ALREADY_REGISTERED: "رقم الآيبان مسجل مسبقًا لشركة أخرى.",
+        GROUP_BANK_ACCOUNT_NOT_FOUND: "الحساب البنكي المحدد لا يتبع شركة التمويل.",
         FINANCIAL_ACCOUNT_NOT_FOUND: "الحساب المالي غير موجود.",
         IDEMPOTENCY_CONFLICT: "مرجع العملية مستخدم سابقًا.",
         FORBIDDEN: "لا تملك صلاحية تسجيل تمويل المجموعة.",
@@ -118,7 +125,15 @@ export default function GroupFinanceActions({ companies, accounts }: Props) {
                 {companies.map((company) => <option key={company.id} value={company.id}>{company.legalNameAr}</option>)}
               </select>
             </label>
-            <label>الحساب المستلم
+            <label>حساب الشركة الممولة — اختياري حتى وصول شهادة الآيبان
+              <select name="sourceBankAccountId" defaultValue="">
+                <option value="">غير محدد</option>
+                {companies.flatMap((company) => company.bankAccounts.map((bank) => (
+                  <option key={bank.id} value={bank.id}>{company.legalNameAr} · {bank.bankName} · {bank.iban ? `IBAN …${bank.iban.slice(-4)}` : bank.accountNumber || "—"}</option>
+                )))}
+              </select>
+            </label>
+            <label>حساب YCD OIL المستلم
               <select name="accountId" required defaultValue="">
                 <option value="" disabled>اختر الحساب</option>
                 {accounts.map((account) => <option key={account.id} value={account.id}>{account.nameAr} — رصيد {account.balance.toFixed(2)} ر.س</option>)}
