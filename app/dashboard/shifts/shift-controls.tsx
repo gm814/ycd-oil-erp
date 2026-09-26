@@ -43,7 +43,9 @@ export default function ShiftControls({
     setBusy(false);
     if (!response.ok) {
       setMessage(
-        result.error === "SHIFT_ALREADY_OPEN"
+        result.error === "PREOPENING_OPERATION_BLOCKED"
+          ? "التشغيل التجاري مقفل حاليًا لأن المركز ما زال في مرحلة ما قبل التشغيل. يفتح فقط في بيئة اختبار UAT المصرح بها."
+          : result.error === "SHIFT_ALREADY_OPEN"
           ? "توجد وردية مفتوحة بالفعل."
           : result.error === "NO_OPEN_SHIFT"
             ? "لا توجد وردية مفتوحة."
