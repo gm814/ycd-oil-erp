@@ -5,6 +5,7 @@ const prisma = new PrismaClient();
 
 const permissionCodes = [
   "dashboard.view",
+  "user.manage",
   "service_order.create",
   "service_order.approve",
   "inventory.manage",
