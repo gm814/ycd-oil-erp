@@ -29,7 +29,10 @@ export default async function PurchaseRequestPage({ params }: { params: Promise<
           <h1>{request.requestNo}</h1>
           <p>{request.reason || "طلب شراء بدون مبرر إضافي"}</p>
         </div>
-        <span className="statusBadge">{request.status}</span>
+        <div className="actionStack">
+          <span className="statusBadge">{request.status}</span>
+          <a className="secondaryLink" href={`/dashboard/procurement/requests/${request.id}/print`}>طباعة النموذج الرسمي</a>
+        </div>
       </div>
 
       <section className="workGrid">
