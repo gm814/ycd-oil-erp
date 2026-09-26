@@ -44,6 +44,31 @@ async function main() {
   assert(funding._count >= 1, "لا توجد حركة تمويل افتتاحية من الشركة الرئيسية");
   assert(Number(funding._sum.amount ?? 0) === 17000, "إجمالي التمويل الافتتاحي يجب أن يكون 17,000 ر.س");
 
+  const expectedPreopening = new Map([
+    ["11080301", 18235],
+    ["11080302", 141927.71],
+    ["11080303", 52170.19],
+  ]);
+  const preopeningAccounts = await prisma.preopeningLedgerAccount.findMany({
+    where: { branchId: branch.id },
+    include: { entries: true },
+  });
+  assert(preopeningAccounts.length === 3, "يجب تحميل ثلاثة حسابات مصدر لما قبل التشغيل");
+  const reportedPreopeningTotal = preopeningAccounts.reduce((sum, account) => sum + Number(account.reportedBalance), 0);
+  const importedPreopeningTotal = preopeningAccounts.reduce(
+    (sum, account) => sum + account.entries.reduce((entrySum, entry) => entrySum + Number(entry.debit) - Number(entry.credit), 0),
+    0,
+  );
+  const preopeningEntryCount = preopeningAccounts.reduce((sum, account) => sum + account.entries.length, 0);
+  assert(Math.abs(reportedPreopeningTotal - 212332.9) < 0.01, "إجمالي كشوف ما قبل التشغيل يجب أن يكون 212,332.90 ر.س");
+  assert(Math.abs(importedPreopeningTotal - reportedPreopeningTotal) < 0.01, "تفاصيل قيود ما قبل التشغيل لا تطابق الأرصدة المصدرية");
+  assert(preopeningEntryCount === 33, "عدد قيود ما قبل التشغيل المستوردة يجب أن يكون 33");
+  for (const account of preopeningAccounts) {
+    const expected = expectedPreopening.get(account.sourceAccountNo);
+    assert(expected !== undefined, `حساب مصدر غير متوقع: ${account.sourceAccountNo}`);
+    assert(Math.abs(Number(account.reportedBalance) - expected) < 0.01, `رصيد المصدر ${account.sourceAccountNo} غير مطابق`);
+  }
+
   const expectedStaff = [
     ["YCD-001", "أبوبكر نبيل سيف"],
     ["YCD-002", "حمزة عبدالرحمن سعيد الذبحاني"],
@@ -77,6 +102,7 @@ async function main() {
   console.log(`Branch: ${branch.nameAr}`);
   console.log("Bank opening balance: 17000 SAR");
   console.log(`Registered staff: ${expectedStaff.length}`);
+  console.log(`Preopening accountant ledger: ${reportedPreopeningTotal.toFixed(2)} SAR / ${preopeningEntryCount} entries`);
   console.log("Commercial operations: not started");
 }
 
