@@ -3,6 +3,64 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+const permissionCodes = [
+  "dashboard.view",
+  "service_order.create",
+  "service_order.approve",
+  "inventory.manage",
+  "inventory.issue",
+  "invoice.issue",
+  "payment.receive",
+  "shift.open",
+  "shift.close",
+  "coupon.redeem",
+  "audit.view",
+] as const;
+
+const roleDefinitions: Record<string, { nameAr: string; permissions: readonly string[] }> = {
+  GENERAL_MANAGER: { nameAr: "المدير العام", permissions: permissionCodes },
+  FINANCE_MANAGER: {
+    nameAr: "مدير المالية",
+    permissions: ["dashboard.view", "invoice.issue", "payment.receive", "shift.close", "audit.view"],
+  },
+  OPERATIONS_MANAGER: {
+    nameAr: "مدير العمليات",
+    permissions: ["dashboard.view", "service_order.create", "service_order.approve", "inventory.issue", "shift.open", "shift.close", "coupon.redeem", "audit.view"],
+  },
+  BRANCH_MANAGER: {
+    nameAr: "مدير الفرع",
+    permissions: ["dashboard.view", "service_order.create", "service_order.approve", "inventory.manage", "inventory.issue", "invoice.issue", "payment.receive", "shift.open", "shift.close", "coupon.redeem", "audit.view"],
+  },
+  ACCOUNTANT: {
+    nameAr: "المحاسب",
+    permissions: ["dashboard.view", "invoice.issue", "payment.receive", "shift.close", "audit.view"],
+  },
+  PROCUREMENT: {
+    nameAr: "المشتريات",
+    permissions: ["dashboard.view", "inventory.manage"],
+  },
+  WAREHOUSE: {
+    nameAr: "المستودع",
+    permissions: ["dashboard.view", "inventory.manage", "inventory.issue"],
+  },
+  CASHIER: {
+    nameAr: "الكاشير",
+    permissions: ["dashboard.view", "payment.receive", "shift.open", "shift.close", "coupon.redeem"],
+  },
+  WASH_SUPERVISOR: {
+    nameAr: "مشرف المغسلة",
+    permissions: ["dashboard.view", "shift.open", "shift.close", "coupon.redeem"],
+  },
+  TECHNICIAN: {
+    nameAr: "الفني",
+    permissions: ["dashboard.view", "service_order.create"],
+  },
+  WORKER: {
+    nameAr: "العامل",
+    permissions: ["dashboard.view"],
+  },
+};
+
 async function main() {
   const organization = await prisma.organization.upsert({
     where: { id: "ycd-oil" },
@@ -27,42 +85,36 @@ async function main() {
     },
   });
 
-  const permissionCodes = [
-    "dashboard.view",
-    "service_order.create",
-    "service_order.approve",
-    "inventory.issue",
-    "invoice.issue",
-    "payment.receive",
-    "shift.close",
-    "audit.view",
-  ];
-
-  const permissions = [];
+  const permissionByCode = new Map<string, { id: string }>();
   for (const code of permissionCodes) {
-    permissions.push(
-      await prisma.permission.upsert({
-        where: { code },
-        update: {},
-        create: { code },
-      }),
-    );
+    const permission = await prisma.permission.upsert({
+      where: { code },
+      update: {},
+      create: { code },
+    });
+    permissionByCode.set(code, permission);
   }
 
-  const role = await prisma.role.upsert({
-    where: { code: "GENERAL_MANAGER" },
-    update: { nameAr: "المدير العام" },
-    create: { code: "GENERAL_MANAGER", nameAr: "المدير العام" },
-  });
-
-  for (const permission of permissions) {
-    await prisma.rolePermission.upsert({
-      where: {
-        roleId_permissionId: { roleId: role.id, permissionId: permission.id },
-      },
-      update: {},
-      create: { roleId: role.id, permissionId: permission.id },
+  const roles = new Map<string, { id: string }>();
+  for (const [code, definition] of Object.entries(roleDefinitions)) {
+    const role = await prisma.role.upsert({
+      where: { code },
+      update: { nameAr: definition.nameAr },
+      create: { code, nameAr: definition.nameAr },
     });
+    roles.set(code, role);
+
+    for (const permissionCode of definition.permissions) {
+      const permission = permissionByCode.get(permissionCode);
+      if (!permission) continue;
+      await prisma.rolePermission.upsert({
+        where: {
+          roleId_permissionId: { roleId: role.id, permissionId: permission.id },
+        },
+        update: {},
+        create: { roleId: role.id, permissionId: permission.id },
+      });
+    }
   }
 
   const adminEmail = process.env.ADMIN_EMAIL;
@@ -86,10 +138,13 @@ async function main() {
       },
     });
 
+    const gmRole = roles.get("GENERAL_MANAGER");
+    if (!gmRole) throw new Error("GENERAL_MANAGER_ROLE_MISSING");
+
     await prisma.userRole.upsert({
-      where: { userId_roleId: { userId: admin.id, roleId: role.id } },
+      where: { userId_roleId: { userId: admin.id, roleId: gmRole.id } },
       update: {},
-      create: { userId: admin.id, roleId: role.id },
+      create: { userId: admin.id, roleId: gmRole.id },
     });
   }
 }
