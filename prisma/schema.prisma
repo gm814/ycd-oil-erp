@@ -815,9 +815,26 @@ model GroupCompany {
   vatNumber      String?
   active         Boolean              @default(true)
   fundings       GroupFunding[]
+  bankAccounts   GroupCompanyBankAccount[]
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
   @@index([organizationId, relationType, active])
+}
+
+model GroupCompanyBankAccount {
+  id            String       @id @default(cuid())
+  companyId     String
+  company       GroupCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  bankName      String
+  accountNameAr String?
+  accountNumber String?
+  iban          String?      @unique
+  currency      String       @default("SAR")
+  active        Boolean      @default(true)
+  notes         String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  @@index([companyId, active])
 }
 
 model GroupFunding {
