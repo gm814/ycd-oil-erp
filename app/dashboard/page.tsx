@@ -11,13 +11,13 @@ const kpis = [
 ];
 
 const modules = [
-  ["التشغيل اليومي", "#"],
+  ["الورديات والإقفال اليومي", "/dashboard/shifts"],
   ["استقبال السيارات وأوامر الخدمة", "/dashboard/service-orders"],
-  ["الزيوت وخدمات السيارات", "#"],
-  ["مغاسل السيارات", "#"],
+  ["الزيوت وخدمات السيارات", "/dashboard/service-orders"],
+  ["كوبونات المغسلة", "/dashboard/coupons"],
   ["المبيعات والعملاء", "#"],
   ["المشتريات والتوريد", "#"],
-  ["المخزون", "#"],
+  ["المخزون والزيوت والفلاتر", "/dashboard/inventory"],
   ["المالية والبنوك", "#"],
   ["العهد", "#"],
   ["الموظفون والرواتب", "#"],
@@ -60,7 +60,7 @@ export default async function DashboardPage() {
             <h2>تشغيل منظم، رقابة لحظية، وقرار مبني على البيانات.</h2>
             <p>الواجهة التشغيلية للفرع الأول – الرياض - حي طويق.</p>
           </div>
-          <button>فتح وردية جديدة</button>
+          <a className="primaryLink" href="/dashboard/shifts">إدارة الوردية</a>
         </section>
 
         <section className="kpis">
