@@ -111,7 +111,7 @@ export async function POST(request: Request) {
       const outflow = (type: "EXPENSE" | "SUPPLIER_PAYMENT" | "PAYROLL_PAYMENT" | "CUSTODY_ISSUE") =>
         sumDecimal(financialTransactions.filter((item) => item.type === type), (item) => item.amount.abs());
       const netFinancialMovement = sumDecimal(
-        financialTransactions.filter((item) => item.type !== "OPENING_BALANCE"),
+        financialTransactions.filter((item) => !["OPENING_BALANCE", "GROUP_FUNDING"].includes(item.type)),
         (item) => item.amount,
       );
 
