@@ -30,7 +30,7 @@ export default async function CouponsPage() {
           <h2>آخر الكوبونات</h2>
           <div className="tableWrap">
             <table>
-              <thead><tr><th>الرقم</th><th>العميل</th><th>الحالة</th><th>الإصدار</th><th>الاستخدام</th></tr></thead>
+              <thead><tr><th>الرقم</th><th>العميل</th><th>الحالة</th><th>الإصدار</th><th>الاستخدام</th><th>النموذج</th></tr></thead>
               <tbody>
                 {coupons.map((coupon) => (
                   <tr key={coupon.id}>
@@ -39,9 +39,10 @@ export default async function CouponsPage() {
                     <td><span className={coupon.status === "ACTIVE" ? "okBadge" : "statusBadge"}>{coupon.status}</span></td>
                     <td>{coupon.issuedAt.toLocaleDateString("ar-SA")}</td>
                     <td>{coupon.usedAt?.toLocaleString("ar-SA") ?? "—"}</td>
+                    <td><a className="orderLink" href={`/dashboard/coupons/${coupon.id}/print`}>طباعة الكوبون</a></td>
                   </tr>
                 ))}
-                {coupons.length === 0 && <tr><td colSpan={5} className="empty">لا توجد كوبونات مصدرة بعد.</td></tr>}
+                {coupons.length === 0 && <tr><td colSpan={6} className="empty">لا توجد كوبونات مصدرة بعد.</td></tr>}
               </tbody>
             </table>
           </div>
