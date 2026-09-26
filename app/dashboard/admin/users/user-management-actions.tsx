@@ -78,11 +78,11 @@ export default function UserManagementActions({
     const data = new FormData(form);
     const roleCodes = data.getAll("roleCodes").map(String);
     const password = String(data.get("password") || "");
+    const isSelf = userId === currentUserId;
     void post(`/api/secure/admin/users/${userId}`, {
-      status: data.get("status"),
-      roleCodes,
+      ...(!isSelf ? { status: data.get("status"), roleCodes } : {}),
       ...(password ? { password } : {}),
-    }, "تم تحديث حالة المستخدم وأدواره.").then((ok) => {
+    }, isSelf ? "تم تحديث كلمة مرور حسابك." : "تم تحديث حالة المستخدم وأدواره.").then((ok) => {
       if (ok) {
         const passwordInput = form.elements.namedItem("password") as HTMLInputElement | null;
         if (passwordInput) passwordInput.value = "";
