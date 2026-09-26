@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import ShiftControls from "./shift-controls";
+import VarianceAction from "./variance-action";
 
 function money(value: number | null) {
   return value === null ? "—" : value.toFixed(2) + " ر.س";
@@ -15,10 +16,12 @@ export default async function ShiftsPage() {
 
   const canOpen = hasPermission(session.permissions, PERMISSIONS.SHIFT_OPEN);
   const canClose = hasPermission(session.permissions, PERMISSIONS.SHIFT_CLOSE);
-  if (!canOpen && !canClose) redirect("/dashboard");
+  const canVarianceApprove = hasPermission(session.permissions, PERMISSIONS.SHIFT_VARIANCE_APPROVE);
+  if (!canOpen && !canClose && !canVarianceApprove) redirect("/dashboard");
 
   const shifts = await db.shift.findMany({
     where: { branchId: session.branchId },
+    include: { varianceResolution: true },
     orderBy: { openedAt: "desc" },
     take: 20,
   });
@@ -93,7 +96,7 @@ export default async function ShiftsPage() {
                 <th>الفتح</th><th>الإقفال</th>
                 <th>النقد المتوقع</th><th>النقد الفعلي</th><th>فرق النقد</th>
                 <th>مدى المتوقع</th><th>مدى الفعلي</th><th>فرق مدى</th>
-                <th>التحويل المتوقع</th><th>التحويل الفعلي</th><th>فرق التحويل</th><th>التقرير</th>
+                <th>التحويل المتوقع</th><th>التحويل الفعلي</th><th>فرق التحويل</th><th>حالة الفرق</th><th>التقرير</th>
               </tr>
             </thead>
             <tbody>
@@ -110,10 +113,23 @@ export default async function ShiftsPage() {
                   <td>{money(shift.expectedTransfer === null ? null : Number(shift.expectedTransfer))}</td>
                   <td>{money(shift.countedTransfer === null ? null : Number(shift.countedTransfer))}</td>
                   <td>{money(shift.transferVariance === null ? null : Number(shift.transferVariance))}</td>
+                  <td>
+                    {!shift.varianceResolution ? (
+                      <span className="okBadge">لا يوجد فرق يتطلب اعتمادًا</span>
+                    ) : shift.varianceResolution.status === "APPROVED" ? (
+                      <span className="okBadge">الفرق معتمد</span>
+                    ) : shift.varianceResolution.status === "REJECTED" ? (
+                      <span className="alertBadge">الفرق مرفوض</span>
+                    ) : canVarianceApprove ? (
+                      <VarianceAction shiftId={shift.id} ownRequest={shift.varianceResolution.requestedBy === session.userId} />
+                    ) : (
+                      <span className="alertBadge">بانتظار اعتماد الفرق</span>
+                    )}
+                  </td>
                   <td><a className="orderLink" href={`/dashboard/shifts/${shift.id}`}>عرض / طباعة</a></td>
                 </tr>
               ))}
-              {shifts.length === 0 && <tr><td colSpan={12} className="empty">لا توجد ورديات مسجلة بعد.</td></tr>}
+              {shifts.length === 0 && <tr><td colSpan={13} className="empty">لا توجد ورديات مسجلة بعد.</td></tr>}
             </tbody>
           </table>
         </div>
