@@ -47,7 +47,7 @@ export default async function HrPage() {
           <h1>الموظفون والرواتب</h1>
           <p>ملفات الموظفين، الحضور، الاستحقاقات والخصومات، ومسير الرواتب الشهري.</p>
         </div>
-        <div className="logoPlaceholder">YCD <span>OIL</span></div>
+        <img className="documentCenterLogo" src="/brand/ycd-logo-source.svg" alt="YCD OIL" />
       </div>
 
       <HrActions employees={employees.map((employee) => ({
