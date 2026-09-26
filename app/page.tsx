@@ -1,74 +1,59 @@
-import { companyConfig } from "@/lib/config";
+"use client";
 
-const kpis = [
-  ["المبيعات اليوم", "0.00 ر.س"],
-  ["السيارات المستلمة", "0"],
-  ["إيرادات المغسلة", "0.00 ر.س"],
-  ["المصروفات", "0.00 ر.س"],
-];
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 
-const modules = [
-  "التشغيل اليومي",
-  "الزيوت وخدمات السيارات",
-  "مغاسل السيارات",
-  "المبيعات والعملاء",
-  "المشتريات والتوريد",
-  "المخزون",
-  "المالية والبنوك",
-  "العهد",
-  "الموظفون والرواتب",
-  "الأصول والصيانة",
-  "التقارير والرقابة",
-];
+export default function LoginPage() {
+  const router = useRouter();
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-export default function Home() {
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const form = new FormData(event.currentTarget);
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        email: form.get("email"),
+        password: form.get("password"),
+      }),
+    });
+
+    setLoading(false);
+    if (!response.ok) {
+      setError("تعذر تسجيل الدخول. تحقق من البريد الإلكتروني وكلمة المرور.");
+      return;
+    }
+
+    router.replace("/dashboard");
+    router.refresh();
+  }
+
   return (
-    <main className="shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <div className="logoPlaceholder">YCD <span>OIL</span></div>
-          <small>ضع ملف الشعار الأصلي في public/brand/ycd-oil-logo.*</small>
-        </div>
-        <nav>
-          <strong>لوحة التحكم</strong>
-          {modules.map((item) => <a href="#" key={item}>{item}</a>)}
-        </nav>
-      </aside>
-
-      <section className="content">
-        <header>
-          <div>
-            <h1>لوحة الإدارة العامة</h1>
-            <p>{companyConfig.legalNameAr}</p>
-          </div>
-          <div className="branch">{companyConfig.branch}</div>
-        </header>
-
-        <section className="hero">
-          <div>
-            <span className="eyebrow">YCD OIL ERP & Operations</span>
-            <h2>تشغيل منظم، رقابة لحظية، وقرار مبني على البيانات.</h2>
-            <p>النسخة التأسيسية للنظام — واجهة عربية RTL وهوية YCD OIL المعتمدة.</p>
-          </div>
-          <button>فتح وردية جديدة</button>
-        </section>
-
-        <section className="kpis">
-          {kpis.map(([label, value]) => (
-            <article key={label}><span>{label}</span><b>{value}</b></article>
-          ))}
-        </section>
-
-        <section className="grid">
-          <article className="panel">
-            <h3>الموافقات المعلقة</h3>
-            <p className="empty">لا توجد موافقات معلقة حاليًا.</p>
-          </article>
-          <article className="panel">
-            <h3>تنبيهات التشغيل</h3>
-            <p className="empty">ستظهر هنا تنبيهات المخزون والعهد والإقفال.</p>
-          </article>
-        </section>
+    <main className="loginShell">
+      <section className="loginCard">
+        <div className="loginBrand">YCD <span>OIL</span></div>
+        <p className="loginSubtitle">نظام الإدارة والتشغيل ERP & Operations</p>
+        <h1>تسجيل الدخول</h1>
+        <form onSubmit={submit}>
+          <label>
+            البريد الإلكتروني
+            <input name="email" type="email" autoComplete="username" required />
+          </label>
+          <label>
+            كلمة المرور
+            <input name="password" type="password" autoComplete="current-password" required />
+          </label>
+          {error && <p className="formError">{error}</p>}
+          <button type="submit" disabled={loading}>
+            {loading ? "جارٍ التحقق..." : "دخول النظام"}
+          </button>
+        </form>
+        <small>شركة وجهتك الإبداعية لزيوت وخدمات السيارات</small>
       </section>
     </main>
   );
