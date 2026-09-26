@@ -131,6 +131,7 @@ export async function completeServiceOrder(input: CompleteServiceInput) {
           ? undefined
           : {
               create: {
+                shiftId: order.shiftId,
                 method: input.paymentMethod,
                 amount: total,
                 reference: input.paymentReference || null,
