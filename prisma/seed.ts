@@ -415,11 +415,25 @@ async function main() {
       reference: entry.reference,
       descriptionAr: entry.description,
       debit: entry.debit,
-      credit: 0,
+      credit: "credit" in entry ? entry.credit : 0,
       runningBalance: entry.balance,
       sourcePage: entry.page,
     })),
     skipDuplicates: true,
+  });
+
+  // Keep the owner-approved correction authoritative even when Seed runs over an existing preopening database.
+  const ownerCorrection = preopeningEntries.find((entry) => entry.key === "11080302-20260927-OWNER-CORRECTION-112500");
+  if (!ownerCorrection || !("credit" in ownerCorrection)) throw new Error("OWNER_CORRECTION_MISSING");
+  await prisma.preopeningLedgerEntry.updateMany({
+    where: { sourceEntryKey: ownerCorrection.key },
+    data: {
+      debit: ownerCorrection.debit,
+      credit: ownerCorrection.credit,
+      runningBalance: ownerCorrection.balance,
+      descriptionAr: ownerCorrection.description,
+      reference: ownerCorrection.reference,
+    },
   });
 
   const permissionByCode = new Map<string, { id: string }>();
