@@ -12,6 +12,12 @@ enum UserStatus {
   SUSPENDED
 }
 
+enum OperationalStatus {
+  PREOPENING
+  LIVE
+  SUSPENDED
+}
+
 enum ServiceOrderStatus {
   DRAFT
   OPEN
@@ -225,6 +231,9 @@ model Branch {
   organization     Organization      @relation(fields: [organizationId], references: [id])
   nameAr           String
   city             String?
+  operationalStatus OperationalStatus @default(PREOPENING)
+  goLiveAt          DateTime?
+  goLiveBy          String?
   departments      Department[]
   employees        Employee[]
   users            User[]
