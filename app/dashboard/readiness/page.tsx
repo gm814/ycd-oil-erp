@@ -29,6 +29,7 @@ export default async function ReadinessPage() {
     physicalProducts,
     openingStockMovements,
     suppliers,
+    preopeningAccounts,
     shifts,
     serviceOrders,
   ] = await Promise.all([
@@ -71,6 +72,11 @@ export default async function ReadinessPage() {
     db.product.count({ where: { active: true, category: { not: "SERVICE" } } }),
     db.stockMovement.count({ where: { branchId: session.branchId, quantity: { gt: 0 } } }),
     db.supplier.count({ where: { active: true } }),
+    db.preopeningLedgerAccount.findMany({
+      where: { branchId: session.branchId },
+      include: { entries: { select: { debit: true, credit: true } } },
+      orderBy: { sourceAccountNo: "asc" },
+    }),
     db.shift.count({ where: { branchId: session.branchId } }),
     db.serviceOrder.count({ where: { branchId: session.branchId } }),
   ]);
@@ -97,6 +103,14 @@ export default async function ReadinessPage() {
   const servicesReady = serviceProducts > 0;
   const stockReady = openingStockMovements > 0;
   const suppliersReady = suppliers > 0;
+  const preopeningReportedTotal = preopeningAccounts.reduce((sum, account) => sum + Number(account.reportedBalance), 0);
+  const preopeningImportedTotal = preopeningAccounts.reduce(
+    (sum, account) => sum + account.entries.reduce((entrySum, entry) => entrySum + Number(entry.debit) - Number(entry.credit), 0),
+    0,
+  );
+  const preopeningVariance = preopeningReportedTotal - preopeningImportedTotal;
+  const preopeningLedgerReady = preopeningAccounts.length > 0 && Math.abs(preopeningVariance) <= 0.01;
+  const correctedSetupAccount = preopeningAccounts.find((account) => account.sourceAccountNo === "11080302");
 
   const checklist = [
     { label: "التشطيبات وتجهيز الموقع", done: companyConfig.preopening.fitOutReady, detail: companyConfig.preopening.readinessSourceAr },
@@ -109,6 +123,7 @@ export default async function ReadinessPage() {
     { label: "الحساب البنكي الرئيسي", done: bankReady, detail: bankReady ? `${bankAccounts[0]?.bankName ?? "بنك"} · IBAN ينتهي بـ ${bankAccounts[0]?.iban?.slice(-4) ?? "—"}` : "بانتظار بيانات البنك" },
     { label: "الرصيد البنكي الافتتاحي", done: openingBalance > 0, detail: `${openingBalance.toFixed(2)} ر.س` },
     { label: "مصدر تمويل المشروع", done: fundingReady, detail: `تمويل مجموعة مسجل: ${fundingTotal.toFixed(2)} ر.س` },
+    { label: "مطابقة سجل تكاليف ما قبل التشغيل", done: preopeningLedgerReady, detail: preopeningLedgerReady ? `مطابق: ${preopeningReportedTotal.toFixed(2)} ر.س · الحساب 11080302 معتمد برصيد ${Number(correctedSetupAccount?.reportedBalance ?? 0).toFixed(2)} ر.س` : `فرق المطابقة: ${preopeningVariance.toFixed(2)} ر.س` },
     { label: "حسابات دخول الموظفين والصلاحيات", done: usersReady, detail: `${accessReadyCount} من ${accessRows.length} حسابات مطابقة لخطة الصلاحيات المعتمدة` },
     { label: "دليل الزيوت والفلاتر والقطع", done: productsReady, detail: `${physicalProducts} صنف مادي مسجل` },
     { label: "دليل الخدمات والأسعار", done: servicesReady, detail: `${serviceProducts} خدمة مسجلة` },
@@ -154,17 +169,20 @@ export default async function ReadinessPage() {
           <GoLiveControl canGoLive={canGoLive} status={branchState.operationalStatus} />
           <p>الرصيد البنكي الافتتاحي: <b>{openingBalance.toFixed(2)} ر.س</b></p>
           <p>عمليات التمويل المسجلة: <b>{groupFunding._count}</b></p>
+          <p>سجل ما قبل التشغيل: <b>{preopeningReportedTotal.toFixed(2)} ر.س</b> · فرق المطابقة: <b>{preopeningVariance.toFixed(2)} ر.س</b></p>
+          <p>الرصيد المصحح للحساب 11080302: <b>{Number(correctedSetupAccount?.reportedBalance ?? 0).toFixed(2)} ر.س</b></p>
           <p className="muted">تم فصل تمويل الشركة الرئيسية عن إيرادات المبيعات حتى تظهر نتائج النشاط الفعلية بصورة صحيحة.</p>
         </article>
 
         <article className="panel">
           <h2>البيانات التي تمنع الإطلاق الكامل</h2>
+          {!preopeningLedgerReady && <p>• مطابقة كشوف وتكاليف ما قبل التشغيل مع القيود المستوردة.</p>}
           {!usersReady && <p>• بيانات دخول الموظفين الذين سيستخدمون النظام فعليًا.</p>}
           {!productsReady && <p>• قائمة الزيوت والفلاتر والقطع مع التكلفة وسعر البيع والوحدة والحد الأدنى.</p>}
           {!servicesReady && <p>• قائمة الخدمات وأسعارها وربط الخدمات المؤهلة لكوبون الغسيل.</p>}
           {!stockReady && <p>• الجرد الافتتاحي للمخزون بالكميات الفعلية.</p>}
           {!suppliersReady && <p>• بيانات الموردين الأساسيين وشروط التوريد.</p>}
-          {usersReady && productsReady && servicesReady && stockReady && suppliersReady && (
+          {preopeningLedgerReady && usersReady && productsReady && servicesReady && stockReady && suppliersReady && (
             <p className="okBadge">بيانات الإطلاق الأساسية مكتملة وجاهزة لاختبارات التشغيل النهائي.</p>
           )}
         </article>
