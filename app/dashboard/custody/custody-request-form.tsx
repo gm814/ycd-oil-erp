@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Employee = { id: string; code: string; nameAr: string; phone: string | null };
@@ -39,7 +39,7 @@ export default function CustodyRequestForm({ employees }: { employees: Employee[
     router.refresh();
   }
 
-  function fillEmployee(event: React.ChangeEvent<HTMLSelectElement>) {
+  function fillEmployee(event: ChangeEvent<HTMLSelectElement>) {
     const employee = employees.find((item) => item.id === event.target.value);
     const form = event.currentTarget.form;
     if (!employee || !form) return;
