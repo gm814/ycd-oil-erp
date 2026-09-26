@@ -112,9 +112,26 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         : 0;
       const unresolvedBankReconciliations = pendingBankReconciliations + missingMonthlyBankReconciliations;
 
+      let missingDailyCloses = 0;
+      if (close.type === "MONTHLY") {
+        const dayMs = 24 * 60 * 60 * 1000;
+        const expectedDays = Math.round((close.periodEnd.getTime() - close.periodStart.getTime()) / dayMs);
+        const closedDailyCloses = await tx.financialClose.count({
+          where: {
+            branchId: session.branchId!,
+            type: "DAILY",
+            status: "CLOSED",
+            periodStart: { gte: close.periodStart },
+            periodEnd: { lte: close.periodEnd },
+          },
+        });
+        missingDailyCloses = Math.max(expectedDays - closedDailyCloses, 0);
+      }
+
       if (openShifts > 0) throw new Error("OPEN_SHIFTS_REMAIN");
       if (unresolvedShiftVariances > 0) throw new Error("SHIFT_VARIANCES_UNRESOLVED");
       if (unresolvedBankReconciliations > 0) throw new Error("BANK_RECONCILIATIONS_UNRESOLVED");
+      if (missingDailyCloses > 0) throw new Error("DAILY_CLOSES_UNRESOLVED");
 
       const updated = await tx.financialClose.update({
         where: { id: close.id },
@@ -144,7 +161,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   } catch (error) {
     const code = error instanceof Error ? error.message : "FINANCIAL_CLOSE_REVIEW_FAILED";
     const status = code === "FINANCIAL_CLOSE_NOT_FOUND" ? 404
-      : ["SELF_REVIEW_NOT_ALLOWED", "FINANCIAL_CLOSE_NOT_DRAFT", "FINANCIAL_CLOSE_REVIEW_REQUIRED", "OPEN_SHIFTS_REMAIN", "SHIFT_VARIANCES_UNRESOLVED", "BANK_RECONCILIATIONS_UNRESOLVED"].includes(code)
+      : ["SELF_REVIEW_NOT_ALLOWED", "FINANCIAL_CLOSE_NOT_DRAFT", "FINANCIAL_CLOSE_REVIEW_REQUIRED", "OPEN_SHIFTS_REMAIN", "SHIFT_VARIANCES_UNRESOLVED", "BANK_RECONCILIATIONS_UNRESOLVED", "DAILY_CLOSES_UNRESOLVED"].includes(code)
         ? 409 : 400;
     return NextResponse.json({ error: code }, { status });
   }
