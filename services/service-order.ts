@@ -1,6 +1,5 @@
 import { Prisma, StockMovementType } from "@prisma/client";
 import { db } from "@/lib/db";
-import { writeAudit } from "@/lib/audit";
 import { companyConfig } from "@/lib/config";
 
 type CompleteServiceInput = {
@@ -13,8 +12,8 @@ type CompleteServiceInput = {
 
 export async function completeServiceOrder(input: CompleteServiceInput) {
   return db.$transaction(async (tx) => {
-    const existingPayment = await tx.payment.findFirst({
-      where: { reference: input.idempotencyReference },
+    const existingPayment = await tx.payment.findUnique({
+      where: { idempotencyKey: input.idempotencyReference },
       include: { invoice: true },
     });
     if (existingPayment) return existingPayment.invoice;
@@ -26,6 +25,19 @@ export async function completeServiceOrder(input: CompleteServiceInput) {
     if (!order) throw new Error("SERVICE_ORDER_NOT_FOUND");
     if (order.invoice) return order.invoice;
     if (order.status === "CANCELLED") throw new Error("SERVICE_ORDER_CANCELLED");
+    if (order.items.length === 0) throw new Error("SERVICE_ORDER_EMPTY");
+
+    for (const item of order.items) {
+      if (!item.productId) continue;
+      const aggregate = await tx.stockMovement.aggregate({
+        where: { branchId: order.branchId, productId: item.productId },
+        _sum: { quantity: true },
+      });
+      const available = aggregate._sum.quantity ?? new Prisma.Decimal(0);
+      if (available.lessThan(item.quantity)) {
+        throw new Error("INSUFFICIENT_STOCK");
+      }
+    }
 
     const subtotal = order.items.reduce(
       (sum, item) => sum.plus(item.unitPrice.mul(item.quantity).minus(item.discount)),
@@ -49,9 +61,10 @@ export async function completeServiceOrder(input: CompleteServiceInput) {
       });
     }
 
+    const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
     const invoice = await tx.invoice.create({
       data: {
-        invoiceNo: `INV-${Date.now()}`,
+        invoiceNo: `INV-${date}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
         serviceOrderId: order.id,
         customerId: order.customerId,
         subtotal,
@@ -63,7 +76,8 @@ export async function completeServiceOrder(input: CompleteServiceInput) {
           create: {
             method: input.paymentMethod,
             amount: total,
-            reference: input.idempotencyReference,
+            reference: input.paymentReference || null,
+            idempotencyKey: input.idempotencyReference,
           },
         },
       },
@@ -83,12 +97,14 @@ export async function completeServiceOrder(input: CompleteServiceInput) {
       data: { status: "COMPLETED" },
     });
 
-    await writeAudit(tx as never, {
-      actorId: input.actorId,
-      action: "SERVICE_ORDER_COMPLETED",
-      entityType: "ServiceOrder",
-      entityId: order.id,
-      afterJson: { invoiceId: invoice.id, total: total.toString() },
+    await tx.auditLog.create({
+      data: {
+        actorId: input.actorId,
+        action: "SERVICE_ORDER_COMPLETED",
+        entityType: "ServiceOrder",
+        entityId: order.id,
+        afterJson: { invoiceId: invoice.id, total: total.toString() },
+      },
     });
 
     return invoice;
