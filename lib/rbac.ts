@@ -24,6 +24,12 @@ export const PERMISSIONS = {
   CUSTODY_DISBURSE: "custody.disburse",
   CUSTODY_SETTLE: "custody.settle",
   CUSTODY_CLOSE: "custody.close",
+  HR_VIEW: "hr.view",
+  HR_MANAGE: "hr.manage",
+  ATTENDANCE_MANAGE: "attendance.manage",
+  PAYROLL_PREPARE: "payroll.prepare",
+  PAYROLL_APPROVE: "payroll.approve",
+  PAYROLL_PAY: "payroll.pay",
   AUDIT_VIEW: "audit.view",
 } as const;
 
