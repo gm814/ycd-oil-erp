@@ -31,6 +31,7 @@ export default async function DashboardPage() {
     db.invoice.findMany({
       where: {
         createdAt: { gte: start, lt: end },
+        status: { not: "VOID" },
         serviceOrder: { branchId: session.branchId },
       },
       include: { payments: true },
@@ -42,7 +43,12 @@ export default async function DashboardPage() {
       where: { branchId: session.branchId, closedAt: null },
       orderBy: { openedAt: "desc" },
     }),
-    db.coupon.count({ where: { status: "ACTIVE" } }),
+    db.coupon.count({
+      where: {
+        status: "ACTIVE",
+        invoice: { serviceOrder: { branchId: session.branchId } },
+      },
+    }),
     db.product.findMany({
       where: { active: true },
       select: {
