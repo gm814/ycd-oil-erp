@@ -12,6 +12,8 @@ const permissionCodes = [
   "invoice.issue",
   "payment.receive",
   "customer.view",
+  "credit.manage",
+  "credit.sale",
   "shift.open",
   "shift.close",
   "coupon.redeem",
@@ -47,7 +49,7 @@ const roleDefinitions: Record<string, { nameAr: string; permissions: readonly st
   GENERAL_MANAGER: { nameAr: "المدير العام", permissions: permissionCodes },
   FINANCE_MANAGER: {
     nameAr: "مدير المالية",
-    permissions: ["dashboard.view", "invoice.issue", "payment.receive", "customer.view", "shift.close", "supplier_invoice.create", "supplier_invoice.approve_payment", "finance.view", "finance.manage", "supplier_payment.execute", "custody.request", "custody.approve", "custody.disburse", "custody.settle", "custody.close", "hr.view", "payroll.approve", "payroll.pay", "reports.view", "audit.view"],
+    permissions: ["dashboard.view", "invoice.issue", "payment.receive", "customer.view", "credit.manage", "credit.sale", "shift.close", "supplier_invoice.create", "supplier_invoice.approve_payment", "finance.view", "finance.manage", "supplier_payment.execute", "custody.request", "custody.approve", "custody.disburse", "custody.settle", "custody.close", "hr.view", "payroll.approve", "payroll.pay", "reports.view", "audit.view"],
   },
   OPERATIONS_MANAGER: {
     nameAr: "مدير العمليات",
@@ -125,6 +127,12 @@ async function main() {
     where: { branchId_code: { branchId: branch.id, code: "BANK-MAIN" } },
     update: { nameAr: "الحساب البنكي الرئيسي", type: "BANK", active: true },
     create: { branchId: branch.id, code: "BANK-MAIN", nameAr: "الحساب البنكي الرئيسي", type: "BANK" },
+  });
+
+  await prisma.financialAccount.upsert({
+    where: { branchId_code: { branchId: branch.id, code: "POS-MAIN" } },
+    update: { nameAr: "تسويات مدى والشبكة", type: "POS_CLEARING", active: true },
+    create: { branchId: branch.id, code: "POS-MAIN", nameAr: "تسويات مدى والشبكة", type: "POS_CLEARING" },
   });
 
   const permissionByCode = new Map<string, { id: string }>();
