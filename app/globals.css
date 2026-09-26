@@ -5,7 +5,7 @@
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,"Noto Sans Arabic",sans-serif;background:var(--bg);color:var(--black)}
 a{text-decoration:none;color:inherit}
-button,input{font:inherit}
+button,input,select{font:inherit}
 button{border:0;background:var(--orange);color:#fff;font-weight:800;padding:13px 20px;border-radius:12px;cursor:pointer}
 button:disabled{opacity:.65;cursor:wait}
 .loginShell{min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(135deg,#f4f4f2,#fff)}
@@ -13,8 +13,8 @@ button:disabled{opacity:.65;cursor:wait}
 .loginBrand{font-size:38px;font-weight:900;letter-spacing:1px}.loginBrand span{color:var(--orange)}
 .loginSubtitle{color:#777;margin:6px 0 26px}.loginCard h1{margin:0 0 22px}
 .loginCard form{display:grid;gap:16px}.loginCard label{display:grid;gap:8px;font-weight:700}
-.loginCard input,.intakeForm input{width:100%;border:1px solid #d8d8d8;border-radius:12px;padding:13px;background:#fff;outline:none}
-.loginCard input:focus,.intakeForm input:focus{border-color:var(--orange);box-shadow:0 0 0 3px #f18f211c}
+.loginCard input,.intakeForm input,.intakeForm select{width:100%;border:1px solid #d8d8d8;border-radius:12px;padding:13px;background:#fff;outline:none}
+.loginCard input:focus,.intakeForm input:focus,.intakeForm select:focus{border-color:var(--orange);box-shadow:0 0 0 3px #f18f211c}
 .loginCard small{display:block;color:#777;margin-top:22px}.formError{margin:0;color:#a21b1b;background:#fff1f1;padding:10px;border-radius:10px}
 .shell{min-height:100vh;display:grid;grid-template-columns:1fr 270px}
 .sidebar{grid-column:2;background:var(--black);color:#fff;padding:28px 22px;min-height:100vh}
@@ -33,10 +33,13 @@ header h1{margin:0 0 6px;font-size:28px}header p{margin:0;color:#666}.branch{bac
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.panel h3{margin-top:0}.empty{color:#777}
 .userbar{display:flex;align-items:center;gap:10px}.logout{background:#fff;color:#333;border:1px solid #ddd;padding:9px 12px}
 .workspace{max-width:1500px;margin:auto;padding:32px}.workspaceTop{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px}
-.workspaceTop h1{margin:8px 0}.workspaceTop p{margin:0;color:#666}.backLink{color:var(--orange);font-weight:800}
+.workspaceTop h1{margin:8px 0}.workspaceTop p{margin:0;color:#666}.backLink,.orderLink{color:var(--orange);font-weight:800}
 .workGrid{display:grid;grid-template-columns:minmax(320px,430px) 1fr;gap:18px;align-items:start}
 .intakeForm{display:grid;gap:14px}.intakeForm label{display:grid;gap:7px;font-weight:700}.formRow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.formNotice{background:#fff8e8;border:1px solid #f7d58c;padding:10px;border-radius:10px;margin:0}
+.formNotice{background:#fff8e8;border:1px solid #f7d58c;padding:10px;border-radius:10px;margin:12px 0 0}
 .tableWrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:650px}th,td{text-align:right;padding:12px;border-bottom:1px solid #eee}th{background:#fafafa;color:#555}
 .statusBadge{display:inline-block;background:#fff3df;color:#7a4800;border:1px solid #f5cf91;border-radius:999px;padding:4px 9px;font-size:12px}
-@media(max-width:900px){.shell{display:block}.sidebar{min-height:auto}.content,.workspace{padding:18px}.kpis{grid-template-columns:1fr 1fr}.grid,.workGrid{grid-template-columns:1fr}.hero{align-items:flex-start;flex-direction:column}.workspaceTop{gap:15px;flex-direction:column}.formRow{grid-template-columns:1fr}}
+.orderTotal{display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding:16px;background:#fafafa;border-radius:12px}.orderTotal b{font-size:20px}
+.invoiceBox{display:flex;justify-content:space-between;gap:12px;margin-top:12px;padding:14px;border:1px solid #b9dfbd;background:#f1fbf2;border-radius:12px}
+.divider{border:0;border-top:1px solid #eee;margin:20px 0}.completeButton{width:100%;background:var(--black)}
+@media(max-width:900px){.shell{display:block}.sidebar{min-height:auto}.content,.workspace{padding:18px}.kpis{grid-template-columns:1fr 1fr}.grid,.workGrid{grid-template-columns:1fr}.hero{align-items:flex-start;flex-direction:column}.workspaceTop{gap:15px;flex-direction:column}.formRow{grid-template-columns:1fr}.invoiceBox{flex-direction:column}}
