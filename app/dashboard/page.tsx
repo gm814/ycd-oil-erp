@@ -16,6 +16,7 @@ const modules = [
   ["المالية والبنوك", "/dashboard/finance"],
   ["العهد", "/dashboard/custody"],
   ["الموظفون والرواتب", "/dashboard/hr"],
+  ["الهيكل التشغيلي والمسؤوليات", "/dashboard/team"],
   ["الأصول والصيانة", "/dashboard/assets"],
   ["التقارير والرقابة", "/dashboard/reports"],
   ["المستندات والنماذج", "/dashboard/documents"],
