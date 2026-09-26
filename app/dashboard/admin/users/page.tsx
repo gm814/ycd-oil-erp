@@ -5,9 +5,10 @@ import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import { operationalTeam } from "@/lib/operations";
 import UserManagementActions from "./user-management-actions";
 
-const suggestedRolesByEmployeeCode = new Map(
-  operationalTeam.map((member) => [member.code, [...member.systemRoleCodes]]),
-);
+const suggestedRolesByEmployeeCode = new Map<string, string[]>();
+for (const member of operationalTeam) {
+  suggestedRolesByEmployeeCode.set(member.code, [...member.systemRoleCodes]);
+}
 
 export default async function UserManagementPage() {
   const session = await getSession();
