@@ -127,7 +127,7 @@ export default async function FinancialStatementPage({
         <div className="tableWrap">
           <table>
             <thead>
-              <tr><th>التاريخ</th><th>الحساب</th><th>النوع</th><th>البيان</th><th>المرجع</th><th>داخل</th><th>خارج</th><th>الرصيد الجاري</th></tr>
+              <tr><th>التاريخ</th><th>الحساب</th><th>النوع</th><th>البيان</th><th>المرجع</th><th>داخل</th><th>خارج</th><th>الرصيد الجاري</th><th className="noPrint">السند</th></tr>
             </thead>
             <tbody>
               {rows.map(({ transaction, balance }) => {
@@ -142,10 +142,11 @@ export default async function FinancialStatementPage({
                     <td className="moneyIn">{amount > 0 ? money(amount) : "—"}</td>
                     <td className="moneyOut">{amount < 0 ? money(Math.abs(amount)) : "—"}</td>
                     <td><b>{money(balance)}</b></td>
+                    <td className="noPrint"><a className="orderLink" href={`/dashboard/finance/transactions/${transaction.id}/voucher`}>{amount >= 0 ? "سند قبض" : "سند صرف"}</a></td>
                   </tr>
                 );
               })}
-              {rows.length === 0 && <tr><td colSpan={8} className="empty">لا توجد حركات مالية ضمن الفترة المحددة.</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={9} className="empty">لا توجد حركات مالية ضمن الفترة المحددة.</td></tr>}
             </tbody>
           </table>
         </div>
