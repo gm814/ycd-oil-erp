@@ -36,7 +36,7 @@ export default function LoginPage() {
   return (
     <main className="loginShell">
       <section className="loginCard">
-        <div className="loginBrand">YCD <span>OIL</span></div>
+        <img className="loginLogo" src="/brand/ycd-logo-source.svg" alt="YCD OIL" />
         <p className="loginSubtitle">نظام الإدارة والتشغيل ERP & Operations</p>
         <h1>تسجيل الدخول</h1>
         <form onSubmit={submit}>
