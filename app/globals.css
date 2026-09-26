@@ -89,3 +89,8 @@ header h1{margin:0 0 6px;font-size:28px}header p{margin:0;color:#666}.branch{bac
 .userEmail{direction:ltr;text-align:left;background:#fafafa;border-radius:9px;padding:9px;font-weight:800;overflow-wrap:anywhere}
 .muted{color:#777}
 @media(max-width:900px){.userAdminGrid{grid-template-columns:1fr}.rolePicker{grid-template-columns:1fr}}
+
+.readinessActionBar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:14px 0 20px;padding:14px 16px;background:#fff8e8;border:1px solid #f7d58c;border-radius:12px}
+.importColumns{display:block;direction:ltr;text-align:left;white-space:normal;overflow-wrap:anywhere;background:#111;color:#fff;border-radius:9px;padding:10px 12px;margin:8px 0 14px;font-size:12px}
+.filePicker{display:grid;gap:8px;margin:12px 0;font-weight:800}.filePicker input{border:1px dashed #bbb;background:#fafafa;padding:12px;border-radius:10px}
+@media(max-width:700px){.readinessActionBar{align-items:stretch;flex-direction:column}}
