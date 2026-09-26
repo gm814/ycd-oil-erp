@@ -27,7 +27,7 @@ export default async function DashboardPage() {
 
   const { start, end } = riyadhBusinessDayRange();
 
-  const [invoices, serviceOrderCount, openShift, activeCoupons, products, pendingPurchases, invoiceMismatches, openCustodies, draftPayrolls, maintenanceAlerts] = await Promise.all([
+  const [invoices, serviceOrderCount, openShift, activeCoupons, products, pendingPurchases, invoiceMismatches, openCustodies, draftPayrolls, maintenanceAlerts, pendingShiftVariances, pendingFinancialCloses] = await Promise.all([
     db.invoice.findMany({
       where: {
         createdAt: { gte: start, lt: end },
@@ -83,6 +83,12 @@ export default async function DashboardPage() {
           { nextMaintenanceAt: { lte: new Date() } },
         ],
       },
+    }),
+    db.shiftVarianceResolution.count({
+      where: { branchId: session.branchId, status: "PENDING" },
+    }),
+    db.financialClose.count({
+      where: { branchId: session.branchId, status: { in: ["DRAFT", "REVIEWED"] } },
     }),
   ]);
 
@@ -156,7 +162,9 @@ export default async function DashboardPage() {
             <p className={openCustodies > 0 ? "" : "empty"}>عهد غير مقفلة: <b>{openCustodies.toLocaleString("ar-SA")}</b></p>
             <p className={draftPayrolls > 0 ? "" : "empty"}>مسيرات رواتب تنتظر الاعتماد/الصرف: <b>{draftPayrolls.toLocaleString("ar-SA")}</b></p>
             <p className={maintenanceAlerts > 0 ? "" : "empty"}>أصول تحتاج متابعة صيانة: <b>{maintenanceAlerts.toLocaleString("ar-SA")}</b></p>
-            <a className="orderLink" href="/dashboard/assets">فتح الأصول والصيانة</a>
+            <p className={pendingShiftVariances > 0 ? "" : "empty"}>فروقات ورديات تنتظر الاعتماد: <b>{pendingShiftVariances.toLocaleString("ar-SA")}</b></p>
+            <p className={pendingFinancialCloses > 0 ? "" : "empty"}>إقفالات مالية تنتظر المراجعة/الإقفال: <b>{pendingFinancialCloses.toLocaleString("ar-SA")}</b></p>
+            <a className="orderLink" href="/dashboard/finance/closes">فتح مركز الإقفال المالي</a>
           </article>
         </section>
       </section>
