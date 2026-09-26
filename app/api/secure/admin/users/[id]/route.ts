@@ -70,7 +70,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         where: { id: current.id },
         data: {
           ...(parsed.data.status ? { status: parsed.data.status } : {}),
-          ...(passwordHash ? { passwordHash } : {}),
+          ...(passwordHash ? {
+            passwordHash,
+            mustChangePassword: current.id !== session.userId,
+          } : {}),
         },
         include: { roles: { include: { role: true } }, employee: true },
       });
@@ -89,6 +92,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
             status: updated.status,
             roles: updated.roles.map((entry) => entry.role.code),
             passwordReset: Boolean(parsed.data.password),
+            mustChangePassword: parsed.data.password ? current.id !== session.userId : updated.mustChangePassword,
           },
         },
       });
@@ -99,8 +103,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return NextResponse.json({
       user: {
         id: user.id,
+        username: user.username,
         email: user.email,
         name: user.name,
+        mustChangePassword: user.mustChangePassword,
         status: user.status,
         roles: user.roles.map((entry) => entry.role.code),
       },
