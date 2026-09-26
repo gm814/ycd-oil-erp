@@ -462,6 +462,7 @@ model SalesReturn {
   refundMethod   PaymentMethod?
   refundAmount   Decimal           @default(0) @db.Decimal(12,2)
   refundReference String?
+  idempotencyKey  String            @unique
   processedBy    String
   items          SalesReturnItem[]
   createdAt      DateTime          @default(now())
