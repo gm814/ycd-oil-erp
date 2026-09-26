@@ -27,7 +27,9 @@ export default function IntakeForm() {
     setLoading(false);
 
     if (!response.ok) {
-      setMessage("تعذر فتح أمر الخدمة. راجع البيانات والصلاحيات.");
+      setMessage(result.error === "OPEN_SHIFT_REQUIRED"
+        ? "يجب فتح وردية تشغيلية قبل استقبال السيارات."
+        : "تعذر فتح أمر الخدمة. راجع البيانات والصلاحيات.");
       return;
     }
 
