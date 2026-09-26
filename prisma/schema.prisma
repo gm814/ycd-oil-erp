@@ -142,6 +142,26 @@ enum PayrollStatus {
   CANCELLED
 }
 
+enum AssetStatus {
+  ACTIVE
+  MAINTENANCE
+  OUT_OF_SERVICE
+  DISPOSED
+}
+
+enum MaintenanceType {
+  PREVENTIVE
+  CORRECTIVE
+  INSPECTION
+}
+
+enum MaintenanceStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
 model Organization {
   id        String   @id @default(cuid())
   nameAr    String
@@ -174,6 +194,7 @@ model Branch {
   financialTransactions FinancialTransaction[]
   custodyRequests CustodyRequest[]
   payrollPeriods  PayrollPeriod[]
+  assets          Asset[]
   createdAt        DateTime          @default(now())
 }
 
@@ -732,6 +753,47 @@ model PayrollLine {
   lateMin            Int           @default(0)
   @@unique([payrollPeriodId, employeeId])
   @@index([employeeId])
+}
+
+model Asset {
+  id                String                 @id @default(cuid())
+  assetNo           String                 @unique
+  branchId          String
+  branch            Branch                 @relation(fields: [branchId], references: [id])
+  nameAr            String
+  categoryAr        String
+  serialNo          String?
+  locationAr        String?
+  purchaseDate      DateTime?
+  purchaseCost      Decimal?               @db.Decimal(12,2)
+  status            AssetStatus            @default(ACTIVE)
+  nextMaintenanceAt DateTime?
+  maintenanceOrders MaintenanceWorkOrder[]
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  @@index([branchId, status])
+  @@index([nextMaintenanceAt])
+}
+
+model MaintenanceWorkOrder {
+  id                String            @id @default(cuid())
+  workOrderNo       String            @unique
+  assetId           String
+  asset             Asset             @relation(fields: [assetId], references: [id])
+  type              MaintenanceType
+  status            MaintenanceStatus @default(OPEN)
+  issueAr           String
+  assignedTo        String?
+  estimatedCost     Decimal?          @db.Decimal(12,2)
+  actualCost        Decimal?          @db.Decimal(12,2)
+  openedBy          String
+  startedAt         DateTime?
+  completedAt       DateTime?
+  completionNotesAr String?
+  nextMaintenanceAt DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  @@index([assetId, status, createdAt])
 }
 
 model Approval {
