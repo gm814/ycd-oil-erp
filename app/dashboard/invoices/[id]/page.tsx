@@ -162,6 +162,11 @@ export default async function InvoicePage({
           </section>
         )}
 
+        <section className="invoicePolicy">
+          <b>سياسة الخدمة</b>
+          <p>لا يوجد استرجاع أو استبدال بعد تنفيذ الخدمة. في حال وجود ملاحظة على الخدمة يرجى التواصل معنا خلال 7 أيام.</p>
+        </section>
+
         <footer className="invoiceFooter">
           <p>شكرًا لاختياركم YCD OIL — وجهتك الإبداعية لزيوت وخدمات السيارات.</p>
         </footer>
