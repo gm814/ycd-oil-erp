@@ -4,7 +4,6 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
-import { companyConfig } from "@/lib/config";
 
 const schema = z.object({ openingCash: z.coerce.number().min(0).max(10_000_000).default(0) });
 
@@ -15,13 +14,21 @@ export async function POST(request: Request) {
   if (!hasPermission(session.permissions, PERMISSIONS.SHIFT_OPEN)) {
     return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
+  const branchState = await db.branch.findUnique({
+    where: { id: session.branchId },
+    select: { operationalStatus: true },
+  });
+  if (!branchState) return NextResponse.json({ error: "BRANCH_NOT_FOUND" }, { status: 404 });
+  if (branchState.operationalStatus === "SUSPENDED") {
+    return NextResponse.json({ error: "BRANCH_SUSPENDED" }, { status: 423 });
+  }
   if (
-    companyConfig.operationalPhase === "PREOPENING" &&
+    branchState.operationalStatus === "PREOPENING" &&
     process.env.ALLOW_PREOPENING_OPERATIONS !== "true"
   ) {
     return NextResponse.json({
       error: "PREOPENING_OPERATION_BLOCKED",
-      phase: companyConfig.operationalPhase,
+      phase: branchState.operationalStatus,
     }, { status: 423 });
   }
 
