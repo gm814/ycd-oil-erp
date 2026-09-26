@@ -110,6 +110,17 @@ enum FinancialTransactionType {
   ADJUSTMENT
 }
 
+enum CustodyStatus {
+  REQUESTED
+  APPROVED
+  DISBURSED
+  PARTIALLY_SETTLED
+  SETTLED
+  CLOSED
+  REJECTED
+  CANCELLED
+}
+
 model Organization {
   id        String   @id @default(cuid())
   nameAr    String
@@ -140,6 +151,7 @@ model Branch {
   supplierInvoices SupplierInvoice[]
   financialAccounts FinancialAccount[]
   financialTransactions FinancialTransaction[]
+  custodyRequests CustodyRequest[]
   createdAt        DateTime          @default(now())
 }
 
@@ -201,8 +213,9 @@ model Employee {
   code      String   @unique
   nameAr    String
   phone     String?
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
+  active          Boolean          @default(true)
+  custodyRequests CustodyRequest[]
+  createdAt       DateTime         @default(now())
 }
 
 model Customer {
@@ -545,6 +558,7 @@ model FinancialAccount {
   iban         String?
   active       Boolean                @default(true)
   transactions FinancialTransaction[]
+  custodyRequests CustodyRequest[]
   createdAt    DateTime               @default(now())
   updatedAt    DateTime               @updatedAt
   @@unique([branchId, code])
@@ -571,6 +585,48 @@ model FinancialTransaction {
   @@index([branchId, createdAt])
   @@index([accountId, createdAt])
   @@index([relatedEntityType, relatedEntityId])
+}
+
+model CustodyRequest {
+  id              String        @id @default(cuid())
+  custodyNo       String        @unique
+  branchId        String
+  branch          Branch        @relation(fields: [branchId], references: [id])
+  employeeId      String?
+  employee        Employee?     @relation(fields: [employeeId], references: [id])
+  custodianName   String
+  custodianPhone  String?
+  purpose         String
+  requestedAmount Decimal       @db.Decimal(12,2)
+  approvedAmount  Decimal?      @db.Decimal(12,2)
+  status          CustodyStatus @default(REQUESTED)
+  requestedBy     String
+  approvedBy      String?
+  approvedAt      DateTime?
+  sourceAccountId String?
+  sourceAccount   FinancialAccount? @relation(fields: [sourceAccountId], references: [id])
+  disbursedAt     DateTime?
+  closedBy        String?
+  closedAt        DateTime?
+  settlements     CustodySettlement[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  @@index([branchId, status, createdAt])
+  @@index([employeeId, status])
+}
+
+model CustodySettlement {
+  id                String         @id @default(cuid())
+  settlementNo      String         @unique
+  custodyRequestId  String
+  custodyRequest    CustodyRequest @relation(fields: [custodyRequestId], references: [id])
+  expenseAmount     Decimal        @default(0) @db.Decimal(12,2)
+  returnedAmount    Decimal        @default(0) @db.Decimal(12,2)
+  documentReference String?
+  notes             String?
+  createdBy         String
+  createdAt         DateTime       @default(now())
+  @@index([custodyRequestId, createdAt])
 }
 
 model Approval {
