@@ -91,6 +91,50 @@ export async function POST(request: Request) {
         },
       });
 
+      const hasVariance =
+        cashVariance.abs().greaterThan("0.01") ||
+        cardVariance.abs().greaterThan("0.01") ||
+        transferVariance.abs().greaterThan("0.01");
+
+      if (hasVariance) {
+        const variance = await tx.shiftVarianceResolution.create({
+          data: {
+            shiftId: closed.id,
+            branchId: session.branchId!,
+            cashVariance,
+            cardVariance,
+            transferVariance,
+            reason: parsed.data.notes || null,
+            requestedBy: session.userId,
+          },
+        });
+
+        await tx.approval.create({
+          data: {
+            entityType: "ShiftVarianceResolution",
+            entityId: variance.id,
+            step: "SHIFT_VARIANCE_APPROVAL",
+            requestedBy: session.userId,
+            status: "PENDING",
+          },
+        });
+
+        await tx.auditLog.create({
+          data: {
+            actorId: session.userId,
+            action: "SHIFT_VARIANCE_REQUESTED",
+            entityType: "ShiftVarianceResolution",
+            entityId: variance.id,
+            afterJson: {
+              shiftId: closed.id,
+              cashVariance: cashVariance.toString(),
+              cardVariance: cardVariance.toString(),
+              transferVariance: transferVariance.toString(),
+            },
+          },
+        });
+      }
+
       await tx.auditLog.create({
         data: {
           actorId: session.userId,
