@@ -118,6 +118,23 @@ enum BankReconciliationStatus {
   CLOSED
 }
 
+enum ShiftVarianceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum FinancialCloseType {
+  DAILY
+  MONTHLY
+}
+
+enum FinancialCloseStatus {
+  DRAFT
+  REVIEWED
+  CLOSED
+}
+
 enum FinancialTransactionType {
   OPENING_BALANCE
   CUSTOMER_RECEIPT
@@ -215,6 +232,8 @@ model Branch {
   financialTransactions FinancialTransaction[]
   expenseRequests ExpenseRequest[]
   bankReconciliations BankReconciliation[]
+  shiftVarianceResolutions ShiftVarianceResolution[]
+  financialCloses FinancialClose[]
   custodyRequests CustodyRequest[]
   payrollPeriods  PayrollPeriod[]
   assets          Asset[]
@@ -367,6 +386,7 @@ model Shift {
   notes             String?
   serviceOrders ServiceOrder[]
   payments      Payment[]
+  varianceResolution ShiftVarianceResolution?
   @@index([branchId, closedAt])
 }
 
@@ -699,6 +719,60 @@ model FinancialAccount {
   updatedAt    DateTime               @updatedAt
   @@unique([branchId, code])
   @@index([branchId, type, active])
+}
+
+model ShiftVarianceResolution {
+  id               String              @id @default(cuid())
+  shiftId          String              @unique
+  shift            Shift               @relation(fields: [shiftId], references: [id])
+  branchId         String
+  branch           Branch              @relation(fields: [branchId], references: [id])
+  cashVariance     Decimal             @db.Decimal(12,2)
+  cardVariance     Decimal             @db.Decimal(12,2)
+  transferVariance Decimal             @db.Decimal(12,2)
+  reason           String?
+  status           ShiftVarianceStatus @default(PENDING)
+  requestedBy      String
+  decidedBy        String?
+  decisionNotes    String?
+  decidedAt        DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  @@index([branchId, status, createdAt])
+}
+
+model FinancialClose {
+  id                            String               @id @default(cuid())
+  closeNo                       String               @unique
+  branchId                      String
+  branch                        Branch               @relation(fields: [branchId], references: [id])
+  type                          FinancialCloseType
+  periodStart                   DateTime
+  periodEnd                     DateTime
+  salesTotal                    Decimal              @db.Decimal(12,2)
+  cashCollections               Decimal              @db.Decimal(12,2)
+  cardCollections               Decimal              @db.Decimal(12,2)
+  transferCollections           Decimal              @db.Decimal(12,2)
+  creditSales                   Decimal              @db.Decimal(12,2)
+  refundsTotal                  Decimal              @db.Decimal(12,2)
+  operatingExpenses             Decimal              @db.Decimal(12,2)
+  supplierPayments              Decimal              @db.Decimal(12,2)
+  payrollPayments               Decimal              @db.Decimal(12,2)
+  custodyIssues                 Decimal              @db.Decimal(12,2)
+  netFinancialMovement          Decimal              @db.Decimal(12,2)
+  unresolvedShiftVariances      Int                  @default(0)
+  unresolvedBankReconciliations Int                  @default(0)
+  status                        FinancialCloseStatus @default(DRAFT)
+  preparedBy                    String
+  reviewedBy                    String?
+  reviewedAt                    DateTime?
+  closedBy                      String?
+  closedAt                      DateTime?
+  notes                         String?
+  createdAt                     DateTime             @default(now())
+  updatedAt                     DateTime             @updatedAt
+  @@unique([branchId, type, periodStart, periodEnd])
+  @@index([branchId, status, periodStart])
 }
 
 model ExpenseRequest {
