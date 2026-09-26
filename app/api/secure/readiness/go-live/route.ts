@@ -23,6 +23,7 @@ export async function POST() {
     physicalProducts,
     openingStockMovements,
     suppliers,
+    preopeningAccounts,
     openShifts,
   ] = await Promise.all([
     db.branch.findUnique({ where: { id: session.branchId } }),
@@ -62,6 +63,10 @@ export async function POST() {
     db.product.count({ where: { active: true, category: { not: "SERVICE" } } }),
     db.stockMovement.count({ where: { branchId: session.branchId, quantity: { gt: 0 } } }),
     db.supplier.count({ where: { active: true } }),
+    db.preopeningLedgerAccount.findMany({
+      where: { branchId: session.branchId },
+      include: { entries: { select: { debit: true, credit: true } } },
+    }),
     db.shift.count({ where: { branchId: session.branchId, closedAt: null } }),
   ]);
 
@@ -89,6 +94,12 @@ export async function POST() {
   });
   const activeUsers = accountPlan.filter((item) => item.accountReady).length;
   const roleReadyUsers = accountPlan.filter((item) => item.accountReady && item.rolesReady).length;
+  const preopeningReportedTotal = preopeningAccounts.reduce((sum, account) => sum + Number(account.reportedBalance), 0);
+  const preopeningImportedTotal = preopeningAccounts.reduce(
+    (sum, account) => sum + account.entries.reduce((entrySum, entry) => entrySum + Number(entry.debit) - Number(entry.credit), 0),
+    0,
+  );
+  const preopeningLedgerVariance = preopeningReportedTotal - preopeningImportedTotal;
 
   const missing: string[] = [];
   if (employees.length < operationalTeam.length) missing.push("EMPLOYEES");
@@ -97,6 +108,7 @@ export async function POST() {
   if (!bankReady) missing.push("BANK_ACCOUNT");
   if (openingBalance <= 0) missing.push("OPENING_BANK_BALANCE");
   if (parentCompanies <= 0 || fundingTotal < openingBalance) missing.push("FUNDING_SOURCE");
+  if (preopeningAccounts.length <= 0 || Math.abs(preopeningLedgerVariance) > 0.01) missing.push("PREOPENING_LEDGER_RECONCILIATION");
   if (physicalProducts <= 0) missing.push("PRODUCT_CATALOG");
   if (serviceProducts <= 0) missing.push("SERVICE_CATALOG");
   if (openingStockMovements <= 0) missing.push("OPENING_STOCK");
@@ -113,6 +125,9 @@ export async function POST() {
         roleReadyUsers,
         openingBalance,
         fundingTotal,
+        preopeningReportedTotal,
+        preopeningImportedTotal,
+        preopeningLedgerVariance,
         physicalProducts,
         serviceProducts,
         openingStockMovements,
@@ -147,6 +162,9 @@ export async function POST() {
             roleReadyUsers,
             openingBalance,
             fundingTotal,
+            preopeningReportedTotal,
+            preopeningImportedTotal,
+            preopeningLedgerVariance,
             physicalProducts,
             serviceProducts,
             openingStockMovements,
