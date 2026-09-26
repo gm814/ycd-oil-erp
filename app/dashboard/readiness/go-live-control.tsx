@@ -10,6 +10,7 @@ const missingLabel: Record<string, string> = {
   BANK_ACCOUNT: "الحساب البنكي",
   OPENING_BANK_BALANCE: "الرصيد البنكي الافتتاحي",
   FUNDING_SOURCE: "مصدر التمويل",
+  PREOPENING_LEDGER_RECONCILIATION: "مطابقة سجل تكاليف ما قبل التشغيل",
   PRODUCT_CATALOG: "دليل الأصناف",
   SERVICE_CATALOG: "دليل الخدمات والأسعار",
   OPENING_STOCK: "الجرد الافتتاحي",
