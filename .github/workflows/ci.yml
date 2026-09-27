@@ -47,10 +47,24 @@ jobs:
       - run: npm run verify:preopening
       - run: npm run verify:controls
       - run: npm run verify:brand
-      - name: Smoke-test isolated UAT fixture seed
+      - name: Create isolated UAT database
+        run: PGPASSWORD=postgres createdb -h 127.0.0.1 -U postgres ycd_oil_erp_uat
+      - name: Prepare isolated UAT database
         env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ycd_oil_erp_uat?schema=public
+        run: |
+          npx prisma migrate deploy
+          npm run db:seed
+      - name: Seed isolated UAT fixtures
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ycd_oil_erp_uat?schema=public
           ALLOW_UAT_FIXTURES: "true"
         run: npm run db:seed:uat
+      - name: Verify isolated UAT fixture integrity
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ycd_oil_erp_uat?schema=public
+          ALLOW_UAT_FIXTURES: "true"
+        run: npm run verify:uat-fixtures
       - run: npm run typecheck
       - run: npm run build
       - name: Validate production Compose stack
