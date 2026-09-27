@@ -8,6 +8,7 @@ import LogoutButton from "./logout-button";
 
 const modules = [
   { label: "جاهزية الافتتاح والتشغيل", href: "/dashboard/readiness", any: [PERMISSIONS.REPORTS_VIEW, PERMISSIONS.OPERATIONS_UAT, PERMISSIONS.OPERATIONS_GO_LIVE] },
+  { label: "مركز الاعتمادات والتنبيهات", href: "/dashboard/approvals", any: [PERMISSIONS.PROCUREMENT_APPROVE, PERMISSIONS.SUPPLIER_INVOICE_APPROVE_PAYMENT, PERMISSIONS.FINANCE_EXPENSE_APPROVE, PERMISSIONS.SHIFT_VARIANCE_APPROVE, PERMISSIONS.BANK_RECONCILE_REVIEW, PERMISSIONS.FINANCIAL_CLOSE_REVIEW, PERMISSIONS.CUSTODY_APPROVE, PERMISSIONS.PAYROLL_APPROVE, PERMISSIONS.REPORTS_VIEW, PERMISSIONS.AUDIT_VIEW] },
   { label: "الورديات والإقفال اليومي", href: "/dashboard/shifts", any: [PERMISSIONS.SHIFT_OPEN, PERMISSIONS.SHIFT_CLOSE, PERMISSIONS.SHIFT_VARIANCE_APPROVE] },
   { label: "استقبال السيارات وأوامر الخدمة", href: "/dashboard/service-orders", any: [PERMISSIONS.SERVICE_ORDER_CREATE, PERMISSIONS.SERVICE_ORDER_APPROVE] },
   { label: "الزيوت وخدمات السيارات", href: "/dashboard/service-orders", any: [PERMISSIONS.SERVICE_ORDER_CREATE, PERMISSIONS.SERVICE_ORDER_APPROVE] },
@@ -185,7 +186,10 @@ export default async function DashboardPage() {
             <p className={maintenanceAlerts > 0 ? "" : "empty"}>أصول تحتاج متابعة صيانة: <b>{maintenanceAlerts.toLocaleString("ar-SA")}</b></p>
             <p className={pendingShiftVariances > 0 ? "" : "empty"}>فروقات ورديات تنتظر الاعتماد: <b>{pendingShiftVariances.toLocaleString("ar-SA")}</b></p>
             <p className={pendingFinancialCloses > 0 ? "" : "empty"}>إقفالات مالية تنتظر المراجعة/الإقفال: <b>{pendingFinancialCloses.toLocaleString("ar-SA")}</b></p>
-            <a className="orderLink" href="/dashboard/finance/closes">فتح مركز الإقفال المالي</a>
+            <div className="actionStack">
+              <a className="orderLink" href="/dashboard/approvals">فتح مركز الاعتمادات والتنبيهات</a>
+              <a className="orderLink" href="/dashboard/finance/closes">فتح مركز الإقفال المالي</a>
+            </div>
           </article>
         </section>
       </section>
