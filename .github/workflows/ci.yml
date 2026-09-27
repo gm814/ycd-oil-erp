@@ -32,6 +32,7 @@ jobs:
       - run: npm install
       - run: npm run db:generate
       - run: npx prisma migrate deploy
+      - run: npx prisma migrate status
       - run: npm run db:seed
       - run: npm run verify:preopening
       - run: npm run verify:controls
