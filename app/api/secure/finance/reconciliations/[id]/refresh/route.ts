@@ -22,13 +22,8 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
       if (!current) throw new Error("RECONCILIATION_NOT_FOUND");
       if (current.status !== "DRAFT") throw new Error("RECONCILIATION_NOT_DRAFT");
 
-      const nextDay = new Date(current.statementDate.getTime() + 1);
-      const end = new Date(Date.UTC(
-        nextDay.getUTCFullYear(),
-        nextDay.getUTCMonth(),
-        nextDay.getUTCDate(),
-        21, 0, 0, 0,
-      ));
+      // statementDate is stored as the last millisecond of the Riyadh statement day.
+      const end = new Date(current.statementDate.getTime() + 1);
 
       const balanceResult = await tx.financialTransaction.aggregate({
         where: { accountId: current.accountId, createdAt: { lt: end } },
