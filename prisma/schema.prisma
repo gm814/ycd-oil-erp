@@ -282,6 +282,9 @@ model User {
   name               String
   passwordHash       String?
   mustChangePassword Boolean    @default(true)
+  failedLoginCount   Int        @default(0)
+  lockedUntil        DateTime?
+  lastLoginAt        DateTime?
   status             UserStatus @default(ACTIVE)
   branchId           String?
   branch             Branch?    @relation(fields: [branchId], references: [id])
