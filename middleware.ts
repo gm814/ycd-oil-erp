@@ -2,8 +2,32 @@ import { jwtVerify } from "jose";
 import { NextRequest, NextResponse } from "next/server";
 
 const SESSION_COOKIE = "ycd_session";
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+function sameOriginMutationAllowed(request: NextRequest) {
+  if (!request.nextUrl.pathname.startsWith("/api/secure/") || SAFE_METHODS.has(request.method)) return true;
+
+  const fetchSite = request.headers.get("sec-fetch-site");
+  if (fetchSite === "cross-site") return false;
+
+  const origin = request.headers.get("origin");
+  if (!origin) return true;
+
+  try {
+    return new URL(origin).origin === request.nextUrl.origin;
+  } catch {
+    return false;
+  }
+}
 
 export async function middleware(request: NextRequest) {
+  if (!sameOriginMutationAllowed(request)) {
+    return NextResponse.json({ error: "CROSS_SITE_REQUEST_REJECTED" }, {
+      status: 403,
+      headers: { "cache-control": "no-store, max-age=0" },
+    });
+  }
+
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   const authSecret = process.env.AUTH_SECRET;
 
@@ -18,15 +42,21 @@ export async function middleware(request: NextRequest) {
 
     if (mustChangePassword && !isPasswordChangeApi) {
       if (request.nextUrl.pathname.startsWith("/api/secure/")) {
-        return NextResponse.json({ error: "PASSWORD_CHANGE_REQUIRED" }, { status: 428 });
+        return NextResponse.json({ error: "PASSWORD_CHANGE_REQUIRED" }, {
+          status: 428,
+          headers: { "cache-control": "no-store, max-age=0" },
+        });
       }
       return NextResponse.redirect(new URL("/change-password", request.url));
     }
 
-    return NextResponse.next();
+    const response = NextResponse.next();
+    response.headers.set("cache-control", "no-store, max-age=0");
+    return response;
   } catch {
     const response = NextResponse.redirect(new URL("/", request.url));
     response.cookies.delete(SESSION_COOKIE);
+    response.headers.set("cache-control", "no-store, max-age=0");
     return response;
   }
 }
