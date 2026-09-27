@@ -31,6 +31,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
       if (parsed.data.action === "REVIEW") {
         if (current.status !== "DRAFT") throw new Error("RECONCILIATION_NOT_DRAFT");
+        if (current.difference.abs().greaterThan("0.01")) throw new Error("RECONCILIATION_DIFFERENCE_REMAINS");
         const updated = await tx.bankReconciliation.update({
           where: { id: current.id },
           data: {
