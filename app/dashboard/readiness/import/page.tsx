@@ -10,13 +10,15 @@ export default async function PreopeningImportPage() {
   if (!session.branchId) redirect("/dashboard");
   const canCatalog = hasPermission(session.permissions, PERMISSIONS.INVENTORY_MANAGE);
   const canSuppliers = hasPermission(session.permissions, PERMISSIONS.PROCUREMENT_QUOTE);
-  if (!canCatalog && !canSuppliers) redirect("/dashboard/readiness");
+  const canHr = hasPermission(session.permissions, PERMISSIONS.HR_MANAGE);
+  if (!canCatalog && !canSuppliers && !canHr) redirect("/dashboard/readiness");
 
-  const [branch, products, suppliers, stockMovements] = await Promise.all([
+  const [branch, products, suppliers, stockMovements, employeesWithHr] = await Promise.all([
     db.branch.findUnique({ where: { id: session.branchId }, select: { operationalStatus: true } }),
     db.product.count({ where: { active: true } }),
     db.supplier.count({ where: { active: true } }),
     db.stockMovement.count({ where: { branchId: session.branchId, quantity: { gt: 0 } } }),
+    db.employee.count({ where: { branchId: session.branchId, active: true, hireDate: { not: null } } }),
   ]);
   if (!branch) redirect("/dashboard");
 
@@ -26,7 +28,7 @@ export default async function PreopeningImportPage() {
         <div>
           <a href="/dashboard/readiness" className="backLink">← جاهزية الافتتاح</a>
           <h1>مركز استيراد بيانات ما قبل التشغيل</h1>
-          <p>مخصص لاستلام ملفات المحاسب وتحميل الأصناف والخدمات والجرد الافتتاحي والموردين قبل تشغيل فرع طويق.</p>
+          <p>مخصص لاستلام ملفات المحاسب والموارد البشرية وتحميل بيانات التشغيل الأساسية قبل تشغيل فرع طويق.</p>
         </div>
         <img className="documentCenterLogo" src="/brand/ycd-logo-source.svg" alt="YCD OIL" />
       </div>
@@ -36,17 +38,18 @@ export default async function PreopeningImportPage() {
         <article><span>الأصناف والخدمات</span><b>{products}</b></article>
         <article><span>حركات الرصيد الافتتاحي</span><b>{stockMovements}</b></article>
         <article><span>الموردون</span><b>{suppliers}</b></article>
+        <article><span>ملفات HR المكتملة</span><b>{employeesWithHr}</b></article>
       </section>
 
       {branch.operationalStatus !== "PREOPENING" ? (
         <article className="panel"><p className="alertBadge">الاستيراد الافتتاحي مقفل بعد بدء التشغيل التجاري.</p></article>
       ) : (
-        <PreopeningImportClient canCatalog={canCatalog} canSuppliers={canSuppliers} />
+        <PreopeningImportClient canCatalog={canCatalog} canSuppliers={canSuppliers} canHr={canHr} />
       )}
 
       <article className="panel">
         <h2>بيانات ما زالت بانتظار التزويد</h2>
-        <p>قائمة العدد والأدوات والأصول الكاملة ستُستكمل عند وصول كشف المحاسب، وكذلك بيانات السجل والحسابات البنكية للشركة الرئيسية وباقي شركات المجموعة. لن ينشئ النظام بيانات تقديرية بدل المستندات الفعلية.</p>
+        <p>النظام لا ينشئ رواتب أو أسعارًا أو أرصدة تقديرية. البيانات المالية والموارد البشرية والأصناف والموردون تُعتمد فقط من الملفات الفعلية الموردة للإدارة.</p>
       </article>
     </main>
   );
