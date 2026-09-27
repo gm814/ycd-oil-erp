@@ -251,6 +251,7 @@ export default async function ReadinessPage() {
             </tbody>
           </table>
         </div>
+        <p className="muted">مصدر التحقق: {companyConfig.bank.certificateSourceAr} · المرجع {companyConfig.bank.certificateReference} · بتاريخ {companyConfig.bank.certificateDate}.</p>
       </article>
 
       <p className="formNotice">{branchState.operationalStatus === "LIVE"
