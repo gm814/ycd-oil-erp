@@ -7,6 +7,8 @@ type Row = {
   code: string;
   areaAr: string;
   titleAr: string;
+  stepsAr: readonly string[];
+  evidenceAr: string;
   status: string;
   executedAt: string | null;
   evidenceRef: string | null;
@@ -68,6 +70,13 @@ export default function UatChecklist({ rows, canExecute }: { rows: Row[]; canExe
             </div>
             <small>{row.areaAr}</small>
             <h2>{row.titleAr}</h2>
+            <div className="uatExecutionPlan">
+              <b>خطوات التنفيذ</b>
+              <ol>
+                {row.stepsAr.map((step) => <li key={step}>{step}</li>)}
+              </ol>
+              <p><b>الدليل المطلوب:</b> {row.evidenceAr}</p>
+            </div>
             {row.executedAt && <p className="muted">آخر تنفيذ: {new Date(row.executedAt).toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</p>}
             {row.evidenceRef && <p><b>الدليل:</b> {row.evidenceRef}</p>}
             {row.notes && <p><b>ملاحظات:</b> {row.notes}</p>}
@@ -81,7 +90,7 @@ export default function UatChecklist({ rows, canExecute }: { rows: Row[]; canExe
                   </select>
                 </label>
                 <label>مرجع الدليل
-                  <input name="evidenceRef" required defaultValue={row.evidenceRef ?? ""} placeholder="رقم فاتورة / طلب / سند / مرجع اختبار" />
+                  <input name="evidenceRef" required defaultValue={row.evidenceRef ?? ""} placeholder={row.evidenceAr} />
                 </label>
                 <small className="muted">لا تعتمد نتيجة ناجح بدون دليل قابل للتتبع داخل النظام أو مستند اختبار.</small>
                 <label>ملاحظات
