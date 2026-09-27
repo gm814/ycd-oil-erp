@@ -32,6 +32,13 @@ export default function UserManagementActions({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [provisioned, setProvisioned] = useState<Array<{
+    employeeCode: string;
+    employeeName: string;
+    username: string;
+    temporaryPassword: string;
+    roles: string[];
+  }>>([]);
 
   async function post(url: string, body: unknown, success: string) {
     setBusy(true);
@@ -61,6 +68,33 @@ export default function UserManagementActions({
     setMessage(success);
     router.refresh();
     return true;
+  }
+
+  async function provisionTeam() {
+    if (!window.confirm("سيتم إنشاء حسابات دخول للموظفين الذين لا يملكون حسابًا، بكلمات مرور مؤقتة تظهر مرة واحدة فقط. هل تريد المتابعة؟")) return;
+    setBusy(true);
+    setMessage("");
+    setProvisioned([]);
+    const response = await fetch("/api/secure/admin/users/provision-team", { method: "POST" });
+    const result = await response.json().catch(() => ({}));
+    setBusy(false);
+    if (!response.ok) {
+      const code = String(result.error || "");
+      setMessage(
+        code.startsWith("EMPLOYEE_MISSING") ? "بيانات أحد موظفي الفريق التشغيلي غير مكتملة."
+          : code.startsWith("USERNAME_ALREADY_USED") ? "أحد أسماء المستخدمين المقترحة مستخدم مسبقًا."
+            : code.startsWith("OPERATIONAL_ROLE_MISSING") ? "أحد الأدوار التشغيلية غير موجود في النظام."
+              : code === "FORBIDDEN" ? "لا تملك صلاحية تهيئة حسابات الفريق."
+                : "تعذر تهيئة حسابات الفريق."
+      );
+      return;
+    }
+    const credentials = Array.isArray(result.credentials) ? result.credentials : [];
+    setProvisioned(credentials);
+    setMessage(credentials.length > 0
+      ? `تم إنشاء ${credentials.length} حسابات. احفظ كلمات المرور المؤقتة الآن؛ لن تظهر مرة أخرى بعد تحديث الصفحة.`
+      : "جميع موظفي الفريق التشغيلي لديهم حسابات دخول بالفعل.");
+    router.refresh();
   }
 
   function createUser(event: FormEvent<HTMLFormElement>, employeeId: string) {
@@ -99,6 +133,38 @@ export default function UserManagementActions({
 
   return (
     <>
+      <article className="panel accessProvisionPanel">
+        <div>
+          <h2>تهيئة حسابات الفريق التشغيلي</h2>
+          <p className="muted">ينشئ النظام الحسابات الناقصة فقط حسب الهيكل المعتمد، ويولد كلمة مرور قوية ومؤقتة لكل موظف مع إلزامه بتغييرها عند أول دخول.</p>
+        </div>
+        <button type="button" disabled={busy || employees.every((employee) => employee.user)} onClick={provisionTeam}>
+          تهيئة الحسابات الناقصة
+        </button>
+      </article>
+
+      {provisioned.length > 0 && (
+        <article className="panel temporaryCredentials">
+          <h2>بيانات الدخول المؤقتة — تظهر مرة واحدة</h2>
+          <p className="alertBadge">احفظ هذه البيانات في مكان آمن ثم وزع كل حساب على صاحبه فقط. لا تُسجل كلمات المرور في سجل التدقيق.</p>
+          <div className="tableWrap">
+            <table>
+              <thead><tr><th>الموظف</th><th>اسم المستخدم</th><th>كلمة المرور المؤقتة</th><th>الأدوار</th></tr></thead>
+              <tbody>
+                {provisioned.map((item) => (
+                  <tr key={item.employeeCode}>
+                    <td><b>{item.employeeName}</b><br /><small>{item.employeeCode}</small></td>
+                    <td dir="ltr"><b>{item.username}</b></td>
+                    <td dir="ltr"><code>{item.temporaryPassword}</code></td>
+                    <td>{item.roles.join(" + ")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </article>
+      )}
+
       <section className="teamGrid userAdminGrid">
         {employees.map((employee) => (
           <article className="teamCard" key={employee.id}>
