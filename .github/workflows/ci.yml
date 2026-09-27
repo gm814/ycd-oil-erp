@@ -38,3 +38,19 @@ jobs:
       - run: npm run verify:brand
       - run: npm run typecheck
       - run: npm run build
+      - name: Production health smoke test
+        env:
+          AUTH_SECRET: ci-only-health-secret-not-for-production-0123456789abcdef
+        run: |
+          npm start > /tmp/ycd-next.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error http://127.0.0.1:3000/api/health > /tmp/ycd-health.json; then
+              cat /tmp/ycd-health.json
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/ycd-next.log
+          exit 1
