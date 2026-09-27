@@ -4,6 +4,7 @@ import { companyConfig } from "@/lib/config";
 import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import { operationalTeam } from "@/lib/operations";
+import { UAT_CASES } from "@/lib/uat";
 import GoLiveControl from "./go-live-control";
 
 function statusBadge(done: boolean) {
@@ -30,6 +31,7 @@ export default async function ReadinessPage() {
     openingStockMovements,
     suppliers,
     preopeningAccounts,
+    uatResults,
     shifts,
     serviceOrders,
   ] = await Promise.all([
@@ -77,6 +79,10 @@ export default async function ReadinessPage() {
       include: { entries: { select: { debit: true, credit: true } } },
       orderBy: { sourceAccountNo: "asc" },
     }),
+    db.uatTestResult.findMany({
+      where: { branchId: session.branchId },
+      select: { caseCode: true, status: true },
+    }),
     db.shift.count({ where: { branchId: session.branchId } }),
     db.serviceOrder.count({ where: { branchId: session.branchId } }),
   ]);
@@ -103,6 +109,9 @@ export default async function ReadinessPage() {
   const servicesReady = serviceProducts > 0;
   const stockReady = openingStockMovements > 0;
   const suppliersReady = suppliers > 0;
+  const passedUatCodes = new Set(uatResults.filter((item) => item.status === "PASSED").map((item) => item.caseCode));
+  const passedUat = UAT_CASES.filter((item) => passedUatCodes.has(item.code)).length;
+  const uatReady = passedUat === UAT_CASES.length;
   const preopeningReportedTotal = preopeningAccounts.reduce((sum, account) => sum + Number(account.reportedBalance), 0);
   const preopeningImportedTotal = preopeningAccounts.reduce(
     (sum, account) => sum + account.entries.reduce((entrySum, entry) => entrySum + Number(entry.debit) - Number(entry.credit), 0),
@@ -129,6 +138,7 @@ export default async function ReadinessPage() {
     { label: "دليل الخدمات والأسعار", done: servicesReady, detail: `${serviceProducts} خدمة مسجلة` },
     { label: "رصيد المخزون الافتتاحي", done: stockReady, detail: `${openingStockMovements} حركة توريد/رصيد موجبة مسجلة` },
     { label: "الموردون", done: suppliersReady, detail: `${suppliers} موردين نشطين` },
+    { label: "اختبارات القبول التشغيلي UAT", done: uatReady, detail: `${passedUat} من ${UAT_CASES.length} سيناريو ناجح` },
   ];
 
   const completed = checklist.filter((item) => item.done).length;
@@ -165,6 +175,7 @@ export default async function ReadinessPage() {
           {hasPermission(session.permissions, PERMISSIONS.USER_MANAGE) && (
             <a className="secondaryLink" href="/dashboard/admin/users">تهيئة حسابات الفريق والصلاحيات</a>
           )}
+          <a className="secondaryLink" href="/dashboard/readiness/uat">اختبارات القبول التشغيلي UAT</a>
         </div>
         <span className="muted">بيانات الفريق والبنك والهوية مثبتة؛ المتبقي تجهيز حسابات الدخول واستيراد الأصناف والخدمات والمخزون والموردين.</span>
       </div>
@@ -192,8 +203,12 @@ export default async function ReadinessPage() {
           {!servicesReady && <p>• قائمة الخدمات وأسعارها وربط الخدمات المؤهلة لكوبون الغسيل.</p>}
           {!stockReady && <p>• الجرد الافتتاحي للمخزون بالكميات الفعلية.</p>}
           {!suppliersReady && <p>• بيانات الموردين الأساسيين وشروط التوريد.</p>}
-          {preopeningLedgerReady && usersReady && productsReady && servicesReady && stockReady && suppliersReady && (
-            <p className="okBadge">بيانات الإطلاق الأساسية مكتملة وجاهزة لاختبارات التشغيل النهائي.</p>
+          {!uatReady && <p>• اجتياز جميع اختبارات القبول التشغيلي UAT: المنجز حاليًا {passedUat} من {UAT_CASES.length}.</p>}
+          {preopeningLedgerReady && usersReady && productsReady && servicesReady && stockReady && suppliersReady && !uatReady && (
+            <p className="formNotice">بيانات الإطلاق الأساسية مكتملة؛ المتبقي تنفيذ واعتماد UAT.</p>
+          )}
+          {preopeningLedgerReady && usersReady && productsReady && servicesReady && stockReady && suppliersReady && uatReady && (
+            <p className="okBadge">بيانات الإطلاق واختبارات UAT مكتملة وجاهزة لقرار GO LIVE.</p>
           )}
         </article>
       </section>
