@@ -44,6 +44,7 @@ export default async function ReadinessPage() {
       select: {
         code: true,
         nameAr: true,
+        hireDate: true,
         user: {
           select: {
             status: true,
@@ -93,6 +94,8 @@ export default async function ReadinessPage() {
   const bankReady = bankAccounts.some((account) => account.bankName && account.accountNumber && account.iban);
   const identityReady = Boolean(companyConfig.brand && companyConfig.bank.iban);
   const staffReady = employees.length >= operationalTeam.length;
+  const hrReadyCount = employees.filter((employee) => employee.hireDate).length;
+  const hrReady = employees.length >= operationalTeam.length && hrReadyCount === employees.length;
   const fundingReady = parentCompanies > 0 && fundingTotal >= openingBalance && openingBalance > 0;
   const employeeByCode = new Map(employees.map((employee) => [employee.code, employee]));
   const accessRows = operationalTeam.map((member) => {
@@ -128,6 +131,7 @@ export default async function ReadinessPage() {
     { label: "المعدات التشغيلية", done: companyConfig.preopening.equipmentReady, detail: companyConfig.preopening.readinessSourceAr },
     { label: "التراخيص اللازمة للمركز", done: companyConfig.preopening.licensesReady, detail: "مؤكد إداريًا؛ تفاصيل وأرقام التراخيص تضاف عند تزويد النظام بالمستندات" },
     { label: "الهيكل الوظيفي الأساسي", done: staffReady, detail: `${employees.length} موظفين مسجلين` },
+    { label: "بيانات الموارد البشرية والرواتب", done: hrReady, detail: `${hrReadyCount} من ${employees.length} ملفات موظفين مكتملة بتاريخ تعيين` },
     { label: "هوية YCD OIL وبيانات المنشأة", done: identityReady, detail: "الهوية والألوان وبيانات الشركة مثبتة بالنظام" },
     { label: "الحساب البنكي الرئيسي", done: bankReady, detail: bankReady ? `${bankAccounts[0]?.bankName ?? "بنك"} · IBAN ينتهي بـ ${bankAccounts[0]?.iban?.slice(-4) ?? "—"}` : "بانتظار بيانات البنك" },
     { label: "الرصيد البنكي الافتتاحي", done: openingBalance > 0, detail: `${openingBalance.toFixed(2)} ر.س` },
@@ -177,7 +181,7 @@ export default async function ReadinessPage() {
           )}
           <a className="secondaryLink" href="/dashboard/readiness/uat">اختبارات القبول التشغيلي UAT</a>
         </div>
-        <span className="muted">بيانات الفريق والبنك والهوية مثبتة؛ المتبقي تجهيز حسابات الدخول واستيراد الأصناف والخدمات والمخزون والموردين.</span>
+        <span className="muted">بيانات الفريق والبنك والهوية مثبتة؛ المتبقي حسابات الدخول وبيانات HR الفعلية والأصناف والخدمات والمخزون والموردون.</span>
       </div>
 
       <section className="workGrid">
@@ -199,15 +203,16 @@ export default async function ReadinessPage() {
           <h2>البيانات التي تمنع الإطلاق الكامل</h2>
           {!preopeningLedgerReady && <p>• مطابقة كشوف وتكاليف ما قبل التشغيل مع القيود المستوردة.</p>}
           {!usersReady && <p>• بيانات دخول الموظفين الذين سيستخدمون النظام فعليًا.</p>}
+          {!hrReady && <p>• استكمال بيانات الموظفين والرواتب والبدلات وتاريخ التعيين من ملف الموارد البشرية.</p>}
           {!productsReady && <p>• قائمة الزيوت والفلاتر والقطع مع التكلفة وسعر البيع والوحدة والحد الأدنى.</p>}
           {!servicesReady && <p>• قائمة الخدمات وأسعارها وربط الخدمات المؤهلة لكوبون الغسيل.</p>}
           {!stockReady && <p>• الجرد الافتتاحي للمخزون بالكميات الفعلية.</p>}
           {!suppliersReady && <p>• بيانات الموردين الأساسيين وشروط التوريد.</p>}
           {!uatReady && <p>• اجتياز جميع اختبارات القبول التشغيلي UAT: المنجز حاليًا {passedUat} من {UAT_CASES.length}.</p>}
-          {preopeningLedgerReady && usersReady && productsReady && servicesReady && stockReady && suppliersReady && !uatReady && (
+          {preopeningLedgerReady && usersReady && hrReady && productsReady && servicesReady && stockReady && suppliersReady && !uatReady && (
             <p className="formNotice">بيانات الإطلاق الأساسية مكتملة؛ المتبقي تنفيذ واعتماد UAT.</p>
           )}
-          {preopeningLedgerReady && usersReady && productsReady && servicesReady && stockReady && suppliersReady && uatReady && (
+          {preopeningLedgerReady && usersReady && hrReady && productsReady && servicesReady && stockReady && suppliersReady && uatReady && (
             <p className="okBadge">بيانات الإطلاق واختبارات UAT مكتملة وجاهزة لقرار GO LIVE.</p>
           )}
         </article>
@@ -276,7 +281,7 @@ export default async function ReadinessPage() {
 
       <p className="formNotice">{branchState.operationalStatus === "LIVE"
         ? "الفرع مفعّل للتشغيل التجاري. تستمر الرقابة عبر الورديات والإقفالات والمطابقات وسجل التدقيق."
-        : "المركز مجهز ميدانيًا، لكن التشغيل التجاري سيبقى مقفلًا في النظام حتى تكتمل بيانات الأصناف والخدمات والمخزون والموردين وحسابات المستخدمين وتنجح اختبارات UAT."}</p>
+        : "المركز مجهز ميدانيًا، لكن التشغيل التجاري سيبقى مقفلًا حتى تكتمل بيانات HR والأصناف والخدمات والمخزون والموردين وحسابات المستخدمين وتنجح اختبارات UAT."}</p>
     </main>
   );
 }
