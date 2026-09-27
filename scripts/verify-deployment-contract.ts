@@ -34,8 +34,12 @@ async function main() {
     "قالب الإنتاج يجب أن يبقي تجاوز PREOPENING معطلاً",
   );
   assert(
-    deploymentDoc.includes("npm run db:deploy") && !deploymentDoc.includes("prisma db push"),
+    deploymentDoc.includes("npm run db:deploy"),
     "دليل Vercel يجب أن يعتمد migrations الإنتاجية",
+  );
+  assert(
+    deploymentDoc.includes("لا تستخدم \`prisma db push\` في الإنتاج"),
+    "دليل Vercel يجب أن يمنع db push على قاعدة الإنتاج",
   );
 
   console.log("YCD DEPLOYMENT CONTRACT VERIFIED");
