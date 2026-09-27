@@ -115,6 +115,7 @@ export async function POST(request: Request) {
     username: user.username,
     email: user.email ?? undefined,
     mustChangePassword: user.mustChangePassword,
+    sessionVersion: user.sessionVersion,
     branchId: user.branchId ?? undefined,
     roles,
     permissions,
