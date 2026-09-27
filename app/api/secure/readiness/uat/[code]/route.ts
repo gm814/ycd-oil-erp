@@ -9,6 +9,14 @@ const schema = z.object({
   status: z.enum(["PASSED", "FAILED"]),
   evidenceRef: z.string().trim().max(300).optional(),
   notes: z.string().trim().max(1000).optional(),
+}).superRefine((value, ctx) => {
+  if (value.status === "PASSED" && !value.evidenceRef?.trim()) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["evidenceRef"],
+      message: "UAT_EVIDENCE_REQUIRED",
+    });
+  }
 });
 
 export async function POST(request: Request, context: { params: Promise<{ code: string }> }) {
