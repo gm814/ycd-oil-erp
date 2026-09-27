@@ -18,12 +18,12 @@ async function main() {
   assert(branch, "فرع طويق غير موجود");
   assert(branch.operationalStatus === "PREOPENING", "بيئة UAT يجب أن تبدأ من PREOPENING");
 
-  const expectedProducts = new Map([
+  const expectedProducts = new Map<string, { category: string; openingQty: number }>([
     ["UAT-OIL-5W30", { category: "OIL", openingQty: 20 }],
     ["UAT-FILTER-OIL", { category: "FILTER", openingQty: 25 }],
     ["UAT-SVC-OIL", { category: "SERVICE", openingQty: 0 }],
     ["UAT-SVC-WASH", { category: "SERVICE", openingQty: 0 }],
-  ] as const);
+  ]);
 
   const products = await prisma.product.findMany({
     where: { sku: { in: [...expectedProducts.keys()] } },
