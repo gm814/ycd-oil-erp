@@ -64,7 +64,7 @@ export async function POST(request: Request, context: { params: Promise<{ code: 
         action: parsed.data.status === "PASSED" ? "UAT_CASE_PASSED" : "UAT_CASE_FAILED",
         entityType: "UatTestResult",
         entityId: updated.id,
-        beforeJson: before ? { status: before.status, evidenceRef: before.evidenceRef, notes: before.notes } : null,
+        ...(before ? { beforeJson: { status: before.status, evidenceRef: before.evidenceRef, notes: before.notes } } : {}),
         afterJson: {
           caseCode: code,
           titleAr: testCase.titleAr,
