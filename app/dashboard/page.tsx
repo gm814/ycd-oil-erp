@@ -7,22 +7,22 @@ import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import LogoutButton from "./logout-button";
 
 const modules = [
-  ["جاهزية الافتتاح والتشغيل", "/dashboard/readiness"],
-  ["الورديات والإقفال اليومي", "/dashboard/shifts"],
-  ["استقبال السيارات وأوامر الخدمة", "/dashboard/service-orders"],
-  ["الزيوت وخدمات السيارات", "/dashboard/service-orders"],
-  ["كوبونات المغسلة", "/dashboard/coupons"],
-  ["المبيعات والعملاء", "/dashboard/customers"],
-  ["المشتريات والتوريد", "/dashboard/procurement"],
-  ["المخزون والزيوت والفلاتر", "/dashboard/inventory"],
-  ["المالية والبنوك", "/dashboard/finance"],
-  ["العهد", "/dashboard/custody"],
-  ["الموظفون والرواتب", "/dashboard/hr"],
-  ["الهيكل التشغيلي والمسؤوليات", "/dashboard/team"],
-  ["الأصول والصيانة", "/dashboard/assets"],
-  ["التقارير والرقابة", "/dashboard/reports"],
-  ["المستندات والنماذج", "/dashboard/documents"],
-];
+  { label: "جاهزية الافتتاح والتشغيل", href: "/dashboard/readiness", any: [PERMISSIONS.REPORTS_VIEW, PERMISSIONS.OPERATIONS_UAT, PERMISSIONS.OPERATIONS_GO_LIVE] },
+  { label: "الورديات والإقفال اليومي", href: "/dashboard/shifts", any: [PERMISSIONS.SHIFT_OPEN, PERMISSIONS.SHIFT_CLOSE, PERMISSIONS.SHIFT_VARIANCE_APPROVE] },
+  { label: "استقبال السيارات وأوامر الخدمة", href: "/dashboard/service-orders", any: [PERMISSIONS.SERVICE_ORDER_CREATE, PERMISSIONS.SERVICE_ORDER_APPROVE] },
+  { label: "الزيوت وخدمات السيارات", href: "/dashboard/service-orders", any: [PERMISSIONS.SERVICE_ORDER_CREATE, PERMISSIONS.SERVICE_ORDER_APPROVE] },
+  { label: "كوبونات المغسلة", href: "/dashboard/coupons", any: [PERMISSIONS.COUPON_REDEEM] },
+  { label: "المبيعات والعملاء", href: "/dashboard/customers", any: [PERMISSIONS.CUSTOMER_VIEW, PERMISSIONS.PAYMENT_RECEIVE, PERMISSIONS.INVOICE_ISSUE] },
+  { label: "المشتريات والتوريد", href: "/dashboard/procurement", any: [PERMISSIONS.PROCUREMENT_REQUEST, PERMISSIONS.PROCUREMENT_QUOTE, PERMISSIONS.PROCUREMENT_APPROVE, PERMISSIONS.PROCUREMENT_ORDER, PERMISSIONS.PROCUREMENT_RECEIVE] },
+  { label: "المخزون والزيوت والفلاتر", href: "/dashboard/inventory", any: [PERMISSIONS.INVENTORY_MANAGE, PERMISSIONS.INVENTORY_ISSUE] },
+  { label: "المالية والبنوك", href: "/dashboard/finance", any: [PERMISSIONS.FINANCE_VIEW] },
+  { label: "العهد", href: "/dashboard/custody", any: [PERMISSIONS.CUSTODY_REQUEST, PERMISSIONS.CUSTODY_APPROVE, PERMISSIONS.CUSTODY_DISBURSE, PERMISSIONS.CUSTODY_SETTLE, PERMISSIONS.CUSTODY_CLOSE] },
+  { label: "الموظفون والرواتب", href: "/dashboard/hr", any: [PERMISSIONS.HR_VIEW, PERMISSIONS.HR_MANAGE, PERMISSIONS.PAYROLL_PREPARE, PERMISSIONS.PAYROLL_APPROVE, PERMISSIONS.PAYROLL_PAY] },
+  { label: "الهيكل التشغيلي والمسؤوليات", href: "/dashboard/team", any: [PERMISSIONS.DASHBOARD_VIEW] },
+  { label: "الأصول والصيانة", href: "/dashboard/assets", any: [PERMISSIONS.ASSET_VIEW, PERMISSIONS.ASSET_MANAGE, PERMISSIONS.MAINTENANCE_MANAGE] },
+  { label: "التقارير والرقابة", href: "/dashboard/reports", any: [PERMISSIONS.REPORTS_VIEW, PERMISSIONS.AUDIT_VIEW] },
+  { label: "المستندات والنماذج", href: "/dashboard/documents", any: [PERMISSIONS.DASHBOARD_VIEW] },
+] as const;
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -132,7 +132,9 @@ export default async function DashboardPage() {
         </div>
         <nav>
           <strong>لوحة التحكم</strong>
-          {modules.map(([item, href]) => <a href={href} key={item}>{item}</a>)}
+          {modules
+            .filter((module) => module.any.some((permission) => hasPermission(session.permissions, permission)))
+            .map((module) => <a href={module.href} key={module.label}>{module.label}</a>)}
           {hasPermission(session.permissions, PERMISSIONS.USER_MANAGE) && (
             <a href="/dashboard/admin/users">المستخدمون والصلاحيات</a>
           )}
