@@ -47,6 +47,7 @@ jobs:
       - run: npm run verify:preopening
       - run: npm run verify:controls
       - run: npm run verify:brand
+      - run: npm run verify:deployment-contract
       - name: Create isolated UAT database
         run: PGPASSWORD=postgres createdb -h 127.0.0.1 -U postgres ycd_oil_erp_uat
       - name: Prepare isolated UAT database
