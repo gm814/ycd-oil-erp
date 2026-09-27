@@ -79,6 +79,7 @@ export default function PreopeningImportClient({ canCatalog, canSuppliers }: Pro
       const labels: Record<string, string> = {
         INVALID_INPUT: "يوجد صف أو حقل غير صالح. راجع أسماء الأعمدة والأرقام.",
         DUPLICATE_SKU_IN_BATCH: "يوجد SKU مكرر داخل الملف.",
+        SERVICE_OPENING_STOCK_NOT_ALLOWED: "الخدمات لا تقبل رصيد مخزون افتتاحي؛ اجعل openingQty للخدمات صفرًا.",
         DUPLICATE_SUPPLIER_CODE_IN_BATCH: "يوجد كود مورد مكرر داخل الملف.",
         PREOPENING_IMPORT_ONLY: "الاستيراد الافتتاحي متاح فقط قبل بدء التشغيل التجاري.",
         FORBIDDEN: "لا تملك الصلاحية المطلوبة للاستيراد.",
@@ -134,6 +135,7 @@ export default function PreopeningImportClient({ canCatalog, canSuppliers }: Pro
             <code className="importColumns">sku,nameAr,category,unit,salePrice,costPrice,minStock,grantsWashCoupon,openingQty</code>
             <a className="orderLink" href="/templates/ycd-preopening-catalog.csv" download>تنزيل قالب الأصناف والخدمات والجرد CSV</a>
             <p className="muted">التصنيف: OIL / FILTER / BATTERY / PART / WASH_SUPPLY / SERVICE / OTHER. الخدمة SERVICE يجب أن يكون openingQty لها صفرًا.</p>
+            <p className="formNotice">قبل التشغيل فقط: إعادة استيراد نفس SKU تستبدل رصيده الافتتاحي السابق بدل مضاعفة الكمية، لتصحيح الجرد بأمان.</p>
             <label className="filePicker">ملف CSV / TSV
               <input type="file" accept=".csv,.tsv,text/csv,text/tab-separated-values" onChange={(event) => void readFile(event, "catalog")} />
             </label>
