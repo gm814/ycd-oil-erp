@@ -191,6 +191,7 @@ export default async function ReadinessPage() {
             <a className="secondaryLink" href="/dashboard/admin/users">تهيئة حسابات الفريق والصلاحيات</a>
           )}
           <a className="secondaryLink" href="/dashboard/readiness/uat">اختبارات القبول التشغيلي UAT</a>
+          <a className="secondaryLink" href="/dashboard/readiness/deployment">فحص بيئة النشر الإنتاجي</a>
           <a className="secondaryLink" href="/dashboard/readiness/launch-report">محضر جاهزية الإطلاق للطباعة</a>
         </div>
         <span className="muted">يمكن نشر النظام النهائي الآن وإدخال الأصناف والخدمات والمخزون والموردين لاحقًا من مركز الاستيراد. تبقى المبيعات والورديات التجارية مقفلة آليًا حتى اعتماد GO LIVE.</span>
