@@ -28,8 +28,8 @@ export const operationalTeam = [
     nameAr: "ضياء فرحان المخلافي",
     primaryRoleAr: "المحاسب العام",
     responsibilitiesAr: ["المحاسبة العامة"],
-    systemRoleCodes: ["ACCOUNTANT"],
-    systemRolesAr: ["المحاسب"],
+    systemRoleCodes: ["GENERAL_ACCOUNTANT"],
+    systemRolesAr: ["المحاسب العام"],
   },
   {
     code: "YCD-005",
