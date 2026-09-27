@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { companyConfig } from "../lib/config";
 import { operationalTeam } from "../lib/operations";
 import { UAT_CASES } from "../lib/uat";
 
@@ -74,9 +75,9 @@ async function main() {
   }
 
   const bankReady = bankAccounts.some((account) =>
-    account.bankName === "مصرف الراجحي" &&
-    account.accountNumber === "528000010006080781162" &&
-    account.iban === "SA7180000528608010781162"
+    account.bankName === companyConfig.bank.nameAr &&
+    account.accountNumber === companyConfig.bank.accountNumber &&
+    account.iban === companyConfig.bank.iban
   );
   assert(bankReady, "الحساب البنكي المعتمد من شهادة IBAN غير مكتمل أو غير مطابق");
 
