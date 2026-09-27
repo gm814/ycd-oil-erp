@@ -24,6 +24,7 @@ async function main() {
 
   const requiredPermissions = [
     "operations.go_live",
+    "operations.uat",
     "shift.variance.approve",
     "finance.close.prepare",
     "finance.close.review",
@@ -67,6 +68,11 @@ async function main() {
       assert(!role.has(permission), `${roleCode} يجب ألا يملك صلاحية الاعتماد ${permission}`);
     }
   }
+
+  const branchManager = roleMap.get("BRANCH_MANAGER");
+  assert(branchManager, "دور مدير الفرع غير موجود");
+  assert(branchManager.has("operations.uat"), "مدير الفرع يجب أن يستطيع تنفيذ UAT");
+  assert(!branchManager.has("operations.go_live"), "مدير الفرع لا يجب أن يملك قرار GO LIVE النهائي");
 
   const accountant = roleMap.get("ACCOUNTANT");
   assert(accountant, "دور المحاسب غير موجود");
