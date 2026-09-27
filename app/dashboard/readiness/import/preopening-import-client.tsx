@@ -103,7 +103,9 @@ export default function PreopeningImportClient({ canCatalog, canSuppliers, canHr
       const errorCode = String(result.error || "");
       setMessage(errorCode.startsWith("EMPLOYEE_NOT_FOUND:")
         ? `الموظف ${errorCode.split(":")[1] || ""} غير موجود في الفرع.`
-        : labels[errorCode] || "تعذر اعتماد الملف.");
+        : errorCode.startsWith("EMPLOYEE_NAME_MISMATCH:")
+          ? `اسم الموظف لا يطابق الهيكل المعتمد للكود ${errorCode.split(":")[1] || ""}. استخدم القالب الرسمي دون تغيير الاسم.`
+          : labels[errorCode] || "تعذر اعتماد الملف.");
       return;
     }
     const summary = result.import;
@@ -147,6 +149,7 @@ export default function PreopeningImportClient({ canCatalog, canSuppliers, canHr
   function importEmployees() {
     const rows = employeeRows.map((row) => ({
       code: row.code,
+      nameAr: row.nameAr,
       phone: row.phone || "",
       jobTitleAr: row.jobTitleAr,
       hireDate: row.hireDate,
@@ -228,7 +231,7 @@ export default function PreopeningImportClient({ canCatalog, canSuppliers, canHr
           <article className="panel">
             <h2>بيانات الموظفين والرواتب الافتتاحية</h2>
             <p className="muted">القالب يحتوي أكواد الفريق المعتمد. أدخل تاريخ التعيين والراتب والبدلات والبيانات المتوفرة دون تقدير.</p>
-            <code className="importColumns">code,phone,jobTitleAr,hireDate,baseSalary,housingAllowance,transportAllowance,iban</code>
+            <code className="importColumns">code,nameAr,phone,jobTitleAr,hireDate,baseSalary,housingAllowance,transportAllowance,iban</code>
             <a className="orderLink" href="/templates/ycd-preopening-employees.csv" download>تنزيل قالب الموظفين والرواتب CSV</a>
             <label className="filePicker">ملف CSV / TSV
               <input type="file" accept=".csv,.tsv,text/csv,text/tab-separated-values" onChange={(event) => void readFile(event, "employees")} />
@@ -237,10 +240,10 @@ export default function PreopeningImportClient({ canCatalog, canSuppliers, canHr
             {employeePreview.length > 0 && (
               <div className="tableWrap">
                 <table>
-                  <thead><tr><th>الكود</th><th>المسمى</th><th>التعيين</th><th>الأساسي</th><th>السكن</th><th>النقل</th></tr></thead>
+                  <thead><tr><th>الكود</th><th>الموظف</th><th>المسمى</th><th>التعيين</th><th>الأساسي</th><th>السكن</th><th>النقل</th></tr></thead>
                   <tbody>{employeePreview.map((row, index) => (
                     <tr key={index}>
-                      <td>{row.code}</td><td>{row.jobTitleAr}</td><td>{row.hireDate || "—"}</td>
+                      <td>{row.code}</td><td>{row.nameAr}</td><td>{row.jobTitleAr}</td><td>{row.hireDate || "—"}</td>
                       <td>{row.baseSalary || "0"}</td><td>{row.housingAllowance || "0"}</td><td>{row.transportAllowance || "0"}</td>
                     </tr>
                   ))}</tbody>
