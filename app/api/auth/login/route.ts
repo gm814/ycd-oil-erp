@@ -9,6 +9,9 @@ const inputSchema = z.object({
   password: z.string().min(8).max(200),
 });
 
+const MAX_FAILED_LOGINS = 5;
+const LOCKOUT_MINUTES = 15;
+
 export async function POST(request: Request) {
   const parsed = inputSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
@@ -40,10 +43,64 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "INVALID_CREDENTIALS" }, { status: 401 });
   }
 
+  const now = new Date();
+  if (user.lockedUntil && user.lockedUntil > now) {
+    return NextResponse.json({ error: "ACCOUNT_TEMPORARILY_LOCKED" }, { status: 423 });
+  }
+
   const valid = await compare(parsed.data.password, user.passwordHash);
   if (!valid) {
-    return NextResponse.json({ error: "INVALID_CREDENTIALS" }, { status: 401 });
+    const failedLoginCount = user.failedLoginCount + 1;
+    const shouldLock = failedLoginCount >= MAX_FAILED_LOGINS;
+    const lockedUntil = shouldLock
+      ? new Date(now.getTime() + LOCKOUT_MINUTES * 60 * 1000)
+      : null;
+
+    await db.user.update({
+      where: { id: user.id },
+      data: {
+        failedLoginCount: shouldLock ? 0 : failedLoginCount,
+        lockedUntil,
+      },
+    });
+
+    await db.auditLog.create({
+      data: {
+        actorId: user.id,
+        action: shouldLock ? "LOGIN_ACCOUNT_TEMPORARILY_LOCKED" : "LOGIN_FAILED",
+        entityType: "User",
+        entityId: user.id,
+        afterJson: {
+          failedLoginCount,
+          lockedUntil: lockedUntil?.toISOString() ?? null,
+        },
+      },
+    });
+
+    return NextResponse.json(
+      { error: shouldLock ? "ACCOUNT_TEMPORARILY_LOCKED" : "INVALID_CREDENTIALS" },
+      { status: shouldLock ? 423 : 401 },
+    );
   }
+
+  await db.user.update({
+    where: { id: user.id },
+    data: {
+      failedLoginCount: 0,
+      lockedUntil: null,
+      lastLoginAt: now,
+    },
+  });
+
+  await db.auditLog.create({
+    data: {
+      actorId: user.id,
+      action: "LOGIN_SUCCEEDED",
+      entityType: "User",
+      entityId: user.id,
+      afterJson: { lastLoginAt: now.toISOString() },
+    },
+  });
 
   const roles = user.roles.map((entry) => entry.role.code);
   const permissions = [...new Set(
