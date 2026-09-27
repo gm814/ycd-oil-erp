@@ -23,6 +23,18 @@ export const companyConfig = {
     parentCompanyNameAr: "شركة الواجهات الإبداعية للمقاولات",
     relationshipAr: "الشركة الرئيسية الممولة للمشروع",
   },
+  management: {
+    generalManager: "أبوبكر نبيل سيف",
+    branchManager: "حمزة عبدالرحمن سعيد الذبحاني",
+    accountant: "هاني عبدالسلام الذبحاني",
+    generalAccountant: "ضياء فرحان المخلافي",
+    cashier: "عمار البخيتي",
+    warehouse: "محمد نجيب عثمان حمادي",
+    procurement: "حمزة عبدالرحمن سعيد الذبحاني",
+    technicians: ["محمد نجيب عثمان حمادي", "عمار النابهي"],
+    washSupervisor: "محمد المهدي ازهري",
+    humanResources: "هاني عبدالسلام الذبحاني",
+  },
   bank: {
     nameAr: "مصرف الراجحي",
     accountNameAr: "شركة وجهتك الإبداعية لخدمات السيارات",
