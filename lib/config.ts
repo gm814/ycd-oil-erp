@@ -28,6 +28,13 @@ export const companyConfig = {
     accountNameAr: "شركة وجهتك الإبداعية لخدمات السيارات",
     accountNumber: "528000010006080781162",
     iban: "SA7180000528608010781162",
+    certificateReference: "55063515",
+    certificateDate: "26/09/2026",
+    certificateSourceAr: "خطاب IBAN المعتمد من مصرف الراجحي",
+  },
+  brandIdentity: {
+    sourceAr: "ملف الهوية الرسمي YCD OIL",
+    logoAsset: "/brand/ycd-logo-source.svg",
   },
   vatRate: Number(process.env.VAT_RATE ?? "0.15"),
   washCouponValidityDays: Number(process.env.WASH_COUPON_VALIDITY_DAYS ?? "30"),
