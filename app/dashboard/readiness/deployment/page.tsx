@@ -91,6 +91,13 @@ export default async function DeploymentReadinessPage() {
       </article>
 
       <article className="panel">
+        <h2>الفوترة الإلكترونية - فاتورة</h2>
+        <p><span className="okBadge">QR الأساسي مفعّل</span> الفاتورة الضريبية المبسطة تولّد QR محليًا بصيغة TLV للحقول الأساسية وتخضع لفحص آلي داخل CI.</p>
+        <p><span className="statusBadge">المرحلة الثانية مسار مستقل</span> لا يعتبر QR الأساسي تكاملًا مع منصة فاتورة. عند انطباق المرحلة الثانية على المنشأة يجب استكمال EGS / CSID / XML / التوقيع والتقرير أو التخليص قبل تاريخ الإلزام المحدد للمنشأة.</p>
+        <p className="muted">مرجع التنفيذ الداخلي: docs/ZATCA_EINVOICING.md</p>
+      </article>
+
+      <article className="panel">
         <h2>قاعدة الأمان قبل النشر</h2>
         <p>يمكن نشر نسخة PREOPENING للإعداد وإدخال البيانات على Vercel أو Docker، لكن لا تُفتح العمليات التجارية إلا بعد اكتمال بيانات التشغيل وUAT ثم اعتماد GO LIVE.</p>
         <p><a className="orderLink" href="/api/health" target="_blank" rel="noreferrer">فحص صحة التطبيق وقاعدة البيانات</a></p>
