@@ -39,6 +39,8 @@ jobs:
       - run: npm run verify:brand
       - run: npm run typecheck
       - run: npm run build
+      - name: Build production container
+        run: docker build --target runner -t ycd-oil-erp:ci .
       - name: Production health smoke test
         env:
           AUTH_SECRET: ci-only-health-secret-not-for-production-0123456789abcdef
