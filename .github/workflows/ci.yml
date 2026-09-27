@@ -47,6 +47,10 @@ jobs:
       - run: npm run verify:preopening
       - run: npm run verify:controls
       - run: npm run verify:brand
+      - name: Smoke-test isolated UAT fixture seed
+        env:
+          ALLOW_UAT_FIXTURES: "true"
+        run: npm run db:seed:uat
       - run: npm run typecheck
       - run: npm run build
       - name: Validate production Compose stack
