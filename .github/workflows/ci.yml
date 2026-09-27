@@ -47,8 +47,20 @@ jobs:
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
           for attempt in {1..30}; do
-            if curl --fail --silent --show-error http://127.0.0.1:3000/api/health > /tmp/ycd-health.json; then
+            if curl --fail --silent --show-error -D /tmp/ycd-headers.txt http://127.0.0.1:3000/api/health > /tmp/ycd-health.json; then
               cat /tmp/ycd-health.json
+              grep -qi '^x-content-type-options: nosniff' /tmp/ycd-headers.txt
+              grep -qi '^x-frame-options: DENY' /tmp/ycd-headers.txt
+              grep -qi '^strict-transport-security: max-age=31536000; includeSubDomains' /tmp/ycd-headers.txt
+              CROSS_SITE_STATUS=$(curl --silent --output /tmp/ycd-cross-site.json --write-out '%{http_code}' \
+                -X POST \
+                -H 'Origin: https://evil.example' \
+                -H 'Sec-Fetch-Site: cross-site' \
+                -H 'Content-Type: application/json' \
+                --data '{}' \
+                http://127.0.0.1:3000/api/secure/finance/expenses)
+              test "$CROSS_SITE_STATUS" = "403"
+              grep -q 'CROSS_SITE_REQUEST_REJECTED' /tmp/ycd-cross-site.json
               exit 0
             fi
             sleep 1
