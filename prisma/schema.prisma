@@ -282,6 +282,7 @@ model User {
   name               String
   passwordHash       String?
   mustChangePassword Boolean    @default(true)
+  sessionVersion     Int        @default(0)
   failedLoginCount   Int        @default(0)
   lockedUntil        DateTime?
   lastLoginAt        DateTime?
