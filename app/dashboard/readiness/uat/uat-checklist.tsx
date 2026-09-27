@@ -46,7 +46,7 @@ export default function UatChecklist({ rows, canExecute }: { rows: Row[]; canExe
         FORBIDDEN: "لا تملك صلاحية تنفيذ اختبارات UAT.",
         UAT_PREOPENING_ONLY: "لا يمكن تعديل UAT بعد بدء التشغيل التجاري.",
         UAT_CASE_NOT_FOUND: "سيناريو الاختبار غير معروف.",
-        INVALID_INPUT: "راجع نتيجة الاختبار والملاحظات.",
+        INVALID_INPUT: "راجع نتيجة الاختبار. عند اختيار ناجح يجب إدخال مرجع دليل واضح.",
       };
       setMessage(labels[result.error] || "تعذر حفظ نتيجة الاختبار.");
       return;
@@ -81,8 +81,9 @@ export default function UatChecklist({ rows, canExecute }: { rows: Row[]; canExe
                   </select>
                 </label>
                 <label>مرجع الدليل
-                  <input name="evidenceRef" defaultValue={row.evidenceRef ?? ""} placeholder="رقم فاتورة / طلب / سند / ملاحظة اختبار" />
+                  <input name="evidenceRef" required defaultValue={row.evidenceRef ?? ""} placeholder="رقم فاتورة / طلب / سند / مرجع اختبار" />
                 </label>
+                <small className="muted">لا تعتمد نتيجة ناجح بدون دليل قابل للتتبع داخل النظام أو مستند اختبار.</small>
                 <label>ملاحظات
                   <textarea name="notes" defaultValue={row.notes ?? ""} rows={3} />
                 </label>
