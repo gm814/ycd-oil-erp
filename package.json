@@ -14,7 +14,8 @@
     "verify:preopening": "tsx scripts/verify-preopening.ts",
     "verify:controls": "tsx scripts/verify-controls.ts",
     "verify:brand": "tsx scripts/verify-brand.ts",
-    "verify:production-env": "tsx scripts/verify-production-env.ts"
+    "verify:production-env": "tsx scripts/verify-production-env.ts",
+    "verify:go-live": "tsx scripts/verify-go-live.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
