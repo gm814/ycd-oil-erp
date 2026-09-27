@@ -1,0 +1,67 @@
+name: ycd-oil-erp
+
+services:
+  db:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ycd_oil_erp}
+      POSTGRES_USER: ${POSTGRES_USER:-ycd}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - ycd_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ycd} -d ${POSTGRES_DB:-ycd_oil_erp}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [ycd_internal]
+
+  migrate:
+    build:
+      context: .
+      target: builder
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ycd}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-ycd_oil_erp}?schema=public
+      AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET is required}
+      ALLOW_PREOPENING_OPERATIONS: "false"
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "npm run db:deploy &&
+             npm run db:seed"
+    networks: [ycd_internal]
+
+  app:
+    build:
+      context: .
+      target: runner
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ycd}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-ycd_oil_erp}?schema=public
+      AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET is required}
+      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-YCD OIL ERP}
+      VAT_RATE: ${VAT_RATE:-0.15}
+      WASH_COUPON_VALIDITY_DAYS: ${WASH_COUPON_VALIDITY_DAYS:-30}
+      ALLOW_PREOPENING_OPERATIONS: "false"
+      HOSTING_PROVIDER: ${HOSTING_PROVIDER:-Docker}
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    networks: [ycd_internal]
+
+volumes:
+  ycd_postgres_data:
+
+networks:
+  ycd_internal:
+    driver: bridge
