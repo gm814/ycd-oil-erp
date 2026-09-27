@@ -16,6 +16,7 @@ export const GO_LIVE_REQUIREMENTS = {
   OPENING_STOCK: "OPENING_STOCK",
   SUPPLIERS: "SUPPLIERS",
   UAT_COMPLETE: "UAT_COMPLETE",
+  UAT_EVIDENCE: "UAT_EVIDENCE",
   OPEN_SHIFT: "OPEN_SHIFT",
 } as const;
 
@@ -78,7 +79,7 @@ export async function evaluateGoLiveReadiness(branchId: string) {
     }),
     db.uatTestResult.findMany({
       where: { branchId },
-      select: { caseCode: true, status: true },
+      select: { caseCode: true, status: true, evidenceRef: true },
     }),
     db.shift.count({ where: { branchId, closedAt: null } }),
   ]);
@@ -108,7 +109,14 @@ export async function evaluateGoLiveReadiness(branchId: string) {
   const preopeningLedgerVariance = preopeningReportedTotal - preopeningImportedTotal;
   const passedUatCodes = new Set(uatResults.filter((item) => item.status === "PASSED").map((item) => item.caseCode));
   const passedUat = UAT_CASES.filter((item) => passedUatCodes.has(item.code)).length;
+  const evidenceUatCodes = new Set(
+    uatResults
+      .filter((item) => item.status === "PASSED" && Boolean(item.evidenceRef?.trim()))
+      .map((item) => item.caseCode),
+  );
+  const evidenceReadyUat = UAT_CASES.filter((item) => evidenceUatCodes.has(item.code)).length;
   const uatReady = passedUat === UAT_CASES.length;
+  const uatEvidenceReady = evidenceReadyUat === UAT_CASES.length;
 
   const missing: GoLiveRequirementCode[] = [];
   if (employees.length < operationalTeam.length) missing.push(GO_LIVE_REQUIREMENTS.EMPLOYEES);
@@ -130,6 +138,7 @@ export async function evaluateGoLiveReadiness(branchId: string) {
   if (openingStockMovements <= 0) missing.push(GO_LIVE_REQUIREMENTS.OPENING_STOCK);
   if (suppliers <= 0) missing.push(GO_LIVE_REQUIREMENTS.SUPPLIERS);
   if (!uatReady) missing.push(GO_LIVE_REQUIREMENTS.UAT_COMPLETE);
+  if (uatReady && !uatEvidenceReady) missing.push(GO_LIVE_REQUIREMENTS.UAT_EVIDENCE);
   if (openShifts > 0) missing.push(GO_LIVE_REQUIREMENTS.OPEN_SHIFT);
 
   return {
@@ -154,7 +163,9 @@ export async function evaluateGoLiveReadiness(branchId: string) {
       suppliers,
       passedUat,
       requiredUat: UAT_CASES.length,
+      evidenceReadyUat,
       uatReady,
+      uatEvidenceReady,
       openShifts,
     },
   };
