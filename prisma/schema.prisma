@@ -147,6 +147,12 @@ enum FinancialCloseStatus {
   CLOSED
 }
 
+enum UatStatus {
+  NOT_RUN
+  PASSED
+  FAILED
+}
+
 enum FinancialTransactionType {
   OPENING_BALANCE
   CUSTOMER_RECEIPT
@@ -252,6 +258,7 @@ model Branch {
   bankReconciliations BankReconciliation[]
   shiftVarianceResolutions ShiftVarianceResolution[]
   financialCloses FinancialClose[]
+  uatTestResults UatTestResult[]
   custodyRequests CustodyRequest[]
   payrollPeriods  PayrollPeriod[]
   assets          Asset[]
@@ -801,6 +808,22 @@ model FinancialClose {
   updatedAt                     DateTime             @updatedAt
   @@unique([branchId, type, periodStart, periodEnd])
   @@index([branchId, status, periodStart])
+}
+
+model UatTestResult {
+  id          String    @id @default(cuid())
+  branchId    String
+  branch      Branch    @relation(fields: [branchId], references: [id])
+  caseCode    String
+  status      UatStatus @default(NOT_RUN)
+  executedBy  String?
+  executedAt  DateTime?
+  evidenceRef String?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  @@unique([branchId, caseCode])
+  @@index([branchId, status, updatedAt])
 }
 
 model GroupCompany {
