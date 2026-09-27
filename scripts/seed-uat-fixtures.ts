@@ -9,6 +9,19 @@ function assertUatEnvironment() {
   if (process.env.ALLOW_UAT_FIXTURES !== "true") {
     throw new Error("Set ALLOW_UAT_FIXTURES=true only in the isolated UAT database.");
   }
+
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) throw new Error("UAT_DATABASE_URL_REQUIRED");
+
+  let databaseName = "";
+  try {
+    databaseName = new URL(databaseUrl).pathname.replace(/^\//, "").toLowerCase();
+  } catch {
+    throw new Error("UAT_DATABASE_URL_INVALID");
+  }
+  if (!databaseName.includes("uat")) {
+    throw new Error("UAT_FIXTURES_REQUIRE_DATABASE_NAME_CONTAINING_UAT");
+  }
 }
 
 async function main() {
