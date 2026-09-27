@@ -73,6 +73,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
           ...(passwordHash ? {
             passwordHash,
             mustChangePassword: current.id !== session.userId,
+            sessionVersion: { increment: 1 },
           } : {}),
         },
         include: { roles: { include: { role: true } }, employee: true },
@@ -93,6 +94,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
             roles: updated.roles.map((entry) => entry.role.code),
             passwordReset: Boolean(parsed.data.password),
             mustChangePassword: parsed.data.password ? current.id !== session.userId : updated.mustChangePassword,
+            sessionVersionRotated: Boolean(parsed.data.password),
           },
         },
       });
