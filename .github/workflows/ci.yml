@@ -39,6 +39,11 @@ jobs:
       - run: npm run verify:brand
       - run: npm run typecheck
       - run: npm run build
+      - name: Validate production Compose stack
+        env:
+          POSTGRES_PASSWORD: ci-compose-only-password
+          AUTH_SECRET: ci-compose-only-auth-secret-0123456789abcdefghijklmnopqrstuvwxyz
+        run: docker compose -f docker-compose.production.yml config --quiet
       - name: Build production container
         run: docker build --target runner -t ycd-oil-erp:ci .
       - name: Production health smoke test
