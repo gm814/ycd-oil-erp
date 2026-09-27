@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 const missingLabel: Record<string, string> = {
   EMPLOYEES: "الموظفون",
+  EMPLOYEE_HR_DATA: "بيانات الموظفين والرواتب وتواريخ التعيين",
   USER_ACCOUNTS: "حسابات دخول الموظفين",
   USER_ROLE_PLAN: "مطابقة أدوار المستخدمين مع المسؤوليات المعتمدة",
   BANK_ACCOUNT: "الحساب البنكي",
@@ -15,6 +16,7 @@ const missingLabel: Record<string, string> = {
   SERVICE_CATALOG: "دليل الخدمات والأسعار",
   OPENING_STOCK: "الجرد الافتتاحي",
   SUPPLIERS: "الموردون",
+  UAT_COMPLETE: "اختبارات القبول التشغيلي UAT",
   OPEN_SHIFT: "إقفال الوردية المفتوحة",
 };
 
