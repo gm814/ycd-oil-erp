@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { companyConfig } from "@/lib/config";
 import { operationalTeam } from "@/lib/operations";
 import { UAT_CASES } from "@/lib/uat";
 
@@ -86,7 +87,11 @@ export async function evaluateGoLiveReadiness(branchId: string) {
 
   const openingBalance = Number(openingBankBalance._sum.amount ?? 0);
   const fundingTotal = Number(groupFunding._sum.amount ?? 0);
-  const bankReady = bankAccounts.some((account) => account.bankName && account.accountNumber && account.iban);
+  const bankReady = bankAccounts.some((account) =>
+    account.bankName === companyConfig.bank.nameAr &&
+    account.accountNumber === companyConfig.bank.accountNumber &&
+    account.iban === companyConfig.bank.iban
+  );
   const employeeByCode = new Map(employees.map((employee) => [employee.code, employee]));
   const hrReadyEmployees = employees.filter((employee) => employee.hireDate).length;
   const accountPlan = operationalTeam.map((member) => {
