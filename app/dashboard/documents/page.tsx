@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
+import { companyConfig } from "@/lib/config";
 
 const groups = [
   {
@@ -66,6 +67,32 @@ export default async function DocumentsPage() {
         <b>الهوية المعتمدة داخل النظام</b>
         <span>الفاتورة · طلب المشتريات · سند القبض · سند الصرف · تذكير الخدمة · كوبون الغسيل · الورقة الرسمية · الختم والمواد التسويقية.</span>
       </section>
+
+      <article className="panel">
+        <h2>المصادر الرسمية المثبتة في بيانات النظام</h2>
+        <div className="tableWrap">
+          <table>
+            <thead><tr><th>المصدر</th><th>البيانات المثبتة</th><th>حالة الاستخدام</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>ملف هوية YCD OIL الرسمي</td>
+                <td>الشعار الرسمي · #F18F21 · #F7A81D · #939497 · #BDBDBF</td>
+                <td><span className="okBadge">مطبق في واجهات ومستندات النظام</span></td>
+              </tr>
+              <tr>
+                <td>{companyConfig.bank.certificateSourceAr}</td>
+                <td>
+                  {companyConfig.bank.nameAr} · {companyConfig.bank.accountNameAr}<br />
+                  <span dir="ltr">A/C {companyConfig.bank.accountNumber}</span><br />
+                  <span dir="ltr">IBAN {companyConfig.bank.iban}</span>
+                </td>
+                <td><span className="okBadge">مرجع {companyConfig.bank.certificateReference} · {companyConfig.bank.certificateDate}</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p className="muted">هذه البيانات مرجعية داخلية للنظام ولا يتم استبدال الشعار أو بيانات الحساب باجتهادات تصميمية أو بيانات تقديرية.</p>
+      </article>
 
       {groups.map((group) => (
         <article className="panel inventoryPanel" key={group.title}>
