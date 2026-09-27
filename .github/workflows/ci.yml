@@ -1,5 +1,12 @@
 name: CI
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   pull_request:
   push:
@@ -25,11 +32,15 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
-      - run: npm install
+          cache: npm
+          package-manager-cache: false
+      - run: npm install --no-audit --no-fund
       - run: npm run db:generate
       - run: npx prisma migrate deploy
       - run: npx prisma migrate status
