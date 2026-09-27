@@ -4,6 +4,7 @@ import { UAT_CASES } from "@/lib/uat";
 
 export const GO_LIVE_REQUIREMENTS = {
   EMPLOYEES: "EMPLOYEES",
+  EMPLOYEE_HR_DATA: "EMPLOYEE_HR_DATA",
   USER_ACCOUNTS: "USER_ACCOUNTS",
   USER_ROLE_PLAN: "USER_ROLE_PLAN",
   BANK_ACCOUNT: "BANK_ACCOUNT",
@@ -41,6 +42,7 @@ export async function evaluateGoLiveReadiness(branchId: string) {
       where: { branchId, active: true },
       select: {
         code: true,
+        hireDate: true,
         user: {
           select: {
             status: true,
@@ -85,6 +87,7 @@ export async function evaluateGoLiveReadiness(branchId: string) {
   const fundingTotal = Number(groupFunding._sum.amount ?? 0);
   const bankReady = bankAccounts.some((account) => account.bankName && account.accountNumber && account.iban);
   const employeeByCode = new Map(employees.map((employee) => [employee.code, employee]));
+  const hrReadyEmployees = employees.filter((employee) => employee.hireDate).length;
   const accountPlan = operationalTeam.map((member) => {
     const employee = employeeByCode.get(member.code);
     const user = employee?.user;
@@ -109,6 +112,9 @@ export async function evaluateGoLiveReadiness(branchId: string) {
 
   const missing: GoLiveRequirementCode[] = [];
   if (employees.length < operationalTeam.length) missing.push(GO_LIVE_REQUIREMENTS.EMPLOYEES);
+  if (employees.length >= operationalTeam.length && hrReadyEmployees < operationalTeam.length) {
+    missing.push(GO_LIVE_REQUIREMENTS.EMPLOYEE_HR_DATA);
+  }
   if (activeUsers < operationalTeam.length) missing.push(GO_LIVE_REQUIREMENTS.USER_ACCOUNTS);
   if (activeUsers === operationalTeam.length && roleReadyUsers < operationalTeam.length) {
     missing.push(GO_LIVE_REQUIREMENTS.USER_ROLE_PLAN);
@@ -133,6 +139,7 @@ export async function evaluateGoLiveReadiness(branchId: string) {
     summary: {
       employees: employees.length,
       plannedEmployees: operationalTeam.length,
+      hrReadyEmployees,
       activeUsers,
       roleReadyUsers,
       bankReady,
