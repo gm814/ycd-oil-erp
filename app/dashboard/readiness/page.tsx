@@ -181,6 +181,7 @@ export default async function ReadinessPage() {
             <a className="secondaryLink" href="/dashboard/admin/users">تهيئة حسابات الفريق والصلاحيات</a>
           )}
           <a className="secondaryLink" href="/dashboard/readiness/uat">اختبارات القبول التشغيلي UAT</a>
+          <a className="secondaryLink" href="/dashboard/readiness/launch-report">محضر جاهزية الإطلاق للطباعة</a>
         </div>
         <span className="muted">بيانات الفريق والبنك والهوية مثبتة؛ المتبقي حسابات الدخول وبيانات HR الفعلية والأصناف والخدمات والمخزون والموردون.</span>
       </div>
