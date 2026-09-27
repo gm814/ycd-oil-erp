@@ -82,7 +82,7 @@ export default async function ReadinessPage() {
     }),
     db.uatTestResult.findMany({
       where: { branchId: session.branchId },
-      select: { caseCode: true, status: true },
+      select: { caseCode: true, status: true, evidenceRef: true },
     }),
     db.shift.count({ where: { branchId: session.branchId } }),
     db.serviceOrder.count({ where: { branchId: session.branchId } }),
@@ -114,7 +114,8 @@ export default async function ReadinessPage() {
   const suppliersReady = suppliers > 0;
   const passedUatCodes = new Set(uatResults.filter((item) => item.status === "PASSED").map((item) => item.caseCode));
   const passedUat = UAT_CASES.filter((item) => passedUatCodes.has(item.code)).length;
-  const uatReady = passedUat === UAT_CASES.length;
+  const evidenceReadyUat = uatResults.filter((item) => item.status === "PASSED" && Boolean(item.evidenceRef?.trim())).length;
+  const uatReady = passedUat === UAT_CASES.length && evidenceReadyUat === UAT_CASES.length;
   const preopeningReportedTotal = preopeningAccounts.reduce((sum, account) => sum + Number(account.reportedBalance), 0);
   const preopeningImportedTotal = preopeningAccounts.reduce(
     (sum, account) => sum + account.entries.reduce((entrySum, entry) => entrySum + Number(entry.debit) - Number(entry.credit), 0),
@@ -142,7 +143,7 @@ export default async function ReadinessPage() {
     { label: "دليل الخدمات والأسعار", done: servicesReady, detail: `${serviceProducts} خدمة مسجلة` },
     { label: "رصيد المخزون الافتتاحي", done: stockReady, detail: `${openingStockMovements} حركة توريد/رصيد موجبة مسجلة` },
     { label: "الموردون", done: suppliersReady, detail: `${suppliers} موردين نشطين` },
-    { label: "اختبارات القبول التشغيلي UAT", done: uatReady, detail: `${passedUat} من ${UAT_CASES.length} سيناريو ناجح` },
+    { label: "اختبارات القبول التشغيلي UAT", done: uatReady, detail: `${passedUat} من ${UAT_CASES.length} ناجح · ${evidenceReadyUat} موثق بدليل` },
   ];
 
   const completed = checklist.filter((item) => item.done).length;
@@ -208,7 +209,7 @@ export default async function ReadinessPage() {
           {!servicesReady && <p>• قائمة الخدمات وأسعارها وربط الخدمات المؤهلة لكوبون الغسيل.</p>}
           {!stockReady && <p>• الجرد الافتتاحي للمخزون بالكميات الفعلية.</p>}
           {!suppliersReady && <p>• بيانات الموردين الأساسيين وشروط التوريد.</p>}
-          {!uatReady && <p>• اجتياز جميع اختبارات القبول التشغيلي UAT: المنجز حاليًا {passedUat} من {UAT_CASES.length}.</p>}
+          {!uatReady && <p>• اجتياز جميع اختبارات القبول التشغيلي UAT مع دليل قابل للتتبع لكل نتيجة ناجحة: الناجح {passedUat} من {UAT_CASES.length} · الموثق {evidenceReadyUat}.</p>}
           {preopeningLedgerReady && usersReady && hrReady && productsReady && servicesReady && stockReady && suppliersReady && !uatReady && (
             <p className="formNotice">بيانات الإطلاق الأساسية مكتملة؛ المتبقي تنفيذ واعتماد UAT.</p>
           )}
