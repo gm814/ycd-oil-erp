@@ -31,14 +31,7 @@ jobs:
           node-version: 22
       - run: npm install
       - run: npm run db:generate
-      - name: Emit baseline migration candidate
-        run: |
-          npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > /tmp/ycd-baseline.sql
-          echo "YCD_BASELINE_SQL_B64_BEGIN"
-          base64 -w0 /tmp/ycd-baseline.sql
-          echo
-          echo "YCD_BASELINE_SQL_B64_END"
-      - run: npx prisma db push --skip-generate
+      - run: npx prisma migrate deploy
       - run: npm run db:seed
       - run: npm run verify:preopening
       - run: npm run verify:controls
