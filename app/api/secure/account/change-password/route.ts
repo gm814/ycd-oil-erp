@@ -39,10 +39,14 @@ export async function POST(request: Request) {
   if (!valid) return NextResponse.json({ error: "CURRENT_PASSWORD_INVALID" }, { status: 401 });
 
   const passwordHash = await hash(parsed.data.newPassword, 12);
-  await db.$transaction(async (tx) => {
-    await tx.user.update({
+  const updatedUser = await db.$transaction(async (tx) => {
+    const updated = await tx.user.update({
       where: { id: user.id },
-      data: { passwordHash, mustChangePassword: false },
+      data: {
+        passwordHash,
+        mustChangePassword: false,
+        sessionVersion: { increment: 1 },
+      },
     });
     await tx.auditLog.create({
       data: {
@@ -50,9 +54,13 @@ export async function POST(request: Request) {
         action: "USER_PASSWORD_CHANGED",
         entityType: "User",
         entityId: user.id,
-        afterJson: { forcedChangeCompleted: user.mustChangePassword },
+        afterJson: {
+          forcedChangeCompleted: user.mustChangePassword,
+          sessionVersion: updated.sessionVersion,
+        },
       },
     });
+    return updated;
   });
 
   const roles = user.roles.map((entry) => entry.role.code);
@@ -65,6 +73,7 @@ export async function POST(request: Request) {
     username: user.username,
     email: user.email ?? undefined,
     mustChangePassword: false,
+    sessionVersion: updatedUser.sessionVersion,
     branchId: user.branchId ?? undefined,
     roles,
     permissions,
