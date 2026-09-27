@@ -111,3 +111,6 @@ header h1{margin:0 0 6px;font-size:28px}header p{margin:0;color:#666}.branch{bac
 .uatCard textarea{width:100%;border:1px solid #d8d8d8;border-radius:12px;padding:13px;background:#fff;resize:vertical;font:inherit}
 .uatCard textarea:focus{border-color:var(--orange);box-shadow:0 0 0 3px #f18f211c;outline:none}
 @media(max-width:850px){.uatGrid{grid-template-columns:1fr}}
+
+.uatExecutionPlan{background:#fafafa;border:1px solid #e6e6e6;border-right:4px solid var(--gold);border-radius:10px;padding:12px 14px;margin:12px 0}
+.uatExecutionPlan>b{display:block;margin-bottom:7px}.uatExecutionPlan ol{margin:0 18px 10px 0;padding:0;display:grid;gap:5px}.uatExecutionPlan p{margin:0;color:#555;line-height:1.7}
