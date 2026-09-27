@@ -248,7 +248,10 @@ export default async function ReportsPage({
           <h1>التقارير والرقابة الإدارية</h1>
           <p>مؤشرات تشغيلية ومالية ورقابية مجمعة للفرع مع تتبع مصادر التنبيه.</p>
         </div>
-        <img className="documentCenterLogo" src="/brand/ycd-logo-source.svg" alt="YCD OIL" />
+        <div className="actionStack">
+          <a className="secondaryLink" href="/dashboard/reports/audit">سجل التدقيق الكامل</a>
+          <img className="documentCenterLogo" src="/brand/ycd-logo-source.svg" alt="YCD OIL" />
+        </div>
       </div>
 
       <article className="panel reportFilter">
