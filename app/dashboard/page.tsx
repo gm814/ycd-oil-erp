@@ -150,6 +150,7 @@ export default async function DashboardPage() {
           </div>
           <div className="userbar">
             <div className="branch">{session.name} · {companyConfig.branch}</div>
+            <a className="secondaryLink" href="/dashboard/account/security">أمان الحساب</a>
             <LogoutButton />
           </div>
         </header>
