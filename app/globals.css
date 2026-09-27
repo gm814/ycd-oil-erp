@@ -101,3 +101,13 @@ header h1{margin:0 0 6px;font-size:28px}header p{margin:0;color:#666}.branch{bac
 .temporaryCredentials{margin-bottom:18px;border:2px solid var(--gold);background:#fffdf6}
 .temporaryCredentials code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px;direction:ltr}
 @media(max-width:800px){.accessProvisionPanel{align-items:stretch;flex-direction:column}.accessProvisionPanel button{width:100%}}
+
+
+.uatGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:18px 0}
+.uatCard{border-top:5px solid var(--orange)}
+.uatCardHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.uatCard h2{font-size:17px;margin:7px 0 10px}
+.uatCard>small{color:var(--orange);font-weight:800}
+.uatCard textarea{width:100%;border:1px solid #d8d8d8;border-radius:12px;padding:13px;background:#fff;resize:vertical;font:inherit}
+.uatCard textarea:focus{border-color:var(--orange);box-shadow:0 0 0 3px #f18f211c;outline:none}
+@media(max-width:850px){.uatGrid{grid-template-columns:1fr}}
