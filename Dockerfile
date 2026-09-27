@@ -1,8 +1,8 @@
 FROM node:22-bookworm-slim AS deps
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json ./
+RUN npm install --no-audit --no-fund
 
 FROM node:22-bookworm-slim AS builder
 WORKDIR /app
