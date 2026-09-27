@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { operationalTeam } from "@/lib/operations";
+import { UAT_CASES } from "@/lib/uat";
 
 export const GO_LIVE_REQUIREMENTS = {
   EMPLOYEES: "EMPLOYEES",
@@ -13,6 +14,7 @@ export const GO_LIVE_REQUIREMENTS = {
   SERVICE_CATALOG: "SERVICE_CATALOG",
   OPENING_STOCK: "OPENING_STOCK",
   SUPPLIERS: "SUPPLIERS",
+  UAT_COMPLETE: "UAT_COMPLETE",
   OPEN_SHIFT: "OPEN_SHIFT",
 } as const;
 
@@ -31,6 +33,7 @@ export async function evaluateGoLiveReadiness(branchId: string) {
     openingStockMovements,
     suppliers,
     preopeningAccounts,
+    uatResults,
     openShifts,
   ] = await Promise.all([
     db.branch.findUnique({ where: { id: branchId } }),
@@ -71,6 +74,10 @@ export async function evaluateGoLiveReadiness(branchId: string) {
       where: { branchId },
       include: { entries: { select: { debit: true, credit: true } } },
     }),
+    db.uatTestResult.findMany({
+      where: { branchId },
+      select: { caseCode: true, status: true },
+    }),
     db.shift.count({ where: { branchId, closedAt: null } }),
   ]);
 
@@ -96,6 +103,9 @@ export async function evaluateGoLiveReadiness(branchId: string) {
     0,
   );
   const preopeningLedgerVariance = preopeningReportedTotal - preopeningImportedTotal;
+  const passedUatCodes = new Set(uatResults.filter((item) => item.status === "PASSED").map((item) => item.caseCode));
+  const passedUat = UAT_CASES.filter((item) => passedUatCodes.has(item.code)).length;
+  const uatReady = passedUat === UAT_CASES.length;
 
   const missing: GoLiveRequirementCode[] = [];
   if (employees.length < operationalTeam.length) missing.push(GO_LIVE_REQUIREMENTS.EMPLOYEES);
@@ -113,6 +123,7 @@ export async function evaluateGoLiveReadiness(branchId: string) {
   if (serviceProducts <= 0) missing.push(GO_LIVE_REQUIREMENTS.SERVICE_CATALOG);
   if (openingStockMovements <= 0) missing.push(GO_LIVE_REQUIREMENTS.OPENING_STOCK);
   if (suppliers <= 0) missing.push(GO_LIVE_REQUIREMENTS.SUPPLIERS);
+  if (!uatReady) missing.push(GO_LIVE_REQUIREMENTS.UAT_COMPLETE);
   if (openShifts > 0) missing.push(GO_LIVE_REQUIREMENTS.OPEN_SHIFT);
 
   return {
@@ -134,6 +145,9 @@ export async function evaluateGoLiveReadiness(branchId: string) {
       serviceProducts,
       openingStockMovements,
       suppliers,
+      passedUat,
+      requiredUat: UAT_CASES.length,
+      uatReady,
       openShifts,
     },
   };
