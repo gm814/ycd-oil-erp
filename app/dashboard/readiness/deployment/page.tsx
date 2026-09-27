@@ -24,6 +24,7 @@ export default async function DeploymentReadinessPage() {
   const preopeningOverride = process.env.ALLOW_PREOPENING_OPERATIONS === "true";
   const production = process.env.NODE_ENV === "production";
   const vercel = Boolean(process.env.VERCEL);
+  const hostingProvider = vercel ? "Vercel" : (process.env.HOSTING_PROVIDER || "غير مرتبطة بعد");
   const checks = [
     {
       label: "اتصال قاعدة البيانات",
@@ -46,9 +47,9 @@ export default async function DeploymentReadinessPage() {
       detail: production ? "NODE_ENV=production" : "هذه البيئة ليست Production حاليًا.",
     },
     {
-      label: "بيئة Vercel",
-      ok: vercel,
-      detail: vercel ? "التطبيق يعمل داخل بيئة Vercel." : "لم تُكتشف بيئة Vercel في هذا التشغيل.",
+      label: "بيئة الاستضافة",
+      ok: vercel || Boolean(process.env.HOSTING_PROVIDER),
+      detail: vercel ? "التطبيق يعمل داخل بيئة Vercel." : process.env.HOSTING_PROVIDER ? `التطبيق يعمل عبر ${process.env.HOSTING_PROVIDER}.` : "لم تُحدد منصة الاستضافة في هذا التشغيل.",
     },
   ];
   const readyCount = checks.filter((item) => item.ok).length;
@@ -67,7 +68,7 @@ export default async function DeploymentReadinessPage() {
       <section className="kpis reportKpis">
         <article><span>حالة الفرع</span><b>{branch.operationalStatus}</b></article>
         <article><span>فحوصات البيئة الجاهزة</span><b>{readyCount} / {checks.length}</b></article>
-        <article><span>بيئة الاستضافة</span><b>{vercel ? "Vercel" : "غير مرتبطة بعد"}</b></article>
+        <article><span>بيئة الاستضافة</span><b>{hostingProvider}</b></article>
         <article><span>التشغيل التجاري</span><b>{branch.operationalStatus === "LIVE" ? "مفعّل" : "مقفل"}</b></article>
       </section>
 
@@ -91,7 +92,8 @@ export default async function DeploymentReadinessPage() {
 
       <article className="panel">
         <h2>قاعدة الأمان قبل النشر</h2>
-        <p>يمكن نشر نسخة PREOPENING للإعداد وإدخال البيانات، لكن لا تُفتح العمليات التجارية إلا بعد اكتمال بيانات التشغيل وUAT ثم اعتماد GO LIVE.</p>
+        <p>يمكن نشر نسخة PREOPENING للإعداد وإدخال البيانات على Vercel أو Docker، لكن لا تُفتح العمليات التجارية إلا بعد اكتمال بيانات التشغيل وUAT ثم اعتماد GO LIVE.</p>
+        <p><a className="orderLink" href="/api/health" target="_blank" rel="noreferrer">فحص صحة التطبيق وقاعدة البيانات</a></p>
         <p className="muted">هذه الشاشة لا تعرض AUTH_SECRET أو DATABASE_URL أو أي قيمة سرية؛ تعرض حالة الإعداد فقط.</p>
       </article>
     </main>
