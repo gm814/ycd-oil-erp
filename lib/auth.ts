@@ -10,6 +10,7 @@ export type SessionPayload = {
   username: string;
   email?: string;
   mustChangePassword: boolean;
+  sessionVersion: number;
   branchId?: string;
   roles: string[];
   permissions: string[];
@@ -65,6 +66,7 @@ export async function getSession() {
     // A password reset or forced-change state invalidates any older browser session.
     // The user must sign in again with the current password before continuing.
     if (tokenSession.mustChangePassword !== user.mustChangePassword) return null;
+    if (tokenSession.sessionVersion !== user.sessionVersion) return null;
 
     const roles = user.roles.map((entry) => entry.role.code);
     const permissions = [...new Set(
@@ -79,6 +81,7 @@ export async function getSession() {
       username: user.username,
       email: user.email ?? undefined,
       mustChangePassword: user.mustChangePassword,
+      sessionVersion: user.sessionVersion,
       branchId: user.branchId ?? undefined,
       roles,
       permissions,
