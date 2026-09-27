@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
-import { operationalTeam } from "@/lib/operations";
+import { evaluateGoLiveReadiness } from "@/lib/go-live-readiness";
 
 export async function POST() {
   const session = await getSession();
@@ -12,63 +12,8 @@ export async function POST() {
     return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
 
-  const [
-    branch,
-    employees,
-    bankAccounts,
-    openingBankBalance,
-    parentCompanies,
-    groupFunding,
-    serviceProducts,
-    physicalProducts,
-    openingStockMovements,
-    suppliers,
-    preopeningAccounts,
-    openShifts,
-  ] = await Promise.all([
-    db.branch.findUnique({ where: { id: session.branchId } }),
-    db.employee.findMany({
-      where: { branchId: session.branchId, active: true },
-      select: {
-        code: true,
-        user: {
-          select: {
-            status: true,
-            passwordHash: true,
-            roles: { select: { role: { select: { code: true } } } },
-          },
-        },
-      },
-    }),
-    db.financialAccount.findMany({
-      where: { branchId: session.branchId, active: true, type: "BANK" },
-      select: { bankName: true, accountNumber: true, iban: true },
-    }),
-    db.financialTransaction.aggregate({
-      where: { branchId: session.branchId, type: "OPENING_BALANCE", account: { type: "BANK" } },
-      _sum: { amount: true },
-    }),
-    db.groupCompany.count({
-      where: {
-        organization: { branches: { some: { id: session.branchId } } },
-        relationType: "PARENT",
-        active: true,
-      },
-    }),
-    db.groupFunding.aggregate({
-      where: { branchId: session.branchId },
-      _sum: { amount: true },
-    }),
-    db.product.count({ where: { active: true, category: "SERVICE" } }),
-    db.product.count({ where: { active: true, category: { not: "SERVICE" } } }),
-    db.stockMovement.count({ where: { branchId: session.branchId, quantity: { gt: 0 } } }),
-    db.supplier.count({ where: { active: true } }),
-    db.preopeningLedgerAccount.findMany({
-      where: { branchId: session.branchId },
-      include: { entries: { select: { debit: true, credit: true } } },
-    }),
-    db.shift.count({ where: { branchId: session.branchId, closedAt: null } }),
-  ]);
+  const readiness = await evaluateGoLiveReadiness(session.branchId);
+  const branch = readiness.branch;
 
   if (!branch) return NextResponse.json({ error: "BRANCH_NOT_FOUND" }, { status: 404 });
   if (branch.operationalStatus === "LIVE") {
@@ -78,61 +23,11 @@ export async function POST() {
     return NextResponse.json({ error: "BRANCH_SUSPENDED" }, { status: 423 });
   }
 
-  const openingBalance = Number(openingBankBalance._sum.amount ?? 0);
-  const fundingTotal = Number(groupFunding._sum.amount ?? 0);
-  const bankReady = bankAccounts.some((account) => account.bankName && account.accountNumber && account.iban);
-  const employeeByCode = new Map(employees.map((employee) => [employee.code, employee]));
-  const accountPlan = operationalTeam.map((member) => {
-    const employee = employeeByCode.get(member.code);
-    const user = employee?.user;
-    const actualRoles = new Set(user?.roles.map((entry) => entry.role.code) ?? []);
-    return {
-      code: member.code,
-      accountReady: Boolean(user?.status === "ACTIVE" && user.passwordHash),
-      rolesReady: member.systemRoleCodes.every((roleCode) => actualRoles.has(roleCode)),
-    };
-  });
-  const activeUsers = accountPlan.filter((item) => item.accountReady).length;
-  const roleReadyUsers = accountPlan.filter((item) => item.accountReady && item.rolesReady).length;
-  const preopeningReportedTotal = preopeningAccounts.reduce((sum, account) => sum + Number(account.reportedBalance), 0);
-  const preopeningImportedTotal = preopeningAccounts.reduce(
-    (sum, account) => sum + account.entries.reduce((entrySum, entry) => entrySum + Number(entry.debit) - Number(entry.credit), 0),
-    0,
-  );
-  const preopeningLedgerVariance = preopeningReportedTotal - preopeningImportedTotal;
-
-  const missing: string[] = [];
-  if (employees.length < operationalTeam.length) missing.push("EMPLOYEES");
-  if (activeUsers < operationalTeam.length) missing.push("USER_ACCOUNTS");
-  if (activeUsers === operationalTeam.length && roleReadyUsers < operationalTeam.length) missing.push("USER_ROLE_PLAN");
-  if (!bankReady) missing.push("BANK_ACCOUNT");
-  if (openingBalance <= 0) missing.push("OPENING_BANK_BALANCE");
-  if (parentCompanies <= 0 || fundingTotal < openingBalance) missing.push("FUNDING_SOURCE");
-  if (preopeningAccounts.length <= 0 || Math.abs(preopeningLedgerVariance) > 0.01) missing.push("PREOPENING_LEDGER_RECONCILIATION");
-  if (physicalProducts <= 0) missing.push("PRODUCT_CATALOG");
-  if (serviceProducts <= 0) missing.push("SERVICE_CATALOG");
-  if (openingStockMovements <= 0) missing.push("OPENING_STOCK");
-  if (suppliers <= 0) missing.push("SUPPLIERS");
-  if (openShifts > 0) missing.push("OPEN_SHIFT");
-
-  if (missing.length > 0) {
+  if (!readiness.ready) {
     return NextResponse.json({
       error: "GO_LIVE_REQUIREMENTS_INCOMPLETE",
-      missing,
-      summary: {
-        employees: employees.length,
-        activeUsers,
-        roleReadyUsers,
-        openingBalance,
-        fundingTotal,
-        preopeningReportedTotal,
-        preopeningImportedTotal,
-        preopeningLedgerVariance,
-        physicalProducts,
-        serviceProducts,
-        openingStockMovements,
-        suppliers,
-      },
+      missing: readiness.missing,
+      summary: readiness.summary,
     }, { status: 409 });
   }
 
@@ -156,20 +51,7 @@ export async function POST() {
         afterJson: {
           operationalStatus: "LIVE",
           goLiveAt: live.goLiveAt?.toISOString() ?? null,
-          readiness: {
-            employees: employees.length,
-            activeUsers,
-            roleReadyUsers,
-            openingBalance,
-            fundingTotal,
-            preopeningReportedTotal,
-            preopeningImportedTotal,
-            preopeningLedgerVariance,
-            physicalProducts,
-            serviceProducts,
-            openingStockMovements,
-            suppliers,
-          },
+          readiness: readiness.summary,
         },
       },
     });
