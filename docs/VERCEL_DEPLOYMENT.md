@@ -16,6 +16,16 @@
 - `NEXT_PUBLIC_APP_NAME=YCD OIL ERP`.
 - `ADMIN_EMAIL`, `ADMIN_USERNAME`, `ADMIN_PASSWORD` تستخدم فقط لتهيئة حساب الإدارة الأول ثم تزال كلمة المرور من إعدادات النشر بعد إنشاء الحسابات الفعلية.
 
+## أمر البناء على Vercel
+
+المستودع يثبت أمر البناء في `vercel.json` على:
+
+```bash
+npm run vercel-build
+```
+
+وهذا الأمر ينفذ `prisma generate` أولًا ثم `next build`. لا تُشغّل migrations من Build Command؛ ترحيل قاعدة الإنتاج يتم كخطوة نشر مستقلة عبر `npm run db:deploy`.
+
 ## قاعدة البيانات قبل أول نشر
 
 نفذ على قاعدة الإنتاج:
