@@ -172,7 +172,7 @@ export default async function ReadinessPage() {
         <div>
           <a href="/dashboard" className="backLink">← لوحة التحكم</a>
           <h1>جاهزية افتتاح وتشغيل YCD OIL</h1>
-          <p>لوحة تجهيز ما قبل التشغيل للفرع الأول – الرياض - حي طويق.</p>
+          <p>النظام جاهز للنشر والاستخدام الإداري الآن؛ التشغيل التجاري للفرع الأول – الرياض - حي طويق يبقى محميًا حتى اكتمال بيانات التشغيل.</p>
         </div>
         <img className="documentCenterLogo" src="/brand/ycd-logo-source.svg" alt="YCD OIL" />
       </div>
@@ -193,7 +193,7 @@ export default async function ReadinessPage() {
           <a className="secondaryLink" href="/dashboard/readiness/uat">اختبارات القبول التشغيلي UAT</a>
           <a className="secondaryLink" href="/dashboard/readiness/launch-report">محضر جاهزية الإطلاق للطباعة</a>
         </div>
-        <span className="muted">بيانات الفريق والبنك والهوية مثبتة؛ المتبقي حسابات الدخول وبيانات HR الفعلية والأصناف والخدمات والمخزون والموردون.</span>
+        <span className="muted">يمكن نشر النظام النهائي الآن وإدخال الأصناف والخدمات والمخزون والموردين لاحقًا من مركز الاستيراد. تبقى المبيعات والورديات التجارية مقفلة آليًا حتى اعتماد GO LIVE.</span>
       </div>
 
       <section className="workGrid">
@@ -212,7 +212,7 @@ export default async function ReadinessPage() {
         </article>
 
         <article className="panel">
-          <h2>البيانات التي تمنع الإطلاق الكامل</h2>
+          <h2>البيانات المؤجلة قبل التشغيل التجاري</h2>
           {!preopeningLedgerReady && <p>• مطابقة كشوف وتكاليف ما قبل التشغيل مع القيود المستوردة.</p>}
           {!usersReady && <p>• بيانات دخول الموظفين الذين سيستخدمون النظام فعليًا.</p>}
           {!hrReady && <p>• استكمال بيانات الموظفين والرواتب والبدلات وتاريخ التعيين من ملف الموارد البشرية.</p>}
@@ -293,7 +293,7 @@ export default async function ReadinessPage() {
 
       <p className="formNotice">{branchState.operationalStatus === "LIVE"
         ? "الفرع مفعّل للتشغيل التجاري. تستمر الرقابة عبر الورديات والإقفالات والمطابقات وسجل التدقيق."
-        : "المركز مجهز ميدانيًا، لكن التشغيل التجاري سيبقى مقفلًا حتى تكتمل بيانات HR والأصناف والخدمات والمخزون والموردين وحسابات المستخدمين وتنجح اختبارات UAT."}</p>
+        : "النسخة الإنتاجية قابلة للنشر والاستخدام لإدخال البيانات والإعداد. التشغيل التجاري سيبقى مقفلًا فقط حتى تكتمل البيانات المؤجلة وحسابات المستخدمين وتنجح اختبارات UAT."}</p>
     </main>
   );
 }
