@@ -7,6 +7,7 @@ import { operationalTeam } from "@/lib/operations";
 
 const rowSchema = z.object({
   code: z.string().trim().min(2).max(30),
+  nameAr: z.string().trim().min(2).max(160),
   phone: z.string().trim().max(30).optional().default(""),
   jobTitleAr: z.string().trim().min(2).max(160),
   hireDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -44,6 +45,11 @@ export async function POST(request: Request) {
   const plannedCodes = new Set(operationalTeam.map((member) => member.code));
   if (rows.some((row) => !plannedCodes.has(row.code as (typeof operationalTeam)[number]["code"]))) {
     return NextResponse.json({ error: "EMPLOYEE_NOT_IN_OPERATIONAL_PLAN" }, { status: 409 });
+  }
+  const plannedByCode = new Map(operationalTeam.map((member) => [member.code, member]));
+  const nameMismatch = rows.find((row) => plannedByCode.get(row.code as (typeof operationalTeam)[number]["code"])?.nameAr !== row.nameAr);
+  if (nameMismatch) {
+    return NextResponse.json({ error: `EMPLOYEE_NAME_MISMATCH:${nameMismatch.code}` }, { status: 409 });
   }
 
   try {
@@ -87,7 +93,7 @@ export async function POST(request: Request) {
             batchId: parsed.data.batchId,
             rowCount: rows.length,
             updated,
-            fields: ["phone", "jobTitleAr", "hireDate", "baseSalary", "housingAllowance", "transportAllowance", "iban"],
+            fields: ["nameAr_verified", "phone", "jobTitleAr", "hireDate", "baseSalary", "housingAllowance", "transportAllowance", "iban"],
           },
         },
       });
