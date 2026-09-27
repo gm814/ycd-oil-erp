@@ -51,6 +51,16 @@ export default function PreopeningImportClient({ canCatalog, canSuppliers }: Pro
 
   const catalogPreview = useMemo(() => catalogRows.slice(0, 8), [catalogRows]);
   const supplierPreview = useMemo(() => supplierRows.slice(0, 8), [supplierRows]);
+  const catalogSummary = useMemo(() => {
+    const services = catalogRows.filter((row) => row.category === "SERVICE").length;
+    const stockLines = catalogRows.filter((row) => row.category !== "SERVICE" && Number(row.openingQty || 0) > 0).length;
+    const openingUnits = catalogRows.reduce((sum, row) => sum + (row.category === "SERVICE" ? 0 : Number(row.openingQty || 0)), 0);
+    const openingCost = catalogRows.reduce((sum, row) => {
+      if (row.category === "SERVICE") return sum;
+      return sum + Number(row.openingQty || 0) * Number(row.costPrice || 0);
+    }, 0);
+    return { services, stockLines, openingUnits, openingCost };
+  }, [catalogRows]);
 
   async function readFile(event: ChangeEvent<HTMLInputElement>, kind: "catalog" | "suppliers") {
     const file = event.target.files?.[0];
@@ -139,7 +149,17 @@ export default function PreopeningImportClient({ canCatalog, canSuppliers }: Pro
             <label className="filePicker">ملف CSV / TSV
               <input type="file" accept=".csv,.tsv,text/csv,text/tab-separated-values" onChange={(event) => void readFile(event, "catalog")} />
             </label>
-            {catalogFile && <p><b>{catalogFile}</b> · {catalogRows.length} صف</p>}
+            {catalogFile && (
+              <>
+                <p><b>{catalogFile}</b> · {catalogRows.length} صف</p>
+                <div className="creditSummary">
+                  <div><span>الخدمات</span><b>{catalogSummary.services}</b></div>
+                  <div><span>أصناف برصيد افتتاحي</span><b>{catalogSummary.stockLines}</b></div>
+                  <div><span>إجمالي الوحدات</span><b>{catalogSummary.openingUnits.toLocaleString("ar-SA")}</b></div>
+                  <div><span>قيمة المخزون بالتكلفة</span><b>{catalogSummary.openingCost.toFixed(2)} ر.س</b></div>
+                </div>
+              </>
+            )}
             {catalogPreview.length > 0 && (
               <div className="tableWrap">
                 <table>
