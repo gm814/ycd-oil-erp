@@ -160,8 +160,13 @@ export default async function ReadinessPage() {
       </section>
 
       <div className="readinessActionBar">
-        <a className="primaryLink" href="/dashboard/readiness/import">استيراد بيانات ما قبل التشغيل</a>
-        <span className="muted">جاهز لاستقبال ملفات الأصناف والخدمات والمخزون والموردين عند وصولها.</span>
+        <div className="actionStack">
+          <a className="primaryLink" href="/dashboard/readiness/import">استيراد بيانات ما قبل التشغيل</a>
+          {hasPermission(session.permissions, PERMISSIONS.USER_MANAGE) && (
+            <a className="secondaryLink" href="/dashboard/admin/users">تهيئة حسابات الفريق والصلاحيات</a>
+          )}
+        </div>
+        <span className="muted">بيانات الفريق والبنك والهوية مثبتة؛ المتبقي تجهيز حسابات الدخول واستيراد الأصناف والخدمات والمخزون والموردين.</span>
       </div>
 
       <section className="workGrid">
