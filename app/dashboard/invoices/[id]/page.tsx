@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { companyConfig } from "@/lib/config";
 import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
+import { buildZatcaPhase1QrPayload, buildZatcaPhase1QrSvg } from "@/lib/zatca";
 import PrintButton from "./print-button";
 import CollectionForm from "./collection-form";
 import SalesReturnForm from "./sales-return-form";
@@ -57,6 +58,14 @@ export default async function InvoicePage({
   const effectiveTotal = Math.max(Number(invoice.total) - returnedTotal, 0);
   const netPaid = Math.max(paid - refunded, 0);
   const remaining = Math.max(effectiveTotal - netPaid, 0);
+  const zatcaQrPayload = buildZatcaPhase1QrPayload({
+    sellerName: companyConfig.legalNameAr,
+    vatNumber: companyConfig.vatNumber,
+    timestamp: invoice.createdAt,
+    totalWithVat: Number(invoice.total),
+    vatTotal: Number(invoice.vatAmount),
+  });
+  const zatcaQrSvg = buildZatcaPhase1QrSvg(zatcaQrPayload);
   const canCollect = hasPermission(session.permissions, PERMISSIONS.PAYMENT_RECEIVE);
   const canReturn = hasPermission(session.permissions, PERMISSIONS.SALES_RETURN_PROCESS);
   const returnedByItem = new Map<string, number>();
@@ -82,7 +91,7 @@ export default async function InvoicePage({
             <p>{companyConfig.email} · {companyConfig.website}</p>
           </div>
           <div className="invoiceTitle">
-            <span>فاتورة ضريبية</span>
+            <span>فاتورة ضريبية مبسطة</span>
             <h1>{invoice.invoiceNo}</h1>
             <p>{invoice.createdAt.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</p>
             <p><b>الحالة:</b> {invoice.status === "PAID" ? "مسددة" : invoice.status === "PARTIALLY_PAID" ? "مسددة جزئيًا" : invoice.status === "ISSUED" ? "مستحقة" : invoice.status}</p>
@@ -95,6 +104,15 @@ export default async function InvoicePage({
           <div><span>السجل التجاري</span><b>{companyConfig.crNumber}</b></div>
           <div><span>الرقم الضريبي</span><b>{companyConfig.vatNumber}</b></div>
           <div><span>نسبة الضريبة</span><b>{(Number(invoice.vatRate) * 100).toFixed(0)}%</b></div>
+        </section>
+
+        <section className="invoiceQrBlock">
+          <div className="invoiceQr" aria-label="رمز الاستجابة السريعة للفاتورة" dangerouslySetInnerHTML={{ __html: zatcaQrSvg }} />
+          <div>
+            <h3>رمز الفاتورة الإلكترونية</h3>
+            <p>QR بصيغة TLV للبيانات الأساسية: اسم البائع، الرقم الضريبي، وقت الإصدار، الإجمالي شامل الضريبة، وإجمالي ضريبة القيمة المضافة.</p>
+            <small>هذا الرمز يحقق طبقة QR الأساسية للفاتورة المبسطة. متطلبات الربط مع منصة فاتورة - المرحلة الثانية - تُدار كمسار تكامل مستقل عند انطباقها على المنشأة.</small>
+          </div>
         </section>
 
         <section className="invoiceParties">
