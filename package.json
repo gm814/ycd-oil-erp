@@ -11,7 +11,8 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "verify:preopening": "tsx scripts/verify-preopening.ts",
-    "verify:controls": "tsx scripts/verify-controls.ts"
+    "verify:controls": "tsx scripts/verify-controls.ts",
+    "verify:brand": "tsx scripts/verify-brand.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
