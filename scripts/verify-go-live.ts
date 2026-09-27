@@ -57,7 +57,7 @@ async function main() {
       where: { branchId: branch.id },
       include: { entries: { select: { debit: true, credit: true } } },
     }),
-    prisma.shift.count({ where: { branchId: branch.id, status: "OPEN" } }),
+    prisma.shift.count({ where: { branchId: branch.id, closedAt: null } }),
   ]);
 
   const employeeByCode = new Map(employees.map((employee) => [employee.code, employee]));
