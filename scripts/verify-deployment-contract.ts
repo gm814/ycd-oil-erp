@@ -13,10 +13,11 @@ async function main() {
   ]);
 
   const packageJson = JSON.parse(packageJsonRaw) as { scripts?: Record<string, string> };
-  const vercel = JSON.parse(vercelRaw) as { framework?: string };
+  const vercel = JSON.parse(vercelRaw) as { framework?: string; buildCommand?: string };
   const scripts = packageJson.scripts ?? {};
 
   assert(vercel.framework === "nextjs", "vercel.json يجب أن يثبت إطار Next.js");
+  assert(vercel.buildCommand === "npm run vercel-build", "Vercel يجب أن يستخدم أمر البناء الآمن المعتمد");
   assert(
     scripts["vercel-build"] === "npm run db:generate && next build",
     "Vercel build يجب أن يولد Prisma Client قبل Next.js build",
