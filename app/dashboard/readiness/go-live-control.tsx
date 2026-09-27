@@ -17,6 +17,7 @@ const missingLabel: Record<string, string> = {
   OPENING_STOCK: "الجرد الافتتاحي",
   SUPPLIERS: "الموردون",
   UAT_COMPLETE: "اختبارات القبول التشغيلي UAT",
+  UAT_EVIDENCE: "أدلة اختبارات UAT لكل سيناريو ناجح",
   OPEN_SHIFT: "إقفال الوردية المفتوحة",
 };
 
