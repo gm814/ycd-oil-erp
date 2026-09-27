@@ -35,6 +35,9 @@ export async function POST(request: Request) {
   if (new Set(rows.map((row) => row.sku)).size !== rows.length) {
     return NextResponse.json({ error: "DUPLICATE_SKU_IN_BATCH" }, { status: 409 });
   }
+  if (rows.some((row) => row.category === "SERVICE" && row.openingQty !== 0)) {
+    return NextResponse.json({ error: "SERVICE_OPENING_STOCK_NOT_ALLOWED" }, { status: 400 });
+  }
 
   try {
     const result = await db.$transaction(async (tx) => {
@@ -55,12 +58,20 @@ export async function POST(request: Request) {
           : await tx.product.create({ data: { sku: row.sku, ...data } });
         existing ? updated++ : created++;
 
-        if (row.category !== "SERVICE" && row.openingQty > 0) {
-          const reference = `OPENING-STOCK:${parsed.data.batchId}:${row.sku}`;
-          const prior = await tx.stockMovement.findFirst({
-            where: { branchId: session.branchId!, productId: product.id, type: "RECEIPT", reference },
+        if (row.category !== "SERVICE") {
+          const reference = `OPENING-STOCK:${row.sku}`;
+          await tx.stockMovement.deleteMany({
+            where: {
+              branchId: session.branchId!,
+              productId: product.id,
+              type: "RECEIPT",
+              OR: [
+                { reference },
+                { reference: { startsWith: "OPENING-STOCK:", endsWith: `:${row.sku}` } },
+              ],
+            },
           });
-          if (!prior) {
+          if (row.openingQty > 0) {
             await tx.stockMovement.create({
               data: {
                 branchId: session.branchId!, productId: product.id, type: "RECEIPT",
@@ -76,7 +87,14 @@ export async function POST(request: Request) {
         data: {
           actorId: session.userId, action: "PREOPENING_CATALOG_IMPORTED",
           entityType: "Branch", entityId: session.branchId!,
-          afterJson: { batchId: parsed.data.batchId, rowCount: rows.length, created, updated, openingMovements },
+          afterJson: {
+            batchId: parsed.data.batchId,
+            rowCount: rows.length,
+            created,
+            updated,
+            openingMovements,
+            openingStockMode: "REPLACE_PER_SKU_PREOPENING",
+          },
         },
       });
       return { rowCount: rows.length, created, updated, openingMovements };
