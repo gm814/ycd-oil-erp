@@ -66,6 +66,10 @@ const roleDefinitions: Record<string, { nameAr: string; permissions: readonly st
     nameAr: "مدير المالية",
     permissions: ["dashboard.view", "invoice.issue", "payment.receive", "customer.view", "credit.manage", "credit.sale", "sales_return.process", "shift.close", "shift.variance.approve", "finance.close.prepare", "finance.close.review", "supplier_invoice.create", "supplier_invoice.approve_payment", "finance.view", "finance.manage", "finance.group_funding", "finance.expense", "finance.expense.approve", "finance.expense.pay", "finance.bank_reconcile", "finance.bank_reconcile.review", "finance.transfer", "pos.settle", "supplier_payment.execute", "custody.request", "custody.approve", "custody.disburse", "custody.settle", "custody.close", "hr.view", "payroll.approve", "payroll.pay", "reports.view", "audit.view"],
   },
+  GENERAL_ACCOUNTANT: {
+    nameAr: "المحاسب العام",
+    permissions: ["dashboard.view", "invoice.issue", "payment.receive", "customer.view", "credit.manage", "sales_return.process", "shift.close", "shift.variance.approve", "finance.close.review", "supplier_invoice.approve_payment", "finance.view", "finance.manage", "finance.group_funding", "finance.expense.approve", "finance.expense.pay", "finance.bank_reconcile.review", "finance.transfer", "pos.settle", "supplier_payment.execute", "custody.approve", "custody.close", "hr.view", "payroll.approve", "payroll.pay", "reports.view", "audit.view"],
+  },
   OPERATIONS_MANAGER: {
     nameAr: "مدير العمليات",
     permissions: ["dashboard.view", "service_order.create", "service_order.approve", "customer.view", "inventory.issue", "shift.open", "shift.close", "shift.variance.approve", "coupon.redeem", "procurement.request", "procurement.approve", "custody.request", "custody.approve", "custody.settle", "hr.view", "attendance.manage", "asset.view", "asset.manage", "maintenance.manage", "reports.view", "audit.view"],
