@@ -34,5 +34,6 @@ jobs:
       - run: npx prisma db push --skip-generate
       - run: npm run db:seed
       - run: npm run verify:preopening
+      - run: npm run verify:controls
       - run: npm run typecheck
       - run: npm run build
