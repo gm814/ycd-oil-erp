@@ -1,5 +1,6 @@
 import { jwtVerify, SignJWT } from "jose";
 import { cookies } from "next/headers";
+import { db } from "@/lib/db";
 
 export const SESSION_COOKIE = "ycd_session";
 
@@ -38,8 +39,50 @@ export async function getSession() {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return null;
+
   try {
-    return await verifySessionToken(token);
+    const tokenSession = await verifySessionToken(token);
+    if (!tokenSession.userId) return null;
+
+    const user = await db.user.findUnique({
+      where: { id: tokenSession.userId },
+      include: {
+        roles: {
+          include: {
+            role: {
+              include: {
+                permissions: { include: { permission: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user || user.status !== "ACTIVE") return null;
+    if (user.lockedUntil && user.lockedUntil > new Date()) return null;
+
+    // A password reset or forced-change state invalidates any older browser session.
+    // The user must sign in again with the current password before continuing.
+    if (tokenSession.mustChangePassword !== user.mustChangePassword) return null;
+
+    const roles = user.roles.map((entry) => entry.role.code);
+    const permissions = [...new Set(
+      user.roles.flatMap((entry) =>
+        entry.role.permissions.map((item) => item.permission.code),
+      ),
+    )];
+
+    return {
+      userId: user.id,
+      name: user.name,
+      username: user.username,
+      email: user.email ?? undefined,
+      mustChangePassword: user.mustChangePassword,
+      branchId: user.branchId ?? undefined,
+      roles,
+      permissions,
+    } satisfies SessionPayload;
   } catch {
     return null;
   }
