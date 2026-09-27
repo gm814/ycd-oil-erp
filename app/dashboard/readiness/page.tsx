@@ -91,8 +91,18 @@ export default async function ReadinessPage() {
   if (!branchState) redirect("/dashboard");
   const openingBalance = Number(openingBankBalance._sum.amount ?? 0);
   const fundingTotal = Number(groupFunding._sum.amount ?? 0);
-  const bankReady = bankAccounts.some((account) => account.bankName && account.accountNumber && account.iban);
-  const identityReady = Boolean(companyConfig.brand && companyConfig.bank.iban);
+  const certifiedBank = bankAccounts.find((account) =>
+    account.bankName === companyConfig.bank.nameAr &&
+    account.accountNumber === companyConfig.bank.accountNumber &&
+    account.iban === companyConfig.bank.iban
+  );
+  const bankReady = Boolean(certifiedBank);
+  const identityReady = Boolean(
+    companyConfig.brand &&
+    companyConfig.brandIdentity.logoAsset &&
+    companyConfig.bank.iban &&
+    companyConfig.unifiedNumber
+  );
   const staffReady = employees.length >= operationalTeam.length;
   const hrReadyCount = employees.filter((employee) => employee.hireDate).length;
   const hrReady = employees.length >= operationalTeam.length && hrReadyCount === employees.length;
@@ -134,7 +144,7 @@ export default async function ReadinessPage() {
     { label: "الهيكل الوظيفي الأساسي", done: staffReady, detail: `${employees.length} موظفين مسجلين` },
     { label: "بيانات الموارد البشرية والرواتب", done: hrReady, detail: `${hrReadyCount} من ${employees.length} ملفات موظفين مكتملة بتاريخ تعيين` },
     { label: "هوية YCD OIL وبيانات المنشأة", done: identityReady, detail: "الهوية والألوان وبيانات الشركة مثبتة بالنظام" },
-    { label: "الحساب البنكي الرئيسي", done: bankReady, detail: bankReady ? `${bankAccounts[0]?.bankName ?? "بنك"} · IBAN ينتهي بـ ${bankAccounts[0]?.iban?.slice(-4) ?? "—"}` : "بانتظار بيانات البنك" },
+    { label: "الحساب البنكي الرئيسي", done: bankReady, detail: bankReady ? `${certifiedBank?.bankName ?? "بنك"} · مطابق لشهادة IBAN رقم ${companyConfig.bank.certificateReference} · ينتهي بـ ${certifiedBank?.iban?.slice(-4) ?? "—"}` : "الحساب المسجل لا يطابق شهادة IBAN المعتمدة" },
     { label: "الرصيد البنكي الافتتاحي", done: openingBalance > 0, detail: `${openingBalance.toFixed(2)} ر.س` },
     { label: "مصدر تمويل المشروع", done: fundingReady, detail: `تمويل مجموعة مسجل: ${fundingTotal.toFixed(2)} ر.س` },
     { label: "مطابقة سجل تكاليف ما قبل التشغيل", done: preopeningLedgerReady, detail: preopeningLedgerReady ? `مطابق: ${preopeningReportedTotal.toFixed(2)} ر.س · الحساب 11080302 معتمد برصيد ${Number(correctedSetupAccount?.reportedBalance ?? 0).toFixed(2)} ر.س` : `فرق المطابقة: ${preopeningVariance.toFixed(2)} ر.س` },
