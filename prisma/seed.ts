@@ -7,6 +7,7 @@ const permissionCodes = [
   "dashboard.view",
   "user.manage",
   "operations.go_live",
+  "operations.uat",
   "service_order.create",
   "service_order.approve",
   "inventory.manage",
@@ -71,7 +72,7 @@ const roleDefinitions: Record<string, { nameAr: string; permissions: readonly st
   },
   BRANCH_MANAGER: {
     nameAr: "مدير الفرع",
-    permissions: ["dashboard.view", "service_order.create", "service_order.approve", "inventory.manage", "inventory.issue", "invoice.issue", "payment.receive", "customer.view", "sales_return.process", "shift.open", "shift.close", "coupon.redeem", "procurement.request", "procurement.quote", "procurement.approve", "procurement.order", "procurement.receive", "supplier_invoice.create", "finance.view", "custody.request", "custody.approve", "custody.settle", "hr.view", "attendance.manage", "asset.view", "asset.manage", "maintenance.manage", "reports.view", "audit.view"],
+    permissions: ["operations.uat", "dashboard.view", "service_order.create", "service_order.approve", "inventory.manage", "inventory.issue", "invoice.issue", "payment.receive", "customer.view", "sales_return.process", "shift.open", "shift.close", "coupon.redeem", "procurement.request", "procurement.quote", "procurement.approve", "procurement.order", "procurement.receive", "supplier_invoice.create", "finance.view", "custody.request", "custody.approve", "custody.settle", "hr.view", "attendance.manage", "asset.view", "asset.manage", "maintenance.manage", "reports.view", "audit.view"],
   },
   ACCOUNTANT: {
     nameAr: "المحاسب",
