@@ -78,6 +78,15 @@ export async function processSalesReturn(input: ReturnInput) {
       const type = input.refundMethod === "CASH" ? "CASH" : input.refundMethod === "CARD" ? "POS_CLEARING" : "BANK";
       const account = await tx.financialAccount.findFirst({ where: { branchId: input.branchId, type, active: true } });
       if (!account) throw new Error("FINANCIAL_ACCOUNT_REQUIRED");
+
+      if (input.refundMethod === "CASH" || input.refundMethod === "TRANSFER") {
+        const balanceResult = await tx.financialTransaction.aggregate({
+          where: { accountId: account.id },
+          _sum: { amount: true },
+        });
+        const balance = balanceResult._sum.amount ?? new Prisma.Decimal(0);
+        if (balance.lessThan(refundAmount)) throw new Error("INSUFFICIENT_FINANCIAL_BALANCE");
+      }
       accountId = account.id;
     }
 
