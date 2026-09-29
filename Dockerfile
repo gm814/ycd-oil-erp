@@ -1,10 +1,16 @@
-FROM node:22-bookworm-slim AS deps
+FROM node:22-bookworm-slim AS base
+# Prisma 6 needs the same OpenSSL runtime when generating and loading its engine.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+FROM base AS deps
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY package.json ./
 RUN npm install --no-audit --no-fund
 
-FROM node:22-bookworm-slim AS builder
+FROM base AS builder
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATABASE_URL=postgresql://build:build@127.0.0.1:5432/ycd_build?schema=public
@@ -13,7 +19,7 @@ COPY . .
 RUN npm run db:generate
 RUN npm run build
 
-FROM node:22-bookworm-slim AS runner
+FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
