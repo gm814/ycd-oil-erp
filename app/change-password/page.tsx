@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { PasswordInput } from "@/components/password-input";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -53,13 +54,13 @@ export default function ChangePasswordPage() {
         <p>قبل دخول النظام لأول مرة، أنشئ كلمة مرور خاصة بك لا تقل عن 10 أحرف.</p>
         <form onSubmit={submit}>
           <label>كلمة المرور الحالية
-            <input name="currentPassword" type="password" autoComplete="current-password" minLength={8} required />
+            <PasswordInput name="currentPassword" autoComplete="current-password" minLength={8} required />
           </label>
           <label>كلمة المرور الجديدة
-            <input name="newPassword" type="password" autoComplete="new-password" minLength={10} required />
+            <PasswordInput name="newPassword" autoComplete="new-password" minLength={10} required />
           </label>
           <label>تأكيد كلمة المرور الجديدة
-            <input name="confirmPassword" type="password" autoComplete="new-password" minLength={10} required />
+            <PasswordInput name="confirmPassword" autoComplete="new-password" minLength={10} required />
           </label>
           {message && <p className="formError">{message}</p>}
           <button type="submit" disabled={busy}>{busy ? "جارٍ الحفظ..." : "حفظ والدخول للنظام"}</button>

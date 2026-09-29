@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { PasswordInput } from "@/components/password-input";
 
 type Role = { code: string; nameAr: string };
 type Employee = {
@@ -188,7 +189,7 @@ export default function UserManagementActions({
                   <input name="email" type="email" autoComplete="off" placeholder="name@ycdoil.sa" />
                 </label>
                 <label>كلمة مرور مؤقتة
-                  <input name="password" type="password" minLength={10} autoComplete="new-password" required />
+                  <PasswordInput name="password" minLength={10} autoComplete="new-password" required />
                 </label>
                 <fieldset className="rolePicker">
                   <legend>الأدوار المقترحة حسب المسؤوليات المعتمدة</legend>
@@ -231,7 +232,7 @@ export default function UserManagementActions({
                   ))}
                 </fieldset>
                 <label>إعادة تعيين كلمة المرور
-                  <input name="password" type="password" minLength={10} autoComplete="new-password" placeholder="اتركه فارغًا بدون تغيير" />
+                  <PasswordInput name="password" minLength={10} autoComplete="new-password" placeholder="اتركه فارغًا بدون تغيير" />
                 </label>
                 {employee.user.id !== currentUserId && (
                   <small className="muted">عند إعادة التعيين تصبح كلمة المرور مؤقتة ويُلزم الموظف بتغييرها عند أول دخول.</small>
