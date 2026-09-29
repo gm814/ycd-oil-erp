@@ -164,29 +164,6 @@ async function main() {
     },
   });
 
-  const openingBankTransaction = await prisma.financialTransaction.upsert({
-    where: { idempotencyKey: "opening-bank-main-2026-09-26" },
-    update: {
-      branchId: branch.id,
-      accountId: bankAccount.id,
-      type: "OPENING_BALANCE",
-      amount: 17000,
-      reference: "OPENING-2026-09-26",
-      descriptionAr: "الرصيد الافتتاحي لحساب مصرف الراجحي — تمويل من شركة الواجهات الإبداعية للمقاولات",
-      performedBy: "SYSTEM-SEED",
-    },
-    create: {
-      branchId: branch.id,
-      accountId: bankAccount.id,
-      type: "OPENING_BALANCE",
-      amount: 17000,
-      reference: "OPENING-2026-09-26",
-      descriptionAr: "الرصيد الافتتاحي لحساب مصرف الراجحي — تمويل من شركة الواجهات الإبداعية للمقاولات",
-      performedBy: "SYSTEM-SEED",
-      idempotencyKey: "opening-bank-main-2026-09-26",
-    },
-  });
-
   const parentCompany = await prisma.groupCompany.upsert({
     where: { code: "CREATIVE-FACADES-CONTRACTING" },
     update: {
@@ -203,32 +180,21 @@ async function main() {
     },
   });
 
-  await prisma.groupFunding.upsert({
+  const syntheticOpeningFunding = await prisma.groupFunding.findUnique({
     where: { fundingNo: "FUND-OPENING-20260926" },
-    update: {
-      branchId: branch.id,
-      sourceCompanyId: parentCompany.id,
-      accountId: bankAccount.id,
-      amount: 17000,
-      reference: "OPENING-2026-09-26",
-      notes: "الرصيد البنكي الافتتاحي قبل بدء التشغيل الفعلي للمركز.",
-      fundedAt: new Date("2026-09-26T00:00:00+03:00"),
-      transactionId: openingBankTransaction.id,
-      createdBy: "SYSTEM-SEED",
-    },
-    create: {
-      fundingNo: "FUND-OPENING-20260926",
-      branchId: branch.id,
-      sourceCompanyId: parentCompany.id,
-      accountId: bankAccount.id,
-      amount: 17000,
-      reference: "OPENING-2026-09-26",
-      notes: "الرصيد البنكي الافتتاحي قبل بدء التشغيل الفعلي للمركز.",
-      fundedAt: new Date("2026-09-26T00:00:00+03:00"),
-      transactionId: openingBankTransaction.id,
-      createdBy: "SYSTEM-SEED",
-    },
+    select: { id: true, createdBy: true },
   });
+  if (syntheticOpeningFunding?.createdBy === "SYSTEM-SEED") {
+    await prisma.groupFunding.delete({ where: { id: syntheticOpeningFunding.id } });
+  }
+
+  const syntheticOpeningTransaction = await prisma.financialTransaction.findUnique({
+    where: { idempotencyKey: "opening-bank-main-2026-09-26" },
+    select: { id: true, performedBy: true },
+  });
+  if (syntheticOpeningTransaction?.performedBy === "SYSTEM-SEED") {
+    await prisma.financialTransaction.delete({ where: { id: syntheticOpeningTransaction.id } });
+  }
 
   const setupToolsAcquisition = await prisma.assetAcquisition.upsert({
     where: { acquisitionNo: "ACQ-TWQ-20260926-219" },
