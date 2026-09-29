@@ -19,13 +19,22 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "INVALID_INPUT" }, { status: 400 });
 
   try {
-    const coupon = await db.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx) => {
       const found = await tx.coupon.findUnique({ where: { serial: parsed.data.serial.toUpperCase() } });
       if (!found) throw new Error("COUPON_NOT_FOUND");
       if (found.status !== "ACTIVE") throw new Error("COUPON_NOT_ACTIVE");
       if (found.expiresAt && found.expiresAt < new Date()) {
-        await tx.coupon.update({ where: { id: found.id }, data: { status: "EXPIRED" } });
-        throw new Error("COUPON_EXPIRED");
+        const expired = await tx.coupon.update({ where: { id: found.id }, data: { status: "EXPIRED" } });
+        await tx.auditLog.create({
+          data: {
+            actorId: session.userId,
+            action: "WASH_COUPON_EXPIRED",
+            entityType: "Coupon",
+            entityId: expired.id,
+            afterJson: { serial: expired.serial, expiresAt: expired.expiresAt?.toISOString() ?? null },
+          },
+        });
+        return { coupon: expired, error: "COUPON_EXPIRED" as const };
       }
 
       const updated = await tx.coupon.update({
@@ -47,10 +56,11 @@ export async function POST(request: Request) {
           afterJson: { serial: updated.serial, branchId: session.branchId },
         },
       });
-      return updated;
+      return { coupon: updated, error: null };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
-    return NextResponse.json({ coupon });
+    if (result.error) return NextResponse.json({ error: result.error }, { status: 409 });
+    return NextResponse.json({ coupon: result.coupon });
   } catch (error) {
     const code = error instanceof Error ? error.message : "COUPON_REDEEM_FAILED";
     return NextResponse.json({ error: code }, { status: code === "COUPON_NOT_FOUND" ? 404 : 409 });
