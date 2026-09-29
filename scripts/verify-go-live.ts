@@ -19,6 +19,9 @@ async function main() {
   const [
     employees,
     bankAccounts,
+    openingBankBalance,
+    parentCompanies,
+    groupFunding,
     physicalProducts,
     serviceProducts,
     openingStockMovements,
@@ -45,6 +48,21 @@ async function main() {
     prisma.financialAccount.findMany({
       where: { branchId: branch.id, active: true, type: "BANK" },
       select: { bankName: true, accountNumber: true, iban: true },
+    }),
+    prisma.financialTransaction.aggregate({
+      where: { branchId: branch.id, type: "OPENING_BALANCE", account: { type: "BANK" } },
+      _sum: { amount: true },
+    }),
+    prisma.groupCompany.count({
+      where: {
+        organization: { branches: { some: { id: branch.id } } },
+        relationType: "PARENT",
+        active: true,
+      },
+    }),
+    prisma.groupFunding.aggregate({
+      where: { branchId: branch.id },
+      _sum: { amount: true },
     }),
     prisma.product.count({ where: { active: true, category: { not: "SERVICE" } } }),
     prisma.product.count({ where: { active: true, category: "SERVICE" } }),
@@ -81,6 +99,12 @@ async function main() {
   );
   assert(bankReady, "الحساب البنكي المعتمد من شهادة IBAN غير مكتمل أو غير مطابق");
 
+  const openingBalance = Number(openingBankBalance._sum.amount ?? 0);
+  const fundingTotal = Number(groupFunding._sum.amount ?? 0);
+  assert(openingBalance > 0, "الرصيد البنكي الافتتاحي الفعلي لم يُسجل بعد");
+  assert(parentCompanies > 0, "الشركة الممولة / الشركة الرئيسية غير مسجلة");
+  assert(fundingTotal >= openingBalance, "مصدر التمويل المسجل أقل من الرصيد البنكي الافتتاحي");
+
   assert(physicalProducts > 0, "دليل الزيوت والفلاتر والقطع لم يُحمّل");
   assert(serviceProducts > 0, "دليل الخدمات والأسعار لم يُحمّل");
   assert(openingStockMovements > 0, "الجرد الافتتاحي للمخزون غير موجود");
@@ -108,6 +132,8 @@ async function main() {
   console.log(`Branch: ${branch.nameAr}`);
   console.log(`Operational status: ${branch.operationalStatus}`);
   console.log(`Operational team: ${operationalTeam.length} / ${operationalTeam.length}`);
+  console.log(`Opening bank balance: ${openingBalance.toFixed(2)} SAR`);
+  console.log(`Recorded funding: ${fundingTotal.toFixed(2)} SAR`);
   console.log(`Physical products: ${physicalProducts}`);
   console.log(`Services: ${serviceProducts}`);
   console.log(`Opening stock movements: ${openingStockMovements}`);
