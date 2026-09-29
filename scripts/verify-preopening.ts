@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { companyConfig } from "../lib/config";
 
 const prisma = new PrismaClient();
 
@@ -26,7 +27,16 @@ async function main() {
   const syntheticOpening = await prisma.financialTransaction.findUnique({
     where: { idempotencyKey: "opening-bank-main-2026-09-26" },
   });
-  assert(!syntheticOpening, "يجب ألا ينشئ Seed رصيدًا بنكيًا افتتاحيًا غير معتمد من الإدارة");
+  assert(!syntheticOpening, "يجب ألا يبقى أي رصيد افتتاحي تقديري قديم داخل Seed");
+
+  const confirmedOpening = await prisma.financialTransaction.findUnique({
+    where: { idempotencyKey: "opening-bank-main-confirmed-2026-09-29" },
+  });
+  assert(confirmedOpening, "الرصيد البنكي الافتتاحي المعتمد غير مسجل");
+  assert(confirmedOpening.accountId === bank.id, "الرصيد الافتتاحي المعتمد غير مربوط بحساب الراجحي الرئيسي");
+  assert(confirmedOpening.type === "OPENING_BALANCE", "نوع حركة الرصيد الافتتاحي غير صحيح");
+  assert(Math.abs(Number(confirmedOpening.amount) - companyConfig.bank.openingBalance) < 0.01, "قيمة الرصيد الافتتاحي لا تطابق القيمة المعتمدة");
+  assert(companyConfig.bank.openingBalanceAsOf === "29/09/2026", "تاريخ اعتماد الرصيد الافتتاحي غير مطابق");
 
   const parent = await prisma.groupCompany.findUnique({
     where: { code: "CREATIVE-FACADES-CONTRACTING" },
@@ -96,7 +106,7 @@ async function main() {
 
   console.log("YCD PREOPENING VERIFIED");
   console.log(`Branch: ${branch.nameAr}`);
-  console.log("Bank opening balance: pending approved source data");
+  console.log(`Bank opening balance: ${companyConfig.bank.openingBalance.toFixed(2)} SAR as of ${companyConfig.bank.openingBalanceAsOf}`);
   console.log(`Registered staff: ${expectedStaff.length}`);
   console.log(`Preopening accountant ledger: ${reportedPreopeningTotal.toFixed(2)} SAR / ${preopeningEntryCount} entries`);
   console.log("Commercial operations: not started");
