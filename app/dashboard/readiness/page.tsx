@@ -63,8 +63,7 @@ export default async function ReadinessPage() {
     db.financialTransaction.aggregate({
       where: {
         branchId: session.branchId,
-        type: "OPENING_BALANCE",
-        account: { type: "BANK" },
+        account: { type: "BANK", active: true },
       },
       _sum: { amount: true },
     }),
@@ -145,7 +144,7 @@ export default async function ReadinessPage() {
     { label: "بيانات الموارد البشرية والرواتب", done: hrReady, detail: `${hrReadyCount} من ${employees.length} ملفات موظفين مكتملة بتاريخ تعيين` },
     { label: "هوية YCD OIL وبيانات المنشأة", done: identityReady, detail: "الهوية والألوان وبيانات الشركة مثبتة بالنظام" },
     { label: "الحساب البنكي الرئيسي", done: bankReady, detail: bankReady ? `${certifiedBank?.bankName ?? "بنك"} · مطابق لشهادة IBAN رقم ${companyConfig.bank.certificateReference} · ينتهي بـ ${certifiedBank?.iban?.slice(-4) ?? "—"}` : "الحساب المسجل لا يطابق شهادة IBAN المعتمدة" },
-    { label: "الرصيد البنكي الافتتاحي", done: openingBalance > 0, detail: `${openingBalance.toFixed(2)} ر.س` },
+    { label: "الرصيد البنكي عند الإطلاق", done: openingBalance > 0, detail: `${openingBalance.toFixed(2)} ر.س · محسوب من الحركة الفعلية للحساب البنكي` },
     { label: "مصدر تمويل المشروع", done: fundingReady, detail: `تمويل مجموعة مسجل: ${fundingTotal.toFixed(2)} ر.س` },
     { label: "مطابقة سجل تكاليف ما قبل التشغيل", done: preopeningLedgerReady, detail: preopeningLedgerReady ? `مطابق: ${preopeningReportedTotal.toFixed(2)} ر.س · الحساب 11080302 معتمد برصيد ${Number(correctedSetupAccount?.reportedBalance ?? 0).toFixed(2)} ر.س` : `فرق المطابقة: ${preopeningVariance.toFixed(2)} ر.س` },
     { label: "حسابات دخول الموظفين والصلاحيات", done: usersReady, detail: `${accessReadyCount} من ${accessRows.length} حسابات مطابقة لخطة الصلاحيات المعتمدة` },
@@ -205,7 +204,7 @@ export default async function ReadinessPage() {
           <p><span className={branchState.operationalStatus === "LIVE" ? "okBadge" : "alertBadge"}>بوابة الإطلاق {branchState.operationalStatus === "LIVE" ? "مفتوحة" : "مقفلة"}</span> {branchState.operationalStatus === "LIVE" ? "الفرع مفعّل للتشغيل التجاري وفتح الورديات الحقيقية." : "فتح وردية تشغيل حقيقية محظور أثناء PREOPENING؛ يسمح به فقط في بيئة UAT المصرح بها."}</p>
           {branchState.goLiveAt && <p>تاريخ التفعيل: <b>{branchState.goLiveAt.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</b></p>}
           <GoLiveControl canGoLive={canGoLive} status={branchState.operationalStatus} />
-          <p>الرصيد البنكي الافتتاحي: <b>{openingBalance.toFixed(2)} ر.س</b></p>
+          <p>الرصيد البنكي عند الإطلاق: <b>{openingBalance.toFixed(2)} ر.س</b></p>
           <p>عمليات التمويل المسجلة: <b>{groupFunding._count}</b></p>
           <p>سجل ما قبل التشغيل: <b>{preopeningReportedTotal.toFixed(2)} ر.س</b> · فرق المطابقة: <b>{preopeningVariance.toFixed(2)} ر.س</b></p>
           <p>الرصيد المصحح للحساب 11080302: <b>{Number(correctedSetupAccount?.reportedBalance ?? 0).toFixed(2)} ر.س</b></p>
@@ -274,7 +273,7 @@ export default async function ReadinessPage() {
         <h2>بيانات الحساب البنكي المثبتة</h2>
         <div className="tableWrap">
           <table>
-            <thead><tr><th>البنك</th><th>اسم الحساب</th><th>رقم الحساب</th><th>IBAN</th><th>الرصيد الافتتاحي</th></tr></thead>
+            <thead><tr><th>البنك</th><th>اسم الحساب</th><th>رقم الحساب</th><th>IBAN</th><th>الرصيد الحالي قبل الإطلاق</th></tr></thead>
             <tbody>
               {bankAccounts.map((account) => (
                 <tr key={account.id}>
