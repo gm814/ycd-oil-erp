@@ -19,7 +19,6 @@ async function main() {
   const [
     employees,
     bankAccounts,
-    openingBankBalance,
     parentCompanies,
     groupFunding,
     physicalProducts,
@@ -47,11 +46,7 @@ async function main() {
     }),
     prisma.financialAccount.findMany({
       where: { branchId: branch.id, active: true, type: "BANK" },
-      select: { bankName: true, accountNumber: true, iban: true },
-    }),
-    prisma.financialTransaction.aggregate({
-      where: { branchId: branch.id, account: { type: "BANK", active: true } },
-      _sum: { amount: true },
+      select: { id: true, bankName: true, accountNumber: true, iban: true },
     }),
     prisma.groupCompany.count({
       where: {
@@ -92,14 +87,18 @@ async function main() {
     }
   }
 
-  const bankReady = bankAccounts.some((account) =>
+  const certifiedBank = bankAccounts.find((account) =>
     account.bankName === companyConfig.bank.nameAr &&
     account.accountNumber === companyConfig.bank.accountNumber &&
     account.iban === companyConfig.bank.iban
   );
-  assert(bankReady, "الحساب البنكي المعتمد من شهادة IBAN غير مكتمل أو غير مطابق");
+  assert(certifiedBank, "الحساب البنكي المعتمد من شهادة IBAN غير مكتمل أو غير مطابق");
 
-  const openingBalance = Number(openingBankBalance._sum.amount ?? 0);
+  const certifiedBankBalance = await prisma.financialTransaction.aggregate({
+    where: { accountId: certifiedBank.id },
+    _sum: { amount: true },
+  });
+  const openingBalance = Number(certifiedBankBalance._sum.amount ?? 0);
   const fundingTotal = Number(groupFunding._sum.amount ?? 0);
   assert(openingBalance > 0, "الرصيد البنكي الفعلي عند الإطلاق غير موجب أو لم يُسجل بعد");
   assert(parentCompanies > 0, "الشركة الممولة / الشركة الرئيسية غير مسجلة");
