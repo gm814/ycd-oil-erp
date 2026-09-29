@@ -10,7 +10,7 @@ async function main() {
   const databaseName = new URL(process.env.DATABASE_URL || 'http://invalid').pathname;
   assert(process.env.ALLOW_UAT_FIXTURES === 'true' && databaseName.includes('uat') && process.env.NODE_ENV !== 'production', 'Isolated UAT database required');
   const branch = await db.branch.findUniqueOrThrow({where:{id:'riyadh-tuwaiq'}});
-  const user = await db.user.findFirstOrThrow({where:{branchId:branch.id}});
+  const user = await db.user.create({data:{username:`offline-uat-${randomUUID()}`,name:'Offline UAT operator',branchId:branch.id,mustChangePassword:false}});
   const session: SessionPayload = {userId:user.id,branchId:branch.id,sessionVersion:user.sessionVersion,name:user.name,username:user.username,mustChangePassword:false,roles:[],permissions:Object.values(PERMISSIONS)};
   const shift = await db.shift.create({data:{branchId:branch.id,openedBy:user.id}});
   const suffix=randomUUID();
