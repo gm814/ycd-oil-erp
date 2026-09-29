@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
+import { companyConfig } from "@/lib/config";
 import FinanceActions from "./finance-actions";
 
 const typeLabel: Record<string, string> = {
@@ -168,6 +169,9 @@ export default async function FinancePage() {
                         <b>{account.bankName || "—"}</b>
                         <span dir="ltr">A/C {account.accountNumber || "—"}</span>
                         <span dir="ltr">IBAN {account.iban || "—"}</span>
+                        {account.code === "BANK-MAIN" && (
+                          <small>شهادة IBAN رقم {companyConfig.bank.certificateReference} · {companyConfig.bank.certificateDate}</small>
+                        )}
                       </div>
                     ) : "—"}
                   </td>
