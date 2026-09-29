@@ -38,7 +38,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   } catch (error) {
     const code = error instanceof Error ? error.message : "SALES_RETURN_FAILED";
     const status = code.endsWith("_NOT_FOUND") ? 404
-      : ["RETURN_QUANTITY_EXCEEDED", "DUPLICATE_RETURN_ITEM"].includes(code) ? 409
+      : ["RETURN_QUANTITY_EXCEEDED", "DUPLICATE_RETURN_ITEM", "INSUFFICIENT_FINANCIAL_BALANCE"].includes(code) ? 409
       : 400;
     return NextResponse.json({ error: code }, { status });
   }
