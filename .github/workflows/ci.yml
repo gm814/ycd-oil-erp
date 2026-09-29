@@ -10,7 +10,7 @@ concurrency:
 on:
   pull_request:
   push:
-    branches: [main, codex/v1-foundation]
+    branches: [main, codex/v1-foundation, "production/**"]
 
 jobs:
   verify:
