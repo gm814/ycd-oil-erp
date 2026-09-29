@@ -170,7 +170,10 @@ export default async function FinancePage() {
                         <span dir="ltr">A/C {account.accountNumber || "—"}</span>
                         <span dir="ltr">IBAN {account.iban || "—"}</span>
                         {account.code === "BANK-MAIN" && (
-                          <small>شهادة IBAN رقم {companyConfig.bank.certificateReference} · {companyConfig.bank.certificateDate}</small>
+                          <>
+                            <small>شهادة IBAN رقم {companyConfig.bank.certificateReference} · {companyConfig.bank.certificateDate}</small>
+                            <small>الرصيد الافتتاحي المعتمد: {companyConfig.bank.openingBalance.toFixed(2)} ر.س · كما في {companyConfig.bank.openingBalanceAsOf}</small>
+                          </>
                         )}
                       </div>
                     ) : "—"}
