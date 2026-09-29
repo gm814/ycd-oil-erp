@@ -1,0 +1,125 @@
+name: CI
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+  push:
+    branches: [main, codex/v1-foundation]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ycd_oil_erp?schema=public
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ycd_oil_erp
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ycd_oil_erp"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - run: npm install --no-audit --no-fund
+      - run: npm run db:generate
+      - run: npx prisma migrate deploy
+      - run: npx prisma migrate status
+      - run: npm run db:seed
+      - run: npm run verify:preopening
+      - run: npm run verify:controls
+      - run: npm run verify:brand
+      - run: npm run verify:zatca-qr
+      - run: npm run verify:deployment-contract
+      - name: Create isolated UAT database
+        run: PGPASSWORD=postgres createdb -h 127.0.0.1 -U postgres ycd_oil_erp_uat
+      - name: Prepare isolated UAT database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ycd_oil_erp_uat?schema=public
+        run: |
+          npx prisma migrate deploy
+          npm run db:seed
+      - name: Seed isolated UAT fixtures
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ycd_oil_erp_uat?schema=public
+          ALLOW_UAT_FIXTURES: "true"
+        run: npm run db:seed:uat
+      - name: Verify isolated UAT fixture integrity
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ycd_oil_erp_uat?schema=public
+          ALLOW_UAT_FIXTURES: "true"
+        run: npm run verify:uat-fixtures
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Validate production Compose stack
+        env:
+          POSTGRES_PASSWORD: ci-compose-only-password
+          AUTH_SECRET: ci-compose-only-auth-secret-0123456789abcdefghijklmnopqrstuvwxyz
+        run: docker compose -f docker-compose.production.yml config --quiet
+      - name: Build production container
+        run: docker build --target runner -t ycd-oil-erp:ci .
+      - name: Production container database smoke test
+        env:
+          AUTH_SECRET: ci-only-container-secret-not-for-production-0123456789abcdef
+        run: |
+          set -eu
+          CONTAINER_ID=$(docker run -d --network host \
+            -e DATABASE_URL -e AUTH_SECRET \
+            -e PORT=10001 -e ALLOW_PREOPENING_OPERATIONS=false \
+            ycd-oil-erp:ci)
+          trap 'docker rm -f "$CONTAINER_ID" >/dev/null' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:10001/api/health > /tmp/ycd-container-health.json; then
+              node -e 'const h=JSON.parse(require("fs").readFileSync("/tmp/ycd-container-health.json","utf8")); if(h.status!=="ok" || h.database!=="reachable") process.exit(1)'
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs "$CONTAINER_ID"
+          exit 1
+      - name: Production health smoke test
+        env:
+          AUTH_SECRET: ci-only-health-secret-not-for-production-0123456789abcdef
+        run: |
+          npm start > /tmp/ycd-next.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error -D /tmp/ycd-headers.txt http://127.0.0.1:3000/api/health > /tmp/ycd-health.json; then
+              cat /tmp/ycd-health.json
+              grep -qi '^x-content-type-options: nosniff' /tmp/ycd-headers.txt
+              grep -qi '^x-frame-options: DENY' /tmp/ycd-headers.txt
+              grep -qi '^strict-transport-security: max-age=31536000; includeSubDomains' /tmp/ycd-headers.txt
+              CROSS_SITE_STATUS=$(curl --silent --output /tmp/ycd-cross-site.json --write-out '%{http_code}' \
+                -X POST \
+                -H 'Origin: https://evil.example' \
+                -H 'Sec-Fetch-Site: cross-site' \
+                -H 'Content-Type: application/json' \
+                --data '{}' \
+                http://127.0.0.1:3000/api/secure/finance/expenses)
+              test "$CROSS_SITE_STATUS" = "403"
+              grep -q 'CROSS_SITE_REQUEST_REJECTED' /tmp/ycd-cross-site.json
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/ycd-next.log
+          exit 1

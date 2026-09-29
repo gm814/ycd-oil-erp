@@ -1,0 +1,66 @@
+export const PERMISSIONS = {
+  DASHBOARD_VIEW: "dashboard.view",
+  USER_MANAGE: "user.manage",
+  OPERATIONS_GO_LIVE: "operations.go_live",
+  OPERATIONS_UAT: "operations.uat",
+  SERVICE_ORDER_CREATE: "service_order.create",
+  SERVICE_ORDER_APPROVE: "service_order.approve",
+  INVENTORY_MANAGE: "inventory.manage",
+  INVENTORY_ISSUE: "inventory.issue",
+  INVOICE_ISSUE: "invoice.issue",
+  PAYMENT_RECEIVE: "payment.receive",
+  CUSTOMER_VIEW: "customer.view",
+  CREDIT_MANAGE: "credit.manage",
+  CREDIT_SALE: "credit.sale",
+  SALES_RETURN_PROCESS: "sales_return.process",
+  SHIFT_OPEN: "shift.open",
+  SHIFT_CLOSE: "shift.close",
+  SHIFT_VARIANCE_APPROVE: "shift.variance.approve",
+  FINANCIAL_CLOSE_PREPARE: "finance.close.prepare",
+  FINANCIAL_CLOSE_REVIEW: "finance.close.review",
+  COUPON_REDEEM: "coupon.redeem",
+  PROCUREMENT_REQUEST: "procurement.request",
+  PROCUREMENT_QUOTE: "procurement.quote",
+  PROCUREMENT_APPROVE: "procurement.approve",
+  PROCUREMENT_ORDER: "procurement.order",
+  PROCUREMENT_RECEIVE: "procurement.receive",
+  SUPPLIER_INVOICE_CREATE: "supplier_invoice.create",
+  SUPPLIER_INVOICE_APPROVE_PAYMENT: "supplier_invoice.approve_payment",
+  FINANCE_VIEW: "finance.view",
+  FINANCE_MANAGE: "finance.manage",
+  GROUP_FUNDING_MANAGE: "finance.group_funding",
+  FINANCE_EXPENSE: "finance.expense",
+  FINANCE_EXPENSE_APPROVE: "finance.expense.approve",
+  FINANCE_EXPENSE_PAY: "finance.expense.pay",
+  BANK_RECONCILE: "finance.bank_reconcile",
+  BANK_RECONCILE_REVIEW: "finance.bank_reconcile.review",
+  FINANCE_TRANSFER: "finance.transfer",
+  POS_SETTLE: "pos.settle",
+  SUPPLIER_PAYMENT_EXECUTE: "supplier_payment.execute",
+  CUSTODY_REQUEST: "custody.request",
+  CUSTODY_APPROVE: "custody.approve",
+  CUSTODY_DISBURSE: "custody.disburse",
+  CUSTODY_SETTLE: "custody.settle",
+  CUSTODY_CLOSE: "custody.close",
+  HR_VIEW: "hr.view",
+  HR_MANAGE: "hr.manage",
+  ATTENDANCE_MANAGE: "attendance.manage",
+  PAYROLL_PREPARE: "payroll.prepare",
+  PAYROLL_APPROVE: "payroll.approve",
+  PAYROLL_PAY: "payroll.pay",
+  ASSET_VIEW: "asset.view",
+  ASSET_MANAGE: "asset.manage",
+  MAINTENANCE_MANAGE: "maintenance.manage",
+  REPORTS_VIEW: "reports.view",
+  AUDIT_VIEW: "audit.view",
+} as const;
+
+export function hasPermission(userPermissions: readonly string[], required: string) {
+  return userPermissions.includes(required);
+}
+
+export function assertPermission(userPermissions: readonly string[], required: string) {
+  if (!hasPermission(userPermissions, required)) {
+    throw new Error("FORBIDDEN");
+  }
+}
