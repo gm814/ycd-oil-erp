@@ -23,11 +23,10 @@ async function main() {
   assert(bank.accountNumber === "528000010006080781162", "رقم حساب الراجحي غير مطابق");
   assert(bank.iban === "SA7180000528608010781162", "رقم IBAN غير مطابق لشهادة البنك");
 
-  const bankBalance = await prisma.financialTransaction.aggregate({
-    where: { branchId: branch.id, accountId: bank.id },
-    _sum: { amount: true },
+  const syntheticOpening = await prisma.financialTransaction.findUnique({
+    where: { idempotencyKey: "opening-bank-main-2026-09-26" },
   });
-  assert(Number(bankBalance._sum.amount ?? 0) === 17000, "الرصيد البنكي الافتتاحي يجب أن يكون 17,000 ر.س");
+  assert(!syntheticOpening, "يجب ألا ينشئ Seed رصيدًا بنكيًا افتتاحيًا غير معتمد من الإدارة");
 
   const parent = await prisma.groupCompany.findUnique({
     where: { code: "CREATIVE-FACADES-CONTRACTING" },
@@ -36,13 +35,10 @@ async function main() {
   assert(parent.legalNameAr === "شركة الواجهات الإبداعية للمقاولات", "اسم الشركة الرئيسية غير مطابق");
   assert(parent.relationType === "PARENT", "علاقة الشركة الرئيسية يجب أن تكون PARENT");
 
-  const funding = await prisma.groupFunding.aggregate({
-    where: { branchId: branch.id, sourceCompanyId: parent.id, accountId: bank.id },
-    _sum: { amount: true },
-    _count: true,
+  const syntheticFunding = await prisma.groupFunding.findUnique({
+    where: { fundingNo: "FUND-OPENING-20260926" },
   });
-  assert(funding._count >= 1, "لا توجد حركة تمويل افتتاحية من الشركة الرئيسية");
-  assert(Number(funding._sum.amount ?? 0) === 17000, "إجمالي التمويل الافتتاحي يجب أن يكون 17,000 ر.س");
+  assert(!syntheticFunding, "يجب ألا ينشئ Seed حركة تمويل افتتاحية بمبلغ غير معتمد");
 
   const expectedPreopening = new Map([
     ["11080301", 18235],
@@ -100,7 +96,7 @@ async function main() {
 
   console.log("YCD PREOPENING VERIFIED");
   console.log(`Branch: ${branch.nameAr}`);
-  console.log("Bank opening balance: 17000 SAR");
+  console.log("Bank opening balance: pending approved source data");
   console.log(`Registered staff: ${expectedStaff.length}`);
   console.log(`Preopening accountant ledger: ${reportedPreopeningTotal.toFixed(2)} SAR / ${preopeningEntryCount} entries`);
   console.log("Commercial operations: not started");
