@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PasswordInput } from "@/components/password-input";
+import { PASSWORD_PATTERN, PASSWORD_HINT } from "@/lib/password-policy";
 
 type Role = { code: string; nameAr: string };
 type Employee = {
@@ -137,7 +138,7 @@ export default function UserManagementActions({
       <article className="panel accessProvisionPanel">
         <div>
           <h2>تهيئة حسابات الفريق التشغيلي</h2>
-          <p className="muted">ينشئ النظام الحسابات الناقصة فقط حسب الهيكل المعتمد، ويولد كلمة مرور قوية ومؤقتة لكل موظف مع إلزامه بتغييرها عند أول دخول.</p>
+          <p className="muted">ينشئ النظام الحسابات الناقصة فقط حسب الهيكل المعتمد، ويولد كلمة مرور مؤقتة لكل موظف مع إلزامه بتغييرها عند أول دخول.</p>
         </div>
         <button type="button" disabled={busy || employees.every((employee) => employee.user)} onClick={provisionTeam}>
           تهيئة الحسابات الناقصة
@@ -189,7 +190,8 @@ export default function UserManagementActions({
                   <input name="email" type="email" autoComplete="off" placeholder="name@ycdoil.sa" />
                 </label>
                 <label>كلمة مرور مؤقتة
-                  <PasswordInput name="password" minLength={10} autoComplete="new-password" required />
+                  <small>{PASSWORD_HINT}</small>
+                  <PasswordInput name="password" minLength={8} maxLength={8} pattern={PASSWORD_PATTERN} title={PASSWORD_HINT} autoComplete="new-password" required />
                 </label>
                 <fieldset className="rolePicker">
                   <legend>الأدوار المقترحة حسب المسؤوليات المعتمدة</legend>
@@ -232,7 +234,8 @@ export default function UserManagementActions({
                   ))}
                 </fieldset>
                 <label>إعادة تعيين كلمة المرور
-                  <PasswordInput name="password" minLength={10} autoComplete="new-password" placeholder="اتركه فارغًا بدون تغيير" />
+                  <small>{PASSWORD_HINT}</small>
+                  <PasswordInput name="password" minLength={8} maxLength={8} pattern={PASSWORD_PATTERN} title={PASSWORD_HINT} autoComplete="new-password" placeholder="اتركه فارغًا بدون تغيير" />
                 </label>
                 {employee.user.id !== currentUserId && (
                   <small className="muted">عند إعادة التعيين تصبح كلمة المرور مؤقتة ويُلزم الموظف بتغييرها عند أول دخول.</small>

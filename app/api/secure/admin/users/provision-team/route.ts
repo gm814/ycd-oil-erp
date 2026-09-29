@@ -1,4 +1,4 @@
-import { randomBytes } from "crypto";
+import { randomInt } from "crypto";
 import { hash } from "bcryptjs";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
@@ -15,7 +15,7 @@ type Credential = {
 };
 
 function temporaryPassword() {
-  return randomBytes(18).toString("base64url");
+  return String.fromCharCode(randomInt(65, 91)) + String.fromCharCode(randomInt(97, 123)) + String(randomInt(0, 1000000)).padStart(6, "0");
 }
 
 export async function POST() {

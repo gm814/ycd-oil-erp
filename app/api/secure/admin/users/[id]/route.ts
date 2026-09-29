@@ -1,6 +1,7 @@
 import { hash } from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { PASSWORD_REGEX, PASSWORD_HINT } from "@/lib/password-policy";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
@@ -8,7 +9,7 @@ import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 const schema = z.object({
   status: z.enum(["ACTIVE", "SUSPENDED"]).optional(),
   roleCodes: z.array(z.string().min(1).max(80)).min(1).max(6).optional(),
-  password: z.string().min(10).max(200).optional(),
+  password: z.string().regex(PASSWORD_REGEX, PASSWORD_HINT).optional(),
 }).refine((value) => value.status || value.roleCodes || value.password, {
   message: "NO_CHANGES",
 });

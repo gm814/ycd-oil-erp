@@ -1,6 +1,7 @@
 import { hash } from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { PASSWORD_REGEX, PASSWORD_HINT } from "@/lib/password-policy";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
@@ -9,7 +10,7 @@ const schema = z.object({
   employeeId: z.string().min(1),
   username: z.string().trim().min(3).max(40).regex(/^[a-zA-Z0-9._-]+$/),
   email: z.union([z.string().email().max(200), z.literal("")]).optional(),
-  password: z.string().min(10).max(200),
+  password: z.string().regex(PASSWORD_REGEX, PASSWORD_HINT),
   roleCodes: z.array(z.string().min(1).max(80)).min(1).max(6),
 });
 

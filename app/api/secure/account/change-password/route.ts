@@ -1,12 +1,13 @@
 import { compare, hash } from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { PASSWORD_REGEX, PASSWORD_HINT } from "@/lib/password-policy";
 import { db } from "@/lib/db";
 import { createSessionToken, getSession, SESSION_COOKIE } from "@/lib/auth";
 
 const schema = z.object({
   currentPassword: z.string().min(8).max(200),
-  newPassword: z.string().min(10).max(200),
+  newPassword: z.string().regex(PASSWORD_REGEX, PASSWORD_HINT),
 }).refine((value) => value.currentPassword !== value.newPassword, {
   message: "PASSWORD_MUST_CHANGE",
   path: ["newPassword"],
