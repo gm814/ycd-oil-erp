@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { lockOfflineProfile } from "@/lib/offline/lock";
 import { PasswordInput } from "@/components/password-input";
 
 export default function LoginPage() {
@@ -11,12 +12,16 @@ export default function LoginPage() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (loading) return;
     setError("");
     setLoading(true);
+    try {
+    await lockOfflineProfile();
 
     const form = new FormData(event.currentTarget);
     const response = await fetch("/api/auth/login", {
       method: "POST",
+      signal: AbortSignal.timeout(15000),
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         identifier: form.get("identifier"),
@@ -31,8 +36,11 @@ export default function LoginPage() {
       return;
     }
 
+    await lockOfflineProfile(false);
     router.replace(result.mustChangePassword ? "/change-password" : "/dashboard");
     router.refresh();
+    } catch { setError("تعذر الاتصال. أعد المحاولة عند توفر الشبكة."); }
+    finally { setLoading(false); }
   }
 
   return (

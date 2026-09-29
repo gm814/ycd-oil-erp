@@ -125,3 +125,14 @@ header h1{margin:0 0 6px;font-size:28px}header p{margin:0;color:#666}.branch{bac
 .installAppButton{position:fixed;bottom:max(12px,env(safe-area-inset-bottom));left:12px;z-index:40;background:#111;color:#fff;border:1px solid #f18f21;padding:10px 14px;font-size:12px;box-shadow:0 4px 18px #0002;border-radius:30px}
 .installOverlay{position:fixed;inset:0;background:#0008;display:grid;place-items:center;padding:20px;z-index:1000}.installDialog{width:min(460px,100%);background:#fff;padding:25px;border-radius:16px;line-height:1.9;box-shadow:0 20px 70px #0003}.installDialog>button{float:left;background:#f4f4f4;color:#222;padding:4px 12px;font-size:24px}.installDialog h2{margin-top:0}.installDialog small{color:#777}.connectionNotice{position:fixed;top:0;right:0;left:0;z-index:1001;background:#fff1cf;color:#784600;padding:10px;text-align:center;font-size:13px}
 @media(max-width:600px){.workspace{padding:16px 10px}.workspaceTop{gap:12px;flex-wrap:wrap}.workspaceTop h1{font-size:23px}.workspaceTop .userbar{flex-wrap:wrap}.workGrid{grid-template-columns:minmax(0,1fr)}.formRow{grid-template-columns:1fr}.panel{min-width:0;overflow-x:auto}.loginCard{padding:24px}.loginShell{padding:16px}.loginCard input{font-size:16px}.installAppButton{font-size:11px;padding:8px 12px}}
+
+/* Short, accessible interaction feedback; no artificial delays. */
+button,a,input,select{touch-action:manipulation}
+button{transition:transform 100ms ease,background-color 100ms ease}
+button:active:not(:disabled){transform:translateY(1px)}
+a:focus-visible,button:focus-visible{outline:3px solid var(--orange);outline-offset:3px}
+.navigationProgress{height:4px;background:linear-gradient(90deg,var(--orange),var(--gold),var(--orange));background-size:200% 100%;animation:navigation-progress 1s linear infinite;border-radius:4px;margin-bottom:20px}
+@keyframes navigation-progress{to{background-position:-200% 0}}
+@media(prefers-reduced-motion:reduce){button{transition:none}.navigationProgress{animation:none}}
+.offlinePilotLink{display:inline-block;margin:10px;padding:10px 14px;border:1px solid var(--orange);border-radius:10px;background:#fff8e8;color:#754300;font-weight:700}
+@media print{.offlinePilotLink,.navigationProgress{display:none}}

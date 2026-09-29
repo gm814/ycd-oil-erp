@@ -14,7 +14,7 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, them
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ar" dir="rtl">
-      <body>{children}<InstallApp /></body>
+      <body>{children}{process.env.YCD_OFFLINE_PILOT === "true" && <a className="offlinePilotLink" href="/offline.html">تجهيز العمل دون اتصال — نسخة اختبار</a>}<InstallApp /></body>
     </html>
   );
 }

@@ -14,12 +14,19 @@ type CompleteServiceInput = {
 };
 
 export async function completeServiceOrder(input: CompleteServiceInput) {
-  return db.$transaction(async (tx) => {
+  return db.$transaction(tx => completeServiceOrderInTransaction(tx, input), { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+}
+
+export async function completeServiceOrderInTransaction(tx: Prisma.TransactionClient, input: CompleteServiceInput) {
     const existingPayment = await tx.payment.findUnique({
       where: { idempotencyKey: input.idempotencyReference },
       include: { invoice: { include: { coupons: true } } },
     });
-    if (existingPayment) return existingPayment.invoice;
+    if (existingPayment) {
+      const originalOrder = await tx.serviceOrder.findUnique({ where: { id: existingPayment.invoice.serviceOrderId } });
+      if (originalOrder?.id !== input.serviceOrderId || originalOrder.branchId !== input.branchId) throw new Error("IDEMPOTENCY_CONFLICT");
+      return existingPayment.invoice;
+    }
 
     const order = await tx.serviceOrder.findUnique({
       where: { id: input.serviceOrderId },
@@ -36,14 +43,18 @@ export async function completeServiceOrder(input: CompleteServiceInput) {
     if (order.items.length === 0) throw new Error("SERVICE_ORDER_EMPTY");
     if (!order.shiftId) throw new Error("SHIFT_REQUIRED");
 
+    // Sum repeated product lines before checking stock; each individual line can fit
+    // while their combined quantity exceeds the available stock.
+    const requiredStock = new Map<string, Prisma.Decimal>();
     for (const item of order.items) {
       if (!item.productId || item.product?.category === "SERVICE") continue;
+      requiredStock.set(item.productId, (requiredStock.get(item.productId) ?? new Prisma.Decimal(0)).plus(item.quantity));
+    }
+    for (const [productId, quantity] of requiredStock) {
       const aggregate = await tx.stockMovement.aggregate({
-        where: { branchId: order.branchId, productId: item.productId },
-        _sum: { quantity: true },
+        where: { branchId: order.branchId, productId }, _sum: { quantity: true },
       });
-      const available = aggregate._sum.quantity ?? new Prisma.Decimal(0);
-      if (available.lessThan(item.quantity)) throw new Error("INSUFFICIENT_STOCK");
+      if ((aggregate._sum.quantity ?? new Prisma.Decimal(0)).lessThan(quantity)) throw new Error("INSUFFICIENT_STOCK");
     }
 
     const subtotal = order.items.reduce(
@@ -224,5 +235,4 @@ export async function completeServiceOrder(input: CompleteServiceInput) {
       where: { id: invoice.id },
       include: { coupons: true, payments: true },
     });
-  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }

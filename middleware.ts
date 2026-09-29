@@ -33,6 +33,7 @@ export async function middleware(request: NextRequest) {
   const authSecret = process.env.AUTH_SECRET;
 
   if (!token || !authSecret) {
+    if (request.nextUrl.pathname.startsWith("/api/secure/")) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401, headers: { "cache-control": "no-store" } });
     return NextResponse.redirect(new URL("/", request.url));
   }
 
@@ -55,7 +56,9 @@ export async function middleware(request: NextRequest) {
     response.headers.set("cache-control", "no-store, max-age=0");
     return response;
   } catch {
-    const response = NextResponse.redirect(new URL("/", request.url));
+    const response = request.nextUrl.pathname.startsWith("/api/secure/")
+      ? NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 })
+      : NextResponse.redirect(new URL("/", request.url));
     response.cookies.delete(SESSION_COOKIE);
     response.headers.set("cache-control", "no-store, max-age=0");
     return response;

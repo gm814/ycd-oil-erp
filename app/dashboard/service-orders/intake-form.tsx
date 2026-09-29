@@ -10,15 +10,18 @@ export default function IntakeForm() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (loading) return;
     setMessage("");
     setLoading(true);
+    try {
 
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
-    const payload = Object.fromEntries(form.entries());
+    const payload = Object.fromEntries([...form.entries()].filter(([key, value]) => !(["year", "odometer"].includes(key) && value === "")));
 
     const response = await fetch("/api/secure/service-orders", {
       method: "POST",
+      signal: AbortSignal.timeout(15000),
       headers: { "content-type": "application/json" },
       body: JSON.stringify(payload),
     });
@@ -36,6 +39,8 @@ export default function IntakeForm() {
     setMessage(`تم فتح أمر الخدمة: ${result.order.orderNo}`);
     formElement.reset();
     router.refresh();
+    } catch { setMessage("لم نتأكد من نتيجة الحفظ بسبب الاتصال. احتفظ بالبيانات وتحقق من قائمة الأوامر قبل إعادة الإرسال."); }
+    finally { setLoading(false); }
   }
 
   return (

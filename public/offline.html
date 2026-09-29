@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#111111"><title>YCD OIL — العمل دون اتصال</title><link rel="stylesheet" href="/offline.css"><link rel="icon" href="/brand/app-icon-192.png"></head>
+<body>
+<header><img src="/brand/ycd-logo-source.svg" alt="YCD OIL"><div><h1>العمل دون اتصال</h1><p id="identity">جارٍ التحقق من تجهيز الجهاز…</p></div><a href="/dashboard">لوحة التحكم</a></header>
+<main>
+<p class="pilot">نسخة اختبار — استقبال السيارات وبنود الخدمة وتسجيل طلب الإقفال. يصدر رقم الفاتورة النهائي بعد المزامنة. بقية الإدارات تتطلب الاتصال حاليًا.</p>
+<section class="status" aria-live="polite"><strong id="connection">جارٍ فحص الاتصال…</strong><span id="prepared"></span><button id="sync" type="button">مزامنة الآن</button></section>
+<p id="notice" role="status"></p>
+<div class="grid">
+<section class="panel"><h2>تسجيل عملية خدمة</h2>
+<form id="order"><fieldset id="fields" disabled>
+<label>اسم العميل<input name="customerName" required minlength="2" maxlength="120" autocomplete="off"></label>
+<label>رقم الجوال<input name="phone" type="tel" minlength="7" maxlength="20" autocomplete="off"></label>
+<label>رقم اللوحة<input name="plate" required minlength="2" maxlength="30" autocomplete="off"></label>
+<div class="row"><label>الشركة المصنعة<input name="make" maxlength="60"></label><label>الموديل<input name="model" maxlength="60"></label></div>
+<div class="row"><label>سنة الصنع<input name="year" type="number" min="1950" max="2100"></label><label>قراءة العداد<input name="odometer" type="number" min="0" max="2000000"></label></div>
+<hr><label>بحث الأصناف والخدمات<input id="search" type="search" placeholder="الاسم أو رمز الصنف"></label>
+<label>الصنف أو الخدمة<select id="product"></select></label>
+<div class="row"><label>الكمية<input id="quantity" type="number" value="1" min="0.001" max="10000" step="0.001"></label><button id="add" type="button">إضافة بند</button></div>
+<ul id="items"></ul><p id="total"></p>
+<label class="check"><input name="complete" type="checkbox"> حفظ طلب الإقفال والتحصيل مع العملية</label>
+<label>طريقة الدفع<select name="paymentMethod"><option value="CASH">نقدًا</option><option value="CARD">بطاقة — عملية مؤكدة مسبقًا</option><option value="TRANSFER">تحويل — مؤكد مسبقًا</option><option value="CREDIT">آجل</option></select></label>
+<label>مرجع الدفع<input name="paymentReference" maxlength="120"></label>
+<p class="hint">تسجيل طريقة الدفع لا ينفذ عملية بنكية. رصيد المخزون المعروض يعود إلى آخر مزامنة، ويُراجع عند إرسال العملية.</p>
+<button id="save" type="submit">حفظ على الجهاز</button>
+</fieldset></form></section>
+<section class="panel"><h2>عمليات هذا الحساب على الجهاز</h2><p id="counts"></p><div id="operations"></div><p class="hint">لا تمسح بيانات المتصفح أو تحذف التطبيق قبل مزامنة العمليات المعلقة. لا تعتمد هذه النسخة للتشغيل التجاري قبل اجتياز الاختبارات.</p></section>
+</div>
+</main><script type="module" src="/offline.js"></script>
+</body></html>
