@@ -43,6 +43,7 @@ export async function evaluateGoLiveReadiness(branchId: string) {
       where: { branchId, active: true },
       select: {
         code: true,
+        nameAr: true,
         hireDate: true,
         user: {
           select: {
@@ -94,7 +95,9 @@ export async function evaluateGoLiveReadiness(branchId: string) {
       })
     : null;
   const openingBalance = Number(certifiedBankBalance?._sum.amount ?? 0);
+  const openingBalanceReady = Math.abs(openingBalance - companyConfig.bank.openingBalance) <= 0.01;
   const employeeByCode = new Map(employees.map((employee) => [employee.code, employee]));
+  const staffIdentityReady = operationalTeam.every((member) => employeeByCode.get(member.code)?.nameAr === member.nameAr);
   const hrReadyEmployees = employees.filter((employee) => employee.hireDate).length;
   const accountPlan = operationalTeam.map((member) => {
     const employee = employeeByCode.get(member.code);
@@ -126,7 +129,7 @@ export async function evaluateGoLiveReadiness(branchId: string) {
   const uatEvidenceReady = evidenceReadyUat === UAT_CASES.length;
 
   const missing: GoLiveRequirementCode[] = [];
-  if (employees.length < operationalTeam.length) missing.push(GO_LIVE_REQUIREMENTS.EMPLOYEES);
+  if (employees.length < operationalTeam.length || !staffIdentityReady) missing.push(GO_LIVE_REQUIREMENTS.EMPLOYEES);
   if (employees.length >= operationalTeam.length && hrReadyEmployees < operationalTeam.length) {
     missing.push(GO_LIVE_REQUIREMENTS.EMPLOYEE_HR_DATA);
   }
@@ -135,8 +138,8 @@ export async function evaluateGoLiveReadiness(branchId: string) {
     missing.push(GO_LIVE_REQUIREMENTS.USER_ROLE_PLAN);
   }
   if (!bankReady) missing.push(GO_LIVE_REQUIREMENTS.BANK_ACCOUNT);
-  if (openingBalance <= 0) missing.push(GO_LIVE_REQUIREMENTS.OPENING_BANK_BALANCE);
-  if (parentCompanies <= 0 || fundingTotal < openingBalance) missing.push(GO_LIVE_REQUIREMENTS.FUNDING_SOURCE);
+  if (!openingBalanceReady) missing.push(GO_LIVE_REQUIREMENTS.OPENING_BANK_BALANCE);
+  if (parentCompanies <= 0 || fundingTotal < companyConfig.bank.openingBalance) missing.push(GO_LIVE_REQUIREMENTS.FUNDING_SOURCE);
   if (preopeningAccounts.length <= 0 || Math.abs(preopeningLedgerVariance) > 0.01) {
     missing.push(GO_LIVE_REQUIREMENTS.PREOPENING_LEDGER_RECONCILIATION);
   }
@@ -155,11 +158,14 @@ export async function evaluateGoLiveReadiness(branchId: string) {
     summary: {
       employees: employees.length,
       plannedEmployees: operationalTeam.length,
+      staffIdentityReady,
       hrReadyEmployees,
       activeUsers,
       roleReadyUsers,
       bankReady,
       openingBalance,
+      expectedOpeningBalance: companyConfig.bank.openingBalance,
+      openingBalanceReady,
       fundingTotal,
       preopeningReportedTotal,
       preopeningImportedTotal,
