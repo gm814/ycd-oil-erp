@@ -68,7 +68,7 @@ jobs:
           ALLOW_UAT_FIXTURES: "true"
         run: npm run verify:uat-fixtures
       - run: npm run typecheck
-      - run: npm run vercel-build
+      - run: npm run build
       - name: Validate production Compose stack
         env:
           POSTGRES_PASSWORD: ci-compose-only-password
