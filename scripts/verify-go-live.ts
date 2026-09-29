@@ -50,7 +50,7 @@ async function main() {
       select: { bankName: true, accountNumber: true, iban: true },
     }),
     prisma.financialTransaction.aggregate({
-      where: { branchId: branch.id, type: "OPENING_BALANCE", account: { type: "BANK" } },
+      where: { branchId: branch.id, account: { type: "BANK", active: true } },
       _sum: { amount: true },
     }),
     prisma.groupCompany.count({
@@ -101,7 +101,7 @@ async function main() {
 
   const openingBalance = Number(openingBankBalance._sum.amount ?? 0);
   const fundingTotal = Number(groupFunding._sum.amount ?? 0);
-  assert(openingBalance > 0, "الرصيد البنكي الافتتاحي الفعلي لم يُسجل بعد");
+  assert(openingBalance > 0, "الرصيد البنكي الفعلي عند الإطلاق غير موجب أو لم يُسجل بعد");
   assert(parentCompanies > 0, "الشركة الممولة / الشركة الرئيسية غير مسجلة");
   assert(fundingTotal >= openingBalance, "مصدر التمويل المسجل أقل من الرصيد البنكي الافتتاحي");
 
