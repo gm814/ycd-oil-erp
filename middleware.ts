@@ -1,4 +1,5 @@
 import { jwtVerify } from "jose";
+import { sameApplicationOrigin } from "@/lib/request-origin";
 import { NextRequest, NextResponse } from "next/server";
 
 const SESSION_COOKIE = "ycd_session";
@@ -13,11 +14,11 @@ function sameOriginMutationAllowed(request: NextRequest) {
   const origin = request.headers.get("origin");
   if (!origin) return true;
 
-  try {
-    return new URL(origin).origin === request.nextUrl.origin;
-  } catch {
-    return false;
-  }
+  return sameApplicationOrigin(
+    origin,
+    request.nextUrl.origin,
+    process.env.APP_ORIGIN || process.env.RENDER_EXTERNAL_URL,
+  );
 }
 
 export async function middleware(request: NextRequest) {

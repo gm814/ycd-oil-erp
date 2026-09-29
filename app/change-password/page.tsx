@@ -33,12 +33,17 @@ export default function ChangePasswordPage() {
     const result = await response.json().catch(() => ({}));
     setBusy(false);
 
+    if (response.redirected || result.error === "UNAUTHENTICATED") {
+      setMessage("انتهت جلسة الدخول. سجّل الدخول مجددًا ثم غيّر كلمة المرور.");
+      return;
+    }
     if (!response.ok) {
-      setMessage(
-        result.error === "CURRENT_PASSWORD_INVALID"
-          ? "كلمة المرور الحالية غير صحيحة."
-          : `تعذر تغيير كلمة المرور. ${PASSWORD_HINT}`,
-      );
+      const messages: Record<string, string> = {
+        CURRENT_PASSWORD_INVALID: "كلمة المرور الحالية غير صحيحة.",
+        INVALID_INPUT: `استخدم كلمة جديدة مختلفة عن الحالية. ${PASSWORD_HINT}`,
+        CROSS_SITE_REQUEST_REJECTED: "تعذر التحقق من عنوان التطبيق. افتح رابط التطبيق الرسمي وسجّل الدخول مجددًا.",
+      };
+      setMessage(messages[result.error] || "تعذر حفظ كلمة المرور بسبب خطأ في النظام. حاول مجددًا.");
       return;
     }
 
