@@ -4,7 +4,7 @@ import { companyConfig } from "@/lib/config";
 import { getSession } from "@/lib/auth";
 import { riyadhBusinessDayRange } from "@/lib/time";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
-import LogoutButton from "./logout-button";
+import { DashboardView, type DashboardData } from "./dashboard-view";
 
 const modules = [
   { label: "جاهزية الافتتاح والتشغيل", href: "/dashboard/readiness", any: [PERMISSIONS.REPORTS_VIEW, PERMISSIONS.OPERATIONS_UAT, PERMISSIONS.OPERATIONS_GO_LIVE] },
@@ -31,19 +31,21 @@ export default async function DashboardPage() {
   if (!session.branchId) redirect("/");
 
   const { start, end } = riyadhBusinessDayRange();
+  const previousStart = new Date(start.getTime() - 86400000);
+  const weekStart = new Date(start.getTime() - 6 * 86400000);
 
   const [branchState, invoices, serviceOrderCount, openShift, activeCoupons, products, pendingPurchases, invoiceMismatches, openCustodies, draftPayrolls, maintenanceAlerts, pendingShiftVariances, pendingFinancialCloses] = await Promise.all([
     db.branch.findUnique({
       where: { id: session.branchId },
-      select: { operationalStatus: true },
+      select: { operationalStatus: true, nameAr: true },
     }),
     db.invoice.findMany({
       where: {
-        createdAt: { gte: start, lt: end },
+        createdAt: { gte: weekStart, lt: end },
         status: { not: "VOID" },
         serviceOrder: { branchId: session.branchId },
       },
-      include: { payments: true },
+      include: { payments: true, serviceOrder: { include: { items: { include: { product: true } } } } },
     }),
     db.serviceOrder.count({
       where: { branchId: session.branchId, createdAt: { gte: start, lt: end } },
@@ -61,7 +63,7 @@ export default async function DashboardPage() {
     db.product.findMany({
       where: { active: true },
       select: {
-        minStock: true,
+        id: true, nameAr: true, minStock: true,
         stockMovements: {
           where: { branchId: session.branchId },
           select: { quantity: true },
@@ -108,92 +110,61 @@ export default async function DashboardPage() {
       ? "موقوف تشغيليًا"
       : companyConfig.operationalPhaseAr;
 
-  const salesToday = invoices.reduce((sum, invoice) => sum + Number(invoice.total), 0);
-  const cashToday = invoices.flatMap((invoice) => invoice.payments)
-    .filter((payment) => payment.method === "CASH")
-    .reduce((sum, payment) => sum + Number(payment.amount), 0);
-  const lowStockCount = products.filter((product) => {
-    const stock = product.stockMovements.reduce((sum, movement) => sum + Number(movement.quantity), 0);
-    return stock <= Number(product.minStock);
-  }).length;
 
-  const kpis = [
-    ["المبيعات اليوم", `${salesToday.toFixed(2)} ر.س`],
-    ["السيارات المستلمة", serviceOrderCount.toLocaleString("ar-SA")],
-    ["التحصيل النقدي", `${cashToday.toFixed(2)} ر.س`],
-    ["كوبونات فعالة", activeCoupons.toLocaleString("ar-SA")],
+  const [transactions, payments, previousCars, recentOrders, requests] = await Promise.all([
+    db.financialTransaction.findMany({ where: { branchId: session.branchId, type: "EXPENSE", createdAt: { gte: weekStart, lt: end } }, select: { amount: true, createdAt: true } }),
+    db.payment.findMany({ where: { paidAt: { gte: start, lt: end }, invoice: { status: { not: "VOID" }, serviceOrder: { branchId: session.branchId } } }, select: { method: true, amount: true } }),
+    db.serviceOrder.count({ where: { branchId: session.branchId, createdAt: { gte: previousStart, lt: start } } }),
+    db.serviceOrder.findMany({ where: { branchId: session.branchId, createdAt: { gte: start, lt: end } }, include: { vehicle: true, items: true }, orderBy: { createdAt: "desc" }, take: 5 }),
+    db.purchaseRequest.findMany({ where: { branchId: session.branchId, status: "PENDING_APPROVAL" }, select: { id: true, requestNo: true, createdAt: true }, orderBy: { createdAt: "desc" }, take: 5 }),
+  ]);
+  const total = (from: Date, to: Date) => invoices.filter(i=>i.createdAt>=from && i.createdAt<to).reduce((n,i)=>n+Number(i.total),0);
+  const expenses = (from: Date, to: Date) => transactions.filter(t=>t.createdAt>=from && t.createdAt<to).reduce((n,t)=>n+Math.abs(Number(t.amount)),0);
+  const categorySales = (category: string, from: Date, to: Date) => invoices.filter(i=>i.createdAt>=from && i.createdAt<to).flatMap(i=>i.serviceOrder.items).filter(i=>i.product?.category===category).reduce((n,i)=>n+Number(i.quantity)*Number(i.unitPrice)-Number(i.discount),0);
+  const sales=total(start,end), previousSales=total(previousStart,start), expense=expenses(start,end), previousExpense=expenses(previousStart,start);
+  const icons = ["settings","bell","clock","car","drop","ticket","users","cart","box","money","document","users","users","tool","chart","document"];
+  const navigation: DashboardData["navigation"] = modules.filter(m=>m.any.some(p=>hasPermission(session.permissions,p))).map(m=>({label:m.label,href:m.href,icon:icons[modules.indexOf(m)]}));
+  if (hasPermission(session.permissions, PERMISSIONS.USER_MANAGE)) navigation.push({label:"الإعدادات والصلاحيات",href:"/dashboard/admin/users",icon:"settings"});
+  const actionList = [
+    {label:"استقبال سيارة",detail:"زيوت وخدمات",href:"/dashboard/service-orders",icon:"car",permission:PERMISSIONS.SERVICE_ORDER_CREATE},
+    {label:"كوبونات المغسلة",detail:"غسيل السيارات",href:"/dashboard/coupons",icon:"car",permission:PERMISSIONS.COUPON_REDEEM},
+    {label:"طلب شراء",detail:"المشتريات",href:"/dashboard/procurement",icon:"cart",permission:PERMISSIONS.PROCUREMENT_REQUEST},
+    {label:"استلام مخزون",detail:"من المورد",href:"/dashboard/inventory",icon:"box",permission:PERMISSIONS.INVENTORY_MANAGE},
+    {label:"المبيعات والعملاء",detail:"فواتير وحسابات",href:"/dashboard/customers",icon:"document",permission:PERMISSIONS.CUSTOMER_VIEW},
+    {label:"سند صرف",detail:"المصروفات",href:"/dashboard/finance",icon:"money",permission:PERMISSIONS.FINANCE_VIEW},
+    {label:"سند قبض",detail:"التحصيل",href:"/dashboard/receivables",icon:"money",permission:PERMISSIONS.PAYMENT_RECEIVE},
+    {label:"طلب عهدة",detail:"عهد الموظفين",href:"/dashboard/custody",icon:"document",permission:PERMISSIONS.CUSTODY_REQUEST},
+    {label:"الوردية اليومية",detail:openShift?"وردية مفتوحة":"فتح وإقفال",href:"/dashboard/shifts",icon:"clock",permission:PERMISSIONS.SHIFT_OPEN},
+    {label:"أمر صيانة",detail:"معدات وأصول",href:"/dashboard/assets",icon:"tool",permission:PERMISSIONS.ASSET_VIEW},
   ];
-
-  return (
-    <main className="shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <img className="sidebarBrandLogo" src="/brand/ycd-logo-source.svg" alt="YCD OIL" />
-          <small>ERP & Operations</small>
-        </div>
-        <nav>
-          <strong>لوحة التحكم</strong>
-          {modules
-            .filter((module) => module.any.some((permission) => hasPermission(session.permissions, permission)))
-            .map((module) => <a href={module.href} key={module.label}>{module.label}</a>)}
-          {hasPermission(session.permissions, PERMISSIONS.USER_MANAGE) && (
-            <a href="/dashboard/admin/users">المستخدمون والصلاحيات</a>
-          )}
-        </nav>
-      </aside>
-
-      <section className="content">
-        <header>
-          <div>
-            <h1>لوحة الإدارة العامة</h1>
-            <p>{companyConfig.legalNameAr}</p>
-          </div>
-          <div className="userbar">
-            <div className="branch">{session.name} · {companyConfig.branch}</div>
-            <a className="secondaryLink" href="/dashboard/account/security">أمان الحساب</a>
-            <LogoutButton />
-          </div>
-        </header>
-
-        <section className="hero">
-          <div>
-            <span className="eyebrow">YCD OIL ERP & Operations</span>
-            <h2>تشغيل منظم، رقابة لحظية، وقرار مبني على البيانات.</h2>
-            <p>الواجهة التشغيلية للفرع الأول – الرياض - حي طويق.</p>
-            <p><span className={branchState.operationalStatus === "LIVE" ? "okBadge" : "alertBadge"}>{phaseLabel}</span></p>
-          </div>
-          <a className="primaryLink" href="/dashboard/readiness">متابعة جاهزية الافتتاح</a>
-        </section>
-
-        <section className="kpis">
-          {kpis.map(([label, value]) => (
-            <article key={label}><span>{label}</span><b>{value}</b></article>
-          ))}
-        </section>
-
-        <section className="grid">
-          <article className="panel">
-            <h3>حالة التشغيل</h3>
-            <p><span className={openShift ? "okBadge" : "alertBadge"}>{openShift ? "الوردية مفتوحة" : "لا توجد وردية مفتوحة"}</span></p>
-            <p>أوامر الخدمة اليوم: <b>{serviceOrderCount.toLocaleString("ar-SA")}</b></p>
-          </article>
-          <article className="panel">
-            <h3>تنبيهات الإدارة</h3>
-            <p>مخزون عند الحد الأدنى: <b>{lowStockCount.toLocaleString("ar-SA")}</b></p>
-            <p>طلبات شراء تنتظر الاعتماد: <b>{pendingPurchases.toLocaleString("ar-SA")}</b></p>
-            <p className={invoiceMismatches > 0 ? "" : "empty"}>فواتير موردين غير متطابقة: <b>{invoiceMismatches.toLocaleString("ar-SA")}</b></p>
-            <p className={openCustodies > 0 ? "" : "empty"}>عهد غير مقفلة: <b>{openCustodies.toLocaleString("ar-SA")}</b></p>
-            <p className={draftPayrolls > 0 ? "" : "empty"}>مسيرات رواتب تنتظر الاعتماد/الصرف: <b>{draftPayrolls.toLocaleString("ar-SA")}</b></p>
-            <p className={maintenanceAlerts > 0 ? "" : "empty"}>أصول تحتاج متابعة صيانة: <b>{maintenanceAlerts.toLocaleString("ar-SA")}</b></p>
-            <p className={pendingShiftVariances > 0 ? "" : "empty"}>فروقات ورديات تنتظر الاعتماد: <b>{pendingShiftVariances.toLocaleString("ar-SA")}</b></p>
-            <p className={pendingFinancialCloses > 0 ? "" : "empty"}>إقفالات مالية تنتظر المراجعة/الإقفال: <b>{pendingFinancialCloses.toLocaleString("ar-SA")}</b></p>
-            <div className="actionStack">
-              <a className="orderLink" href="/dashboard/approvals">فتح مركز الاعتمادات والتنبيهات</a>
-              <a className="orderLink" href="/dashboard/finance/closes">فتح مركز الإقفال المالي</a>
-            </div>
-          </article>
-        </section>
-      </section>
-    </main>
-  );
+  const statuses:Record<string,string>={DRAFT:"مسودة",OPEN:"مستلمة",IN_PROGRESS:"قيد التنفيذ",COMPLETED:"منتهية",CANCELLED:"ملغاة"};
+  const data: DashboardData = {
+    name:session.name, branch:branchState.nameAr,phase:phaseLabel,live:branchState.operationalStatus==="LIVE",navigation,
+    actions:actionList.filter(a=>hasPermission(session.permissions,a.permission)),
+    kpis:[
+      {label:"عدد السيارات اليوم",value:serviceOrderCount,previous:previousCars,icon:"car",color:"#ff7725"},
+      {label:"مبيعات الزيوت قبل الضريبة",value:categorySales("OIL",start,end),previous:categorySales("OIL",previousStart,start),money:true,icon:"drop",color:"#ff9612"},
+      {label:"مبيعات الخدمات قبل الضريبة",value:categorySales("SERVICE",start,end),previous:categorySales("SERVICE",previousStart,start),money:true,icon:"tool",color:"#939497"},
+      {label:"إجمالي المبيعات",value:sales,previous:previousSales,money:true,icon:"box",color:"#ffa318"},
+      {label:"المصروفات التشغيلية",value:expense,previous:previousExpense,money:true,icon:"money",color:"#ff4938"},
+      {label:"المبيعات ناقص المصروفات",value:sales-expense,previous:previousSales-previousExpense,money:true,icon:"money",color:"#f69b12"},
+    ],
+    payments:[{method:"CASH",label:"نقدي",color:"#fa9318"},{method:"CARD",label:"مدى / بطاقات",color:"#ffc225"},{method:"TRANSFER",label:"تحويل بنكي",color:"#939497"},{method:"CREDIT",label:"آجل مسجل",color:"#c5c5c6"}].map(m=>({...m,value:payments.filter(p=>p.method===m.method).reduce((n,p)=>n+Number(p.amount),0)})),
+    trend:Array.from({length:7},(_,i)=>{const from=new Date(weekStart.getTime()+i*86400000),to=new Date(from.getTime()+86400000);return {label:from.toLocaleDateString("en-GB",{timeZone:"Asia/Riyadh",day:"2-digit",month:"2-digit"}),sales:total(from,to),expenses:expenses(from,to)};}),
+    branches:[{label:branchState.nameAr,sales:total(weekStart,end),expenses:expenses(weekStart,end)}],
+    orders:recentOrders.map(o=>({id:o.id,plate:o.vehicle.plate,car:[o.vehicle.make,o.vehicle.model].filter(Boolean).join(" ")||"—",service:o.items.map(i=>i.descriptionAr).join(" + ")||"—",status:statuses[o.status]||o.status})),
+    stock:products.map(p=>({id:p.id,name:p.nameAr,quantity:p.stockMovements.reduce((n,m)=>n+Number(m.quantity),0),minimum:Number(p.minStock)})).filter(p=>p.quantity<=p.minimum).slice(0,5),
+    approvals:requests.map(r=>({id:r.id,type:"طلب شراء",number:r.requestNo,date:r.createdAt.toLocaleDateString("en-GB",{timeZone:"Asia/Riyadh"}),href:`/dashboard/procurement/requests/${r.id}`})),
+    alerts:[
+      {label:"طلبات شراء",count:pendingPurchases,href:"/dashboard/approvals"},
+      {label:"فواتير غير متطابقة",count:invoiceMismatches,href:"/dashboard/approvals"},
+      {label:"عهد غير مقفلة",count:openCustodies,href:"/dashboard/custody"},
+      {label:"مسيرات رواتب",count:draftPayrolls,href:"/dashboard/hr"},
+      {label:"تنبيهات صيانة",count:maintenanceAlerts,href:"/dashboard/assets"},
+      {label:"فروقات ورديات",count:pendingShiftVariances,href:"/dashboard/shifts"},
+      {label:"إقفالات مالية",count:pendingFinancialCloses,href:"/dashboard/finance/closes"},
+      {label:"كوبونات فعالة",count:activeCoupons,href:"/dashboard/coupons"},
+    ],
+  };
+  return <DashboardView data={data}/>;
 }
