@@ -392,8 +392,9 @@ export default function FinanceActions({
               </label>
               <div className="formRow">
                 <label>اسم البنك<input name="bankName" /></label>
-                <label>IBAN<input name="iban" /></label>
+                <label>رقم الحساب<input name="accountNumber" dir="ltr" /></label>
               </div>
+              <label>IBAN<input name="iban" dir="ltr" placeholder="SA..." /></label>
               <label>الرصيد الافتتاحي<input name="openingBalance" type="number" min="0" step="0.01" defaultValue="0" /></label>
               <button disabled={busy}>حفظ الحساب</button>
             </form>
