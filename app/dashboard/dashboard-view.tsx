@@ -39,7 +39,7 @@ const paths: Record<string, string> = {
  settings: "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2",
 };
 function Icon({ name }: { name: string }) { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name] || paths.document} /></svg>; }
-function ReferenceArtwork({banner=false}:{banner?:boolean}) { return banner ? <><img className={styles.heroPhoto} src="/brand/service-center-hero.webp" alt="مركز خدمات YCD OIL"/><div className={styles.heroBrand}><img src="/brand/ycd-logo-source.svg" alt="YCD OIL"/><h1>وجهتك الإبداعية لزيوت وخدمات السيارات</h1><p>Your Creative Destination for Oil & Auto Services</p></div></> : <img src="/brand/ycd-logo-source.svg" alt="YCD OIL"/>; }
+function ReferenceArtwork({banner=false}:{banner?:boolean}) { return <svg viewBox={banner?"18 61 1296 210":"1330 2 204 108"} role="img" aria-label={banner?"وجهتك الإبداعية لزيوت وخدمات السيارات":"YCD OIL"} preserveAspectRatio="xMidYMid meet"><image href="/brand/dashboard-reference.jpeg" width="1536" height="1024"/></svg>; }
 function Empty({ children }: { children: React.ReactNode }) { return <p className={styles.empty}>{children}</p>; }
 function LineChart({ data }: { data: DashboardData["trend"] }) {
  const max = Math.max(1, ...data.flatMap(d => [d.sales, d.expenses]));
