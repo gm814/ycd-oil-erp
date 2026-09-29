@@ -18,13 +18,9 @@
 
 ## أمر البناء على Vercel
 
-المستودع يثبت أمر البناء في `vercel.json` على:
+يُترك Vercel لاكتشاف Next.js تلقائيًا وتشغيل `npm run build`. سكربت `build` نفسه ينفذ `prisma generate` ثم `next build`، لذلك لا يعتمد توليد Prisma على إعداد Vercel خاص.
 
-```bash
-npm run vercel-build
-```
-
-وهذا الأمر ينفذ `prisma generate` أولًا ثم `next build`. لا تُشغّل migrations من Build Command؛ ترحيل قاعدة الإنتاج يتم كخطوة نشر مستقلة عبر `npm run db:deploy`.
+لا تُشغّل migrations من Build Command؛ ترحيل قاعدة الإنتاج يتم كخطوة نشر مستقلة عبر `npm run db:deploy`. ملف `vercel.json` يقتصر على سلوك الروابط المتوافق مع الفرع الرئيسي لتجنب تعارضات الدمج.
 
 ## قاعدة البيانات قبل أول نشر
 
