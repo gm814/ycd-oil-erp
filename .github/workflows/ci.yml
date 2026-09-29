@@ -76,19 +76,31 @@ jobs:
         run: docker compose -f docker-compose.production.yml config --quiet
       - name: Build production container
         run: docker build --target runner -t ycd-oil-erp:ci .
+      - name: Create empty bootstrap test database
+        run: PGPASSWORD=postgres createdb -h 127.0.0.1 -U postgres ycd_bootstrap
       - name: Production container database smoke test
         env:
           AUTH_SECRET: ci-only-container-secret-not-for-production-0123456789abcdef
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ycd_bootstrap?schema=public
+          ADMIN_EMAIL: bootstrap@example.invalid
+          ADMIN_USERNAME: admin
+          ADMIN_PASSWORD: ci-only-bootstrap-password-482159
         run: |
           set -eu
           CONTAINER_ID=$(docker run -d --network host \
-            -e DATABASE_URL -e AUTH_SECRET \
+            -e DATABASE_URL -e AUTH_SECRET -e YCD_BOOTSTRAP=true \
+            -e ADMIN_EMAIL -e ADMIN_USERNAME -e ADMIN_PASSWORD \
             -e PORT=10001 -e ALLOW_PREOPENING_OPERATIONS=false \
             ycd-oil-erp:ci)
           trap 'docker rm -f "$CONTAINER_ID" >/dev/null' EXIT
-          for attempt in {1..30}; do
+          for attempt in {1..60}; do
             if curl --fail --silent http://127.0.0.1:10001/api/health > /tmp/ycd-container-health.json; then
               node -e 'const h=JSON.parse(require("fs").readFileSync("/tmp/ycd-container-health.json","utf8")); if(h.status!=="ok" || h.database!=="reachable") process.exit(1)'
+              docker exec -e ADMIN_PASSWORD=changed-password-must-not-apply "$CONTAINER_ID" node scripts/bootstrap-production.cjs
+              curl --fail --silent -H 'Content-Type: application/json' \
+                --data '{"identifier":"admin","password":"ci-only-bootstrap-password-482159"}' \
+                http://127.0.0.1:10001/api/auth/login > /tmp/ycd-bootstrap-login.json
+              node -e 'const r=JSON.parse(require("fs").readFileSync("/tmp/ycd-bootstrap-login.json","utf8")); if(r.ok!==true || r.mustChangePassword!==true) process.exit(1)'
               exit 0
             fi
             sleep 1
