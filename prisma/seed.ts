@@ -196,6 +196,33 @@ async function main() {
     await prisma.financialTransaction.delete({ where: { id: syntheticOpeningTransaction.id } });
   }
 
+  await prisma.financialTransaction.upsert({
+    where: { idempotencyKey: "opening-bank-main-confirmed-2026-09-29" },
+    update: {
+      branchId: branch.id,
+      accountId: bankAccount.id,
+      type: "OPENING_BALANCE",
+      amount: 17000,
+      reference: "OPENING-BALANCE-20260929",
+      descriptionAr: "الرصيد الافتتاحي المعتمد لحساب مصرف الراجحي حسب إفادة الإدارة",
+      relatedEntityType: "OpeningBalance",
+      relatedEntityId: "BANK-MAIN-20260929",
+      performedBy: "SYSTEM-SEED",
+    },
+    create: {
+      branchId: branch.id,
+      accountId: bankAccount.id,
+      type: "OPENING_BALANCE",
+      amount: 17000,
+      reference: "OPENING-BALANCE-20260929",
+      descriptionAr: "الرصيد الافتتاحي المعتمد لحساب مصرف الراجحي حسب إفادة الإدارة",
+      relatedEntityType: "OpeningBalance",
+      relatedEntityId: "BANK-MAIN-20260929",
+      performedBy: "SYSTEM-SEED",
+      idempotencyKey: "opening-bank-main-confirmed-2026-09-29",
+    },
+  });
+
   const setupToolsAcquisition = await prisma.assetAcquisition.upsert({
     where: { acquisitionNo: "ACQ-TWQ-20260926-219" },
     update: {
