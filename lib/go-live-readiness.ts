@@ -59,7 +59,7 @@ export async function evaluateGoLiveReadiness(branchId: string) {
       select: { bankName: true, accountNumber: true, iban: true },
     }),
     db.financialTransaction.aggregate({
-      where: { branchId, type: "OPENING_BALANCE", account: { type: "BANK" } },
+      where: { branchId, account: { type: "BANK", active: true } },
       _sum: { amount: true },
     }),
     db.groupCompany.count({
