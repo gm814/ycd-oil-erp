@@ -9,6 +9,7 @@ const schema = z.object({
   nameAr: z.string().trim().min(2).max(160),
   type: z.enum(["CASH", "BANK", "POS_CLEARING"]),
   bankName: z.string().trim().max(120).optional(),
+  accountNumber: z.string().trim().max(40).optional(),
   iban: z.string().trim().max(40).optional(),
   openingBalance: z.coerce.number().min(0).max(100_000_000).default(0),
 });
@@ -32,6 +33,7 @@ export async function POST(request: Request) {
           nameAr: parsed.data.nameAr,
           type: parsed.data.type,
           bankName: parsed.data.bankName || null,
+          accountNumber: parsed.data.accountNumber || null,
           iban: parsed.data.iban || null,
         },
       });
