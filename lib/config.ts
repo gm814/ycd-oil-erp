@@ -44,6 +44,9 @@ export const companyConfig = {
     certificateDate: "26/09/2026",
     certificateSourceAr: "خطاب IBAN المعتمد من مصرف الراجحي",
     certificateSha256: "121703866f6e01c3aaaacd8b3bed7befe6d9b02d342086ff087e63d7d5698dc6",
+    openingBalance: 17000,
+    openingBalanceAsOf: "29/09/2026",
+    openingBalanceSourceAr: "إفادة الإدارة — الرصيد الافتتاحي المعتمد",
   },
   brandIdentity: {
     sourceAr: "ملف الهوية الرسمي YCD OIL المرفق من الإدارة",
