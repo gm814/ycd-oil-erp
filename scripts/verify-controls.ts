@@ -97,10 +97,17 @@ async function main() {
   const syntheticOpening = await prisma.financialTransaction.findUnique({
     where: { idempotencyKey: "opening-bank-main-2026-09-26" },
   });
+  const confirmedOpening = await prisma.financialTransaction.findUnique({
+    where: { idempotencyKey: "opening-bank-main-confirmed-2026-09-29" },
+  });
   const salesReceipts = await prisma.financialTransaction.count({
     where: { branchId: branch.id, type: "CUSTOMER_RECEIPT" },
   });
-  assert(!syntheticOpening, "لا يجوز تثبيت رصيد افتتاحي بنكي غير معتمد داخل Seed");
+  assert(!syntheticOpening, "لا يجوز إبقاء رصيد افتتاحي تقديري قديم داخل Seed");
+  assert(confirmedOpening, "الرصيد الافتتاحي البنكي المعتمد غير موجود");
+  assert(confirmedOpening.accountId === bank.id, "الرصيد الافتتاحي المعتمد يجب أن يكون على BANK-MAIN");
+  assert(confirmedOpening.type === "OPENING_BALANCE", "الرصيد الافتتاحي المعتمد يجب أن يسجل كـ OPENING_BALANCE");
+  assert(Math.abs(Number(confirmedOpening.amount) - 17000) < 0.01, "الرصيد الافتتاحي المعتمد يجب أن يساوي 17,000 ر.س");
   if (branch.operationalStatus === "PREOPENING") {
     assert(salesReceipts === 0, "لا يجب وجود تحصيلات عملاء فعلية أثناء PREOPENING في بيانات الأساس");
   }
