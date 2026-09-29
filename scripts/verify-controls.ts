@@ -94,14 +94,13 @@ async function main() {
   assert(cash?.type === "CASH" && cash.active, "الصندوق الرئيسي غير جاهز");
   assert(pos?.type === "POS_CLEARING" && pos.active, "حساب تسويات مدى غير جاهز");
 
-  const bankOpening = await prisma.financialTransaction.aggregate({
-    where: { branchId: branch.id, accountId: bank.id, type: "OPENING_BALANCE" },
-    _sum: { amount: true },
+  const syntheticOpening = await prisma.financialTransaction.findUnique({
+    where: { idempotencyKey: "opening-bank-main-2026-09-26" },
   });
   const salesReceipts = await prisma.financialTransaction.count({
     where: { branchId: branch.id, type: "CUSTOMER_RECEIPT" },
   });
-  assert(Number(bankOpening._sum.amount ?? 0) === 17000, "الرصيد الافتتاحي البنكي غير مطابق");
+  assert(!syntheticOpening, "لا يجوز تثبيت رصيد افتتاحي بنكي غير معتمد داخل Seed");
   if (branch.operationalStatus === "PREOPENING") {
     assert(salesReceipts === 0, "لا يجب وجود تحصيلات عملاء فعلية أثناء PREOPENING في بيانات الأساس");
   }
