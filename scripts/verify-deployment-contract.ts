@@ -13,14 +13,19 @@ async function main() {
   ]);
 
   const packageJson = JSON.parse(packageJsonRaw) as { scripts?: Record<string, string> };
-  const vercel = JSON.parse(vercelRaw) as { framework?: string; buildCommand?: string };
+  const vercel = JSON.parse(vercelRaw) as { cleanUrls?: boolean; trailingSlash?: boolean; framework?: string; buildCommand?: string };
   const scripts = packageJson.scripts ?? {};
 
-  assert(vercel.framework === "nextjs", "vercel.json يجب أن يثبت إطار Next.js");
-  assert(vercel.buildCommand === "npm run vercel-build", "Vercel يجب أن يستخدم أمر البناء الآمن المعتمد");
+  assert(vercel.cleanUrls === true, "vercel.json يجب أن يفعّل cleanUrls المتوافق مع الفرع الرئيسي");
+  assert(vercel.trailingSlash === false, "vercel.json يجب أن يعطل trailingSlash");
+  assert(!vercel.framework && !vercel.buildCommand, "Vercel يجب أن يكتشف Next.js تلقائيًا دون إعداد متعارض مع main");
+  assert(
+    scripts["build"] === "npm run db:generate && next build",
+    "أمر build يجب أن يولد Prisma Client قبل Next.js build",
+  );
   assert(
     scripts["vercel-build"] === "npm run db:generate && next build",
-    "Vercel build يجب أن يولد Prisma Client قبل Next.js build",
+    "أمر vercel-build الاحتياطي يجب أن يبقى متوافقًا مع build",
   );
   assert(scripts["db:deploy"] === "prisma migrate deploy", "أمر migrations الإنتاجي غير مثبت");
   assert(scripts["verify:production-env"], "فحص بيئة الإنتاج غير معرف");
@@ -43,7 +48,7 @@ async function main() {
   );
 
   console.log("YCD DEPLOYMENT CONTRACT VERIFIED");
-  console.log("Vercel build: Prisma generate + Next.js build");
+  console.log("Vercel: automatic Next.js detection; build generates Prisma Client");
   console.log("Production migrations: deploy-only");
   console.log("PREOPENING bypass: disabled by template");
 }
