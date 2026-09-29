@@ -28,7 +28,6 @@ export async function evaluateGoLiveReadiness(branchId: string) {
     branch,
     employees,
     bankAccounts,
-    openingBankBalance,
     parentCompanies,
     groupFunding,
     serviceProducts,
@@ -56,11 +55,7 @@ export async function evaluateGoLiveReadiness(branchId: string) {
     }),
     db.financialAccount.findMany({
       where: { branchId, active: true, type: "BANK" },
-      select: { bankName: true, accountNumber: true, iban: true },
-    }),
-    db.financialTransaction.aggregate({
-      where: { branchId, account: { type: "BANK", active: true } },
-      _sum: { amount: true },
+      select: { id: true, bankName: true, accountNumber: true, iban: true },
     }),
     db.groupCompany.count({
       where: {
@@ -85,13 +80,20 @@ export async function evaluateGoLiveReadiness(branchId: string) {
     db.shift.count({ where: { branchId, closedAt: null } }),
   ]);
 
-  const openingBalance = Number(openingBankBalance._sum.amount ?? 0);
   const fundingTotal = Number(groupFunding._sum.amount ?? 0);
-  const bankReady = bankAccounts.some((account) =>
+  const certifiedBank = bankAccounts.find((account) =>
     account.bankName === companyConfig.bank.nameAr &&
     account.accountNumber === companyConfig.bank.accountNumber &&
     account.iban === companyConfig.bank.iban
   );
+  const bankReady = Boolean(certifiedBank);
+  const certifiedBankBalance = certifiedBank
+    ? await db.financialTransaction.aggregate({
+        where: { accountId: certifiedBank.id },
+        _sum: { amount: true },
+      })
+    : null;
+  const openingBalance = Number(certifiedBankBalance?._sum.amount ?? 0);
   const employeeByCode = new Map(employees.map((employee) => [employee.code, employee]));
   const hrReadyEmployees = employees.filter((employee) => employee.hireDate).length;
   const accountPlan = operationalTeam.map((member) => {
