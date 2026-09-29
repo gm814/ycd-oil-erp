@@ -1222,3 +1222,15 @@ model AuditLog {
   createdAt  DateTime @default(now())
   @@index([entityType, entityId])
 }
+
+// Receipts are committed atomically with business writes. Keep them for deduplication.
+model OfflineReceipt {
+  id          String   @id
+  userId      String
+  branchId    String
+  payloadHash String
+  result      Json
+  recordedAt  DateTime
+  createdAt   DateTime @default(now())
+  @@index([userId, branchId, createdAt])
+}

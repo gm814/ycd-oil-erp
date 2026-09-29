@@ -67,6 +67,14 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ycd_oil_erp_uat?schema=public
           ALLOW_UAT_FIXTURES: "true"
         run: npm run verify:uat-fixtures
+      - name: Verify offline atomic synchronization
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ycd_oil_erp_uat?schema=public
+          ALLOW_UAT_FIXTURES: "true"
+        run: npm run verify:offline
+      - name: Install test browser
+        run: npx playwright install --with-deps chromium
+      - run: npm run verify:offline-browser
       - run: npm run typecheck
       - run: npm run build
       - name: Validate production Compose stack

@@ -20,7 +20,9 @@
     "verify:uat-fixtures": "tsx scripts/verify-uat-fixtures.ts",
     "vercel-build": "npm run db:generate && next build",
     "verify:deployment-contract": "tsx scripts/verify-deployment-contract.ts",
-    "verify:zatca-qr": "tsx scripts/verify-zatca-qr.ts"
+    "verify:zatca-qr": "tsx scripts/verify-zatca-qr.ts",
+    "verify:offline": "tsx scripts/verify-offline.ts",
+    "verify:offline-browser": "node tests/offline-browser.cjs"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
@@ -38,7 +40,8 @@
     "@types/react-dom": "^19.1.9",
     "prisma": "^6.16.2",
     "tsx": "^4.20.5",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "playwright": "1.62.1"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

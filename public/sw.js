@@ -1,10 +1,23 @@
-// Online-first operations: never cache credentials, API responses, or authenticated pages.
-self.addEventListener("install", () => self.skipWaiting());
-self.addEventListener("activate", event => event.waitUntil(self.clients.claim()));
-self.addEventListener("fetch", event => {
-  if (event.request.mode !== "navigate" || event.request.method !== "GET") return;
-  event.respondWith(fetch(event.request).catch(() => new Response(
-    '<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>YCD OIL — لا يوجد اتصال</title><body style="font-family:Arial;text-align:center;padding:60px 24px;background:#f4f4f4;color:#222"><h1 style="color:#ec8a17">YCD OIL</h1><h2>لا يوجد اتصال بالإنترنت</h2><p>اتصل بالشبكة ثم أعد فتح التطبيق للوصول إلى بياناتك.</p><a href="/">إعادة المحاولة</a></body></html>',
-    {status:503,headers:{"Content-Type":"text/html; charset=utf-8","Cache-Control":"no-store"}}
-  )));
+// Cache only the public offline shell. Never cache sessions, private HTML, APIs or RSC.
+const SHELL = 'ycd-offline-shell-v1';
+const ASSETS = ['/offline.html', '/offline.css', '/offline.js', '/offline-store.js', '/brand/ycd-logo-source.svg', '/brand/app-icon-192.png'];
+self.addEventListener('install', event => {
+  event.waitUntil(caches.open(SHELL).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
+});
+self.addEventListener('activate', event => {
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('ycd-offline-shell-') && key !== SHELL).map(key => caches.delete(key)))).then(() => self.clients.claim()));
+});
+self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+  if (event.request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
+  if (ASSETS.includes(url.pathname) && !url.search) {
+    event.respondWith(caches.open(SHELL).then(async cache => (await cache.match(event.request)) || fetch(event.request)));
+    return;
+  }
+  if (event.request.mode === 'navigate') {
+    event.respondWith(fetch(event.request).catch(async () => {
+      const cache = await caches.open(SHELL);
+      return (await cache.match('/offline.html')) || new Response('لا يوجد اتصال. جهّز الجهاز بالإنترنت أولًا.', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+    }));
+  }
 });
