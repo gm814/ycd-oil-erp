@@ -22,7 +22,6 @@ export default async function ReadinessPage() {
     employees,
     activeUsers,
     bankAccounts,
-    openingBankBalance,
     parentCompanies,
     groupFunding,
     activeProducts,
@@ -60,13 +59,6 @@ export default async function ReadinessPage() {
       where: { branchId: session.branchId, active: true, type: "BANK" },
       select: { id: true, nameAr: true, bankName: true, accountNumber: true, iban: true },
     }),
-    db.financialTransaction.aggregate({
-      where: {
-        branchId: session.branchId,
-        account: { type: "BANK", active: true },
-      },
-      _sum: { amount: true },
-    }),
     db.groupCompany.count({ where: { organization: { branches: { some: { id: session.branchId } } }, relationType: "PARENT", active: true } }),
     db.groupFunding.aggregate({ where: { branchId: session.branchId }, _sum: { amount: true }, _count: true }),
     db.product.count({ where: { active: true } }),
@@ -88,7 +80,6 @@ export default async function ReadinessPage() {
   ]);
 
   if (!branchState) redirect("/dashboard");
-  const openingBalance = Number(openingBankBalance._sum.amount ?? 0);
   const fundingTotal = Number(groupFunding._sum.amount ?? 0);
   const certifiedBank = bankAccounts.find((account) =>
     account.bankName === companyConfig.bank.nameAr &&
@@ -96,6 +87,13 @@ export default async function ReadinessPage() {
     account.iban === companyConfig.bank.iban
   );
   const bankReady = Boolean(certifiedBank);
+  const certifiedBankBalance = certifiedBank
+    ? await db.financialTransaction.aggregate({
+        where: { accountId: certifiedBank.id },
+        _sum: { amount: true },
+      })
+    : null;
+  const openingBalance = Number(certifiedBankBalance?._sum.amount ?? 0);
   const identityReady = Boolean(
     companyConfig.brand &&
     companyConfig.brandIdentity.logoAsset &&
