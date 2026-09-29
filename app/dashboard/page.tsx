@@ -123,8 +123,15 @@ export default async function DashboardPage() {
   const categorySales = (category: string, from: Date, to: Date) => invoices.filter(i=>i.createdAt>=from && i.createdAt<to).flatMap(i=>i.serviceOrder.items).filter(i=>i.product?.category===category).reduce((n,i)=>n+Number(i.quantity)*Number(i.unitPrice)-Number(i.discount),0);
   const sales=total(start,end), previousSales=total(previousStart,start), expense=expenses(start,end), previousExpense=expenses(previousStart,start);
   const icons = ["settings","bell","clock","car","drop","ticket","users","cart","box","money","document","users","users","tool","chart","document"];
-  const navigation: DashboardData["navigation"] = modules.filter(m=>m.any.some(p=>hasPermission(session.permissions,p))).map(m=>({label:m.label,href:m.href,icon:icons[modules.indexOf(m)]}));
-  if (hasPermission(session.permissions, PERMISSIONS.USER_MANAGE)) navigation.push({label:"الإعدادات والصلاحيات",href:"/dashboard/admin/users",icon:"settings"});
+  const labels:Record<string,string>={"جاهزية الافتتاح والتشغيل":"الإدارة والحوكمة","الورديات والإقفال اليومي":"التشغيل اليومي","كوبونات المغسلة":"مغاسل السيارات","المخزون والزيوت والفلاتر":"المخزون","المالية والبنوك":"المالية","الموظفون والرواتب":"الموظفون والعمال"};
+  const secondary=new Set(["استقبال السيارات وأوامر الخدمة","مركز الاعتمادات والتنبيهات","الهيكل التشغيلي والمسؤوليات","المستندات والنماذج"]);
+  const navigation: DashboardData["navigation"] = modules.filter(m=>!secondary.has(m.label)&&m.any.some(p=>hasPermission(session.permissions,p))).map(m=>({label:labels[m.label]||m.label,href:m.href,icon:icons[modules.indexOf(m)]}));
+  const financeIndex=navigation.findIndex(n=>n.label==="المالية");
+  if(financeIndex>=0)navigation.splice(financeIndex+1,0,{label:"البنوك",href:"/dashboard/finance",icon:"bank"});
+  if(hasPermission(session.permissions,PERMISSIONS.HR_VIEW)||hasPermission(session.permissions,PERMISSIONS.PAYROLL_PREPARE)){
+    const index=navigation.findIndex(n=>n.label==="الموظفون والعمال");navigation.splice(index+1,0,{label:"الرواتب",href:"/dashboard/hr",icon:"money"});
+  }
+  if (hasPermission(session.permissions, PERMISSIONS.USER_MANAGE)) navigation.push({label:"الإعدادات",href:"/dashboard/admin/users",icon:"settings"});
   const actionList = [
     {label:"استقبال سيارة",detail:"زيوت وخدمات",href:"/dashboard/service-orders",icon:"car",permission:PERMISSIONS.SERVICE_ORDER_CREATE},
     {label:"كوبونات المغسلة",detail:"غسيل السيارات",href:"/dashboard/coupons",icon:"car",permission:PERMISSIONS.COUPON_REDEEM},

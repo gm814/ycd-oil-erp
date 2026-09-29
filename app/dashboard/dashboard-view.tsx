@@ -39,6 +39,7 @@ const paths: Record<string, string> = {
  settings: "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2",
 };
 function Icon({ name }: { name: string }) { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name] || paths.document} /></svg>; }
+function ReferenceArtwork({banner=false}:{banner?:boolean}) { return banner ? <><img className={styles.heroPhoto} src="/brand/service-center-hero.webp" alt="مركز خدمات YCD OIL"/><div className={styles.heroBrand}><img src="/brand/ycd-logo-source.svg" alt="YCD OIL"/><h1>وجهتك الإبداعية لزيوت وخدمات السيارات</h1><p>Your Creative Destination for Oil & Auto Services</p></div></> : <img src="/brand/ycd-logo-source.svg" alt="YCD OIL"/>; }
 function Empty({ children }: { children: React.ReactNode }) { return <p className={styles.empty}>{children}</p>; }
 function LineChart({ data }: { data: DashboardData["trend"] }) {
  const max = Math.max(1, ...data.flatMap(d => [d.sales, d.expenses]));
@@ -58,41 +59,41 @@ export function DashboardView({ data }: { data: DashboardData }) {
  return <main className={styles.app} dir="rtl">
  {menu&&<button className={styles.scrim} onClick={()=>setMenu(false)} aria-label="إغلاق القائمة"/>}
  <aside className={`${styles.sidebar} ${menu?styles.open:""}`}>
- <a href="/dashboard" className={styles.logo}><img src="/brand/ycd-logo-source.svg" alt="YCD OIL"/></a>
+ <a href="/dashboard" className={styles.logo}><ReferenceArtwork/></a>
  <nav aria-label="أقسام النظام"><a className={styles.selected} href="/dashboard"><Icon name="home"/><span>الرئيسية</span><b>‹</b></a>
  {data.navigation.map(n=><a href={n.href} key={n.label}><Icon name={n.icon}/><span>{n.label}</span><b>‹</b></a>)}</nav>
- <a className={styles.support} href="/dashboard/account/security"><Icon name="settings"/><span>إعدادات الحساب<small>الأمان وكلمة المرور</small></span></a>
+ <a className={styles.support} href="/dashboard/account/security"><Icon name="settings"/><span>إعدادات الحساب<small>الأمان وكلمة المرور</small></span></a><div className={styles.logout}><LogoutButton/></div>
  </aside>
  <section className={styles.main}>
  <header className={styles.topbar}>
  <button className={styles.menuButton} onClick={()=>setMenu(!menu)} aria-expanded={menu} aria-label="فتح قائمة الأقسام"><Icon name="menu"/></button>
- <div className={styles.clock}>{now?.toLocaleTimeString("en-GB",{timeZone:"Asia/Riyadh",hour:"2-digit",minute:"2-digit"}) || "—"}<small>{now?.toLocaleDateString("ar-SA",{timeZone:"Asia/Riyadh",calendar:"gregory",day:"numeric",month:"long",year:"numeric"})}</small></div>
+ <div className={styles.clock}>{now?.toLocaleTimeString("en-GB",{timeZone:"Asia/Riyadh",hour:"2-digit",minute:"2-digit"}) || "—"}</div><div className={styles.date}><Icon name="document"/>{now?.toLocaleDateString("ar-SA",{timeZone:"Asia/Riyadh",calendar:"gregory",day:"numeric",month:"long",year:"numeric"}) || "—"}</div>
  <div className={styles.branch}><Icon name="pin"/><span>{data.branch}</span></div>
  <div className={styles.search}><Icon name="search"/><input aria-label="البحث في أقسام النظام" placeholder="البحث في النظام..." value={search} onChange={e=>setSearch(e.target.value)}/>
  {search&&<div className={styles.results}>{data.navigation.filter(n=>n.label.includes(search)).map(n=><a key={n.label} href={n.href}>{n.label}</a>)}{!data.navigation.some(n=>n.label.includes(search))&&<span>لا توجد أقسام مطابقة</span>}</div>}</div>
  <a href="/dashboard/approvals" className={styles.notifications} aria-label={`التنبيهات: ${notificationCount}`}><Icon name="bell"/>{notificationCount>0&&<b>{notificationCount}</b>}</a>
- <div className={styles.profile}><Icon name="users"/><span>{data.name}<small>حساب المستخدم</small></span></div><LogoutButton/>
+ <div className={styles.profile}><Icon name="users"/><span>{data.name}<small>حساب المستخدم</small></span></div>
  </header>
  <div className={styles.body}>
  <section className={styles.hero} aria-label="وجهتك الإبداعية لزيوت وخدمات السيارات">
- <img className={styles.heroPhoto} src="/brand/service-center-hero.webp" alt="تصور بصري لمركز خدمات سيارات بهوية YCD OIL"/>
- <div className={styles.heroBrand}><img src="/brand/ycd-logo-source.svg" alt="YCD OIL"/><h1>وجهتك الإبداعية لزيوت وخدمات السيارات</h1><p>Your Creative Destination for Oil & Auto Services</p></div>
+ <ReferenceArtwork banner/>
  </section>
- <div className={styles.phase}><span className={data.live?styles.live:styles.preopening}>● {data.phase}</span><span>لوحة الإدارة العامة · تحديث البيانات عند فتح الصفحة</span><a href="/dashboard/readiness">جاهزية التشغيل ‹</a></div>
- <section className={styles.kpis} aria-label="مؤشرات اليوم">{data.kpis.map(k=><article key={k.label}><div><h2>{k.label}</h2><strong>{fmt(k.value)}</strong><small>{k.money?"ريال سعودي":"سيارة"}</small></div><span className={styles.kpiIcon} style={{background:k.color}}><Icon name={k.icon}/></span><footer><span>أمس {fmt(k.previous)}</span><b>{k.previous?`${k.value>=k.previous?"↑":"↓"} ${fmt(Math.abs((k.value-k.previous)/k.previous*100))}%`:"—"}</b></footer></article>)}</section>
+
+ <section className={styles.kpis} aria-label="مؤشرات اليوم">{data.kpis.map(k=><article key={k.label}><div><h2>{k.label}</h2><strong>{fmt(k.value)}</strong></div><span className={styles.kpiIcon} style={{background:k.color}}><Icon name={k.icon}/></span><footer><span>أمس {fmt(k.previous)}</span><b className={k.value>=k.previous?styles.up:styles.down}>{k.previous?`${k.value>=k.previous?"↑":"↓"} ${fmt(Math.abs((k.value-k.previous)/k.previous*100))}%`:"—"}</b></footer></article>)}</section>
  <section className={styles.charts}>
- <article className={styles.panel}><div className={styles.panelHead}><h2>أداء الفرع</h2><span>هذا الأسبوع</span></div><small>المبيعات والمصروفات · ريال</small><div className={styles.bars}>
+ <article className={styles.panel}><div className={styles.panelHead}><h2>أداء الفروع</h2><span>هذا الأسبوع</span></div><small>المبيعات والمصروفات · ريال</small><div className={styles.bars}>
  {data.branches.map(b=>{const max=Math.max(1,...data.branches.flatMap(x=>[x.sales,x.expenses]));return <div key={b.label}><div className={styles.barPair}><i style={{height:`${Math.max(1,b.sales/max*145)}px`}} title={`المبيعات ${fmt(b.sales)}`}/><i style={{height:`${Math.max(1,b.expenses/max*145)}px`}} title={`المصروفات ${fmt(b.expenses)}`}/></div><strong>{b.label}</strong><small>{fmt(b.sales)} / {fmt(b.expenses)}</small></div>;})}</div><div className={styles.legend}><span>🟠 المبيعات</span><span>● المصروفات</span></div></article>
- <article className={styles.panel}><div className={styles.panelHead}><h2>طرق الدفع اليوم</h2><span>التحصيل الفعلي</span></div><div className={styles.paymentContent}><div className={styles.donut} style={{background:paymentTotal?`conic-gradient(${gradient})`:"#eceeef"}}><div><strong>{fmt(paymentTotal)}</strong><small>ريال</small></div></div><ul className={styles.paymentLegend}>{data.payments.map(p=><li key={p.label}><i style={{background:p.color}}/><span>{p.label}</span><b>{fmt(p.value)}</b></li>)}</ul></div>{!paymentTotal&&<small className={styles.zeroNote}>لا توجد دفعات مسجلة اليوم</small>}</article>
+ <article className={styles.panel}><div className={styles.panelHead}><h2>طرق الدفع اليوم</h2><span>التحصيل الفعلي</span></div><div className={styles.paymentContent}><div className={styles.donut} style={{background:paymentTotal?`conic-gradient(${gradient})`:"#eceeef"}}><div><strong>{fmt(paymentTotal)}</strong><small>ريال</small></div></div><ul className={styles.paymentLegend}>{data.payments.map(p=><li key={p.label}><i style={{background:p.color}}/><span>{p.label}</span><b>{fmt(p.value)}</b><small>({paymentTotal?Math.round(p.value/paymentTotal*100):0}%)</small></li>)}</ul></div>{!paymentTotal&&<small className={styles.zeroNote}>لا توجد دفعات مسجلة اليوم</small>}</article>
  <article className={styles.panel}><div className={styles.panelHead}><h2>حركة المبيعات</h2><span>آخر 7 أيام</span></div><LineChart data={data.trend}/><div className={styles.legend}><span>🟠 المبيعات</span><span>● المصروفات</span></div></article>
  </section>
  <section className={styles.actions} aria-label="اختصارات العمليات">{data.actions.map(a=><a key={a.label} href={a.href}><Icon name={a.icon}/><strong>{a.label}</strong><small>{a.detail}</small></a>)}</section>
  <section className={styles.tables}>
- <article className={styles.panel}><div className={styles.panelHead}><h2>الطلبات بانتظار اعتمادك</h2><a href="/dashboard/approvals">عرض الكل</a></div><div className={styles.tableScroll}><table><thead><tr><th>نوع الطلب</th><th>الرقم</th><th>التاريخ</th></tr></thead><tbody>{data.approvals.map(a=><tr key={a.id}><td><a href={a.href}>{a.type}</a></td><td dir="ltr">{a.number}</td><td>{a.date}</td></tr>)}</tbody></table></div>{!data.approvals.length&&<Empty>لا توجد طلبات بانتظار الاعتماد</Empty>}</article>
- <article className={styles.panel}><div className={styles.panelHead}><h2>المخزون المنخفض</h2><a href="/dashboard/inventory">عرض الكل</a></div><div className={styles.tableScroll}><table><thead><tr><th>الصنف</th><th>الكمية</th><th>الحد الأدنى</th><th>الحالة</th></tr></thead><tbody>{data.stock.map(s=><tr key={s.id}><td>{s.name}</td><td className={styles.danger}>{fmt(s.quantity)}</td><td>{fmt(s.minimum)}</td><td><span className={styles.low}>منخفض</span></td></tr>)}</tbody></table></div>{!data.stock.length&&<Empty>لا توجد أصناف تحت الحد الأدنى</Empty>}</article>
- <article className={styles.panel}><div className={styles.panelHead}><h2>آخر السيارات المستلمة اليوم</h2><a href="/dashboard/service-orders">عرض الكل</a></div><div className={styles.tableScroll}><table><thead><tr><th>اللوحة</th><th>السيارة</th><th>الخدمة</th><th>الحالة</th></tr></thead><tbody>{data.orders.map(o=><tr key={o.id}><td><a href={`/dashboard/service-orders/${o.id}`}>{o.plate}</a></td><td>{o.car}</td><td>{o.service}</td><td><span className={styles.status}>{o.status}</span></td></tr>)}</tbody></table></div>{!data.orders.length&&<Empty>لم تُستلم سيارات اليوم بعد</Empty>}</article>
+ <article className={styles.panel}><div className={styles.panelHead}><h2>الطلبات بانتظار اعتمادك</h2><a href="/dashboard/approvals">عرض الكل</a></div><div className={styles.tableScroll}><table><thead><tr><th>#</th><th>نوع الطلب</th><th>الرقم</th><th>التاريخ</th></tr></thead><tbody>{data.approvals.map((a,i)=><tr key={a.id}><td>{i+1}</td><td><a href={a.href}>{a.type}</a></td><td dir="ltr">{a.number}</td><td>{a.date}</td></tr>)}</tbody></table></div>{!data.approvals.length&&<Empty>لا توجد طلبات بانتظار الاعتماد</Empty>}</article>
+ <article className={styles.panel}><div className={styles.panelHead}><h2>المخزون المنخفض</h2><a href="/dashboard/inventory">عرض الكل</a></div><div className={styles.tableScroll}><table><thead><tr><th>#</th><th>الصنف</th><th>الكمية</th><th>الحد الأدنى</th><th>الحالة</th></tr></thead><tbody>{data.stock.map((s,i)=><tr key={s.id}><td>{i+1}</td><td>{s.name}</td><td className={styles.danger}>{fmt(s.quantity)}</td><td>{fmt(s.minimum)}</td><td><span className={styles.low}>منخفض</span></td></tr>)}</tbody></table></div>{!data.stock.length&&<Empty>لا توجد أصناف تحت الحد الأدنى</Empty>}</article>
+ <article className={styles.panel}><div className={styles.panelHead}><h2>آخر السيارات المستلمة اليوم</h2><a href="/dashboard/service-orders">عرض الكل</a></div><div className={styles.tableScroll}><table><thead><tr><th>#</th><th>رقم اللوحة</th><th>السيارة</th><th>الخدمة</th><th>الحالة</th></tr></thead><tbody>{data.orders.map((o,i)=><tr key={o.id}><td>{i+1}</td><td><a href={`/dashboard/service-orders/${o.id}`}>{o.plate}</a></td><td>{o.car}</td><td>{o.service}</td><td><span className={styles.status}>{o.status}</span></td></tr>)}</tbody></table></div>{!data.orders.length&&<Empty>لم تُستلم سيارات اليوم بعد</Empty>}</article>
  </section>
  <section className={styles.alerts} aria-label="متابعة الإدارة">{data.alerts.filter(a=>a.count>0).map(a=><a key={a.label} href={a.href}>{a.label}<b>{a.count}</b></a>)}</section>
+ <div className={styles.phase}><span className={data.live?styles.live:styles.preopening}>● {data.phase}</span><span>لوحة الإدارة العامة · تحديث البيانات عند فتح الصفحة</span><a href="/dashboard/readiness">جاهزية التشغيل ‹</a></div>
  <footer className={styles.footer}>YCD OIL · نظام الإدارة والتشغيل <span>جميع المبالغ بالريال السعودي · توقيت الرياض</span></footer>
  </div></section></main>;
 }
