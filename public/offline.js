@@ -186,7 +186,7 @@ window.addEventListener('pageshow', () => { void render(); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { void render(); void synchronize(); } });
 channel?.addEventListener('message', () => void render());
 try {
-  if ('serviceWorker' in navigator) await navigator.serviceWorker.register('/sw.js');
+  if ('serviceWorker' in navigator) await navigator.serviceWorker.register('/sw.js').catch(() => null);
   owner = await profile(); fillProducts(); renderLines(); await render();
   if (navigator.storage?.persist) await navigator.storage.persist().catch(() => false);
   void synchronize();
