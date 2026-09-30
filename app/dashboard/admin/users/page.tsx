@@ -37,7 +37,7 @@ export default async function UserManagementPage() {
         <div>
           <a href="/dashboard" className="backLink">← لوحة التحكم</a>
           <h1>المستخدمون والصلاحيات</h1>
-          <p>ربط الموظفين بحسابات دخول فعلية وتحديد الأدوار مع منع تغيير صلاحيات المستخدم لنفسه.</p>
+          <p>إنشاء الحسابات وتعديل اسم المستخدم والبريد وكلمة المرور وإدارة الحالة والأدوار، مع حماية صلاحيات حسابك الحالي.</p>
         </div>
         <img className="documentCenterLogo" src="/brand/ycd-logo-source.svg" alt="YCD OIL" />
       </div>
