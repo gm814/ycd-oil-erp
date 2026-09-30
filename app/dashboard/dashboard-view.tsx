@@ -37,6 +37,7 @@ const paths: Record<string, string> = {
  bell: "M4 17h16l-2-4V8a6 6 0 0 0-12 0v5ZM10 21h4",
  menu: "M3 6h18M3 12h18M3 18h18",
  pin: "M12 22s8-8 8-13a8 8 0 0 0-16 0c0 5 8 13 8 13ZM15 9a3 3 0 1 1-6 0 3 3 0 0 1 6 0",
+ admin: "M12 2 3 6v6c0 5 9 10 9 10s9-5 9-10V6l-9-4M9 11l2 2 4-4",
  settings: "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2",
 };
 function Icon({ name }: { name: string }) { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name] || paths.document} /></svg>; }
