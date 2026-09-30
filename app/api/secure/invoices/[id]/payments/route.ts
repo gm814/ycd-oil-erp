@@ -1,3 +1,4 @@
+import { earnLoyalty } from "@/services/loyalty";
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -137,6 +138,7 @@ export async function POST(
         },
       });
 
+      await earnLoyalty(tx, invoice.id);
       return { payment, invoice: updatedInvoice };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 

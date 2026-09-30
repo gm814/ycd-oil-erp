@@ -40,6 +40,7 @@ export default async function CustomersPage({
   const searchScope: Prisma.CustomerWhereInput = query
     ? {
         OR: [
+          { customerNo: { contains: query, mode: "insensitive" } },
           { name: { contains: query, mode: "insensitive" } },
           { phone: { contains: query } },
           { vehicles: { some: { plate: { contains: query, mode: "insensitive" } } } },

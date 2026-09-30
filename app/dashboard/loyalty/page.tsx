@@ -1,0 +1,16 @@
+import { redirect } from "next/navigation";
+import { db } from "@/lib/db";
+import { getSession } from "@/lib/auth";
+import { PERMISSIONS as P, hasPermission } from "@/lib/rbac";
+import ActionForm from "./action-form";
+export default async function LoyaltyPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  const session = await getSession();
+  if (!session?.branchId || ![P.CUSTOMER_VIEW,P.SERVICE_ORDER_CREATE,P.USER_MANAGE].some(p => hasPermission(session.permissions,p))) redirect("/dashboard");
+  const q = (await searchParams).q?.trim().slice(0,100) ?? "";
+  const program = await db.loyaltyProgram.findUnique({ where: { branchId: session.branchId }, include: { earningProduct: true, rewardProduct: true } });
+  const products = await db.product.findMany({ where: { category: "SERVICE", active: true, salePrice: { gt: 0 } }, orderBy: { nameAr: "asc" } });
+  const customers = await db.customer.findMany({ where: { serviceOrders: { some: { branchId: session.branchId } }, ...(q ? { OR: [{ name: { contains:q } }, { phone:q }, { customerNo:q }, { loyaltyCode:q }] } : {}) }, take:50, orderBy:{createdAt:"desc"}, include:{loyaltyEntries:{where:{branchId:session.branchId,revoked:false}}} });
+  return <main className="workspace"><a href="/dashboard/wash" className="backLink">← المغسلة</a><h1>برنامج الولاء</h1><p>{program?.active ? `كل ${program.paidWashesRequired} غسلات مدفوعة من خدمة «${program.earningProduct.nameAr}» تمنح غسلة «${program.rewardProduct.nameAr}» مجانية في الزيارة التالية.` : "البرنامج غير مفعّل؛ يلزم إعداد خدماته أولًا."}</p><p>ختم واحد لكل فاتورة غسيل مباشر مكتملة ومدفوعة. غسلات الكوبونات والزيارات المجانية لا تكسب أختامًا. المرتجع يلغي ختم الزيارة. الرصيد خاص بالفرع الحالي.</p>
+  {hasPermission(session.permissions,P.USER_MANAGE) && <section className="panel"><h2>إعداد البرنامج</h2><ActionForm action="configure" label="حفظ إعداد الولاء"><label>عدد الغسلات المدفوعة قبل المجانية<input name="paidWashesRequired" type="number" min="1" max="100" defaultValue={program?.paidWashesRequired ?? 4} required /></label><p>٤ تعني الخامسة مجانية؛ ٣ تعني الرابعة مجانية. تعديل العدد يطبق على الاستبدالات القادمة ويحفظ الأختام الحالية.</p>{[ ["earningProductId","خدمة الغسيل المؤهلة"], ["rewardProductId","خدمة الغسيل المجانية"] ].map(([key,title])=><label key={key}>{title}<select name={key} defaultValue={key==="earningProductId"?program?.earningProductId:program?.rewardProductId} required><option value="">اختر خدمة</option>{products.map(p=><option key={p.id} value={p.id}>{p.nameAr}</option>)}</select></label>)}<label>الحالة<select name="active" defaultValue={String(program?.active ?? true)}><option value="true">مفعّل</option><option value="false">موقوف</option></select></label></ActionForm></section>}
+  <section className="panel"><h2>بطاقات العملاء — آخر ٥٠ نتيجة</h2><form><label>اسم العميل أو رقمه أو جواله أو رمز البطاقة<input name="q" defaultValue={q}/></label><button>بحث</button></form><table><thead><tr><th>العميل</th><th>الأختام المتاحة</th><th>البطاقة</th></tr></thead><tbody>{customers.map(c=><tr key={c.id}><td>{c.name} — {c.customerNo}</td><td>{c.loyaltyEntries.reduce((n,e)=>n+e.points,0)}</td><td><a href={`/dashboard/loyalty/${c.id}`}>عرض وطباعة QR</a></td></tr>)}</tbody></table></section></main>;
+}

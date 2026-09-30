@@ -7,7 +7,10 @@ export default async function CouponsPage() {
   const session = await getSession();
   if (!session) redirect("/");
 
+  if (!session.branchId) redirect("/dashboard");
+  const agreements = await db.washAgreement.findMany({ where: { washBranchId: session.branchId, active: true }, select: { sourceBranchId: true } });
   const coupons = await db.coupon.findMany({
+    where: { OR: [{ invoice: { serviceOrder: { branchId: session.branchId } } }, { invoice: { serviceOrder: { branchId: { in: agreements.map(a=>a.sourceBranchId) } } } }] },
     include: { invoice: { include: { customer: true } } },
     orderBy: { issuedAt: "desc" },
     take: 30,
@@ -25,7 +28,7 @@ export default async function CouponsPage() {
       </div>
 
       <section className="workGrid">
-        <article className="panel"><h2>استخدام كوبون</h2><CouponRedeem /></article>
+        <article className="panel"><h2>استخدام كوبون</h2><p>يفتح خدمة غسيل مرتبطة بالكوبون والعميل والسيارة.</p><CouponRedeem /><a className="primaryLink" href="/dashboard/wash">خدمات الغسيل والمطالبات والتسويات</a></article>
         <article className="panel">
           <h2>آخر الكوبونات</h2>
           <div className="tableWrap">

@@ -1,5 +1,6 @@
 export const PERMISSIONS = {
   DASHBOARD_VIEW: "dashboard.view",
+  MARKETING_MANAGE: "marketing.manage",
   USER_MANAGE: "user.manage",
   OPERATIONS_GO_LIVE: "operations.go_live",
   OPERATIONS_UAT: "operations.uat",

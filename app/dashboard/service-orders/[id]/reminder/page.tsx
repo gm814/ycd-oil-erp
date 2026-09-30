@@ -19,7 +19,7 @@ export default async function ServiceReminderPage({ params }: { params: Promise<
       histories: { orderBy: { createdAt: "desc" }, take: 1 },
     },
   });
-  if (!order) notFound();
+  if (!order || order.status !== "COMPLETED") notFound();
   const history = order.histories[0];
   const oilItem = order.items.find((item) => item.product?.category === "OIL");
 
@@ -32,6 +32,8 @@ export default async function ServiceReminderPage({ params }: { params: Promise<
       <article className="serviceReminderCard">
         <YcdDocumentHeader title="تذكير الخدمة القادمة" titleEn="SERVICE REMINDER" number={order.orderNo} />
         <section className="reminderGrid">
+          <div><span>رقم العميل</span><b>{order.customer.customerNo}</b></div>
+          <div><span>رقم الزيارة / الخدمة</span><b>{order.orderNo}</b></div>
           <div><span>التاريخ</span><b>{order.createdAt.toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" })}</b></div>
           <div><span>نوع السيارة</span><b>{order.vehicle.make || "—"}</b></div>
           <div><span>الموديل</span><b>{[order.vehicle.model, order.vehicle.year].filter(Boolean).join(" · ") || "—"}</b></div>

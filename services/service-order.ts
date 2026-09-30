@@ -1,4 +1,5 @@
 import { Prisma, StockMovementType } from "@prisma/client";
+import { earnLoyalty } from "@/services/loyalty";
 import { db } from "@/lib/db";
 import { companyConfig } from "@/lib/config";
 
@@ -39,6 +40,8 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
     });
     if (!order || order.branchId !== input.branchId) throw new Error("SERVICE_ORDER_NOT_FOUND");
     if (order.invoice) return order.invoice;
+    if (input.nextServiceKm !== undefined && input.nextServiceKm <= (order.odometer ?? order.vehicle.currentOdometer ?? -1)) throw new Error("NEXT_SERVICE_KM_INVALID");
+    if (input.nextServiceAt && Number.isNaN(input.nextServiceAt.getTime())) throw new Error("NEXT_SERVICE_DATE_INVALID");
     if (order.status === "CANCELLED") throw new Error("SERVICE_ORDER_CANCELLED");
     if (order.items.length === 0) throw new Error("SERVICE_ORDER_EMPTY");
     if (!order.shiftId) throw new Error("SHIFT_REQUIRED");
@@ -66,7 +69,7 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
     const total = subtotal.plus(vatAmount);
 
     let dueAt: Date | null = null;
-    if (input.paymentMethod === "CREDIT") {
+    if (input.paymentMethod === "CREDIT" && total.gt(0)) {
       if (!order.customer.creditAllowed || order.customer.creditLimit.lessThanOrEqualTo(0)) {
         throw new Error("CREDIT_NOT_ALLOWED");
       }
@@ -102,7 +105,7 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
       dueAt.setDate(dueAt.getDate() + order.customer.creditDays);
     }
 
-    const financialAccount = input.paymentMethod === "CREDIT"
+    const financialAccount = input.paymentMethod === "CREDIT" || total.isZero()
       ? null
       : await tx.financialAccount.findFirst({
           where: {
@@ -116,7 +119,7 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
           },
           orderBy: { createdAt: "asc" },
         });
-    if (input.paymentMethod !== "CREDIT" && !financialAccount) {
+    if (input.paymentMethod !== "CREDIT" && total.gt(0) && !financialAccount) {
       throw new Error("FINANCIAL_ACCOUNT_REQUIRED");
     }
 
@@ -145,8 +148,8 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
         vatAmount,
         total,
         dueAt,
-        status: input.paymentMethod === "CREDIT" ? "ISSUED" : "PAID",
-        payments: input.paymentMethod === "CREDIT"
+        status: input.paymentMethod === "CREDIT" && total.gt(0) ? "ISSUED" : "PAID",
+        payments: input.paymentMethod === "CREDIT" || total.isZero()
           ? undefined
           : {
               create: {
@@ -178,7 +181,8 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
       });
     }
 
-    const grantsWashCoupon = order.items.some((item) => item.product?.grantsWashCoupon);
+    const washPolicy = await tx.washAgreement.findUnique({ where: { sourceBranchId: input.branchId } });
+    const grantsWashCoupon = order.channel === "OIL" && (washPolicy?.issueMode === "ALL" || order.items.some((item) => item.product?.grantsWashCoupon));
     let couponSerial: string | null = null;
     if (grantsWashCoupon) {
       couponSerial = `WASH-${date}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
@@ -231,6 +235,7 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
       },
     });
 
+    await earnLoyalty(tx, invoice.id);
     return tx.invoice.findUniqueOrThrow({
       where: { id: invoice.id },
       include: { coupons: true, payments: true },

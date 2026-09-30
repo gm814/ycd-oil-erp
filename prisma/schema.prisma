@@ -232,6 +232,10 @@ model Organization {
 }
 
 model Branch {
+  loyaltyProgram LoyaltyProgram?
+  loyaltyEntries LoyaltyEntry[]
+  marketingConsents MarketingConsent[]
+  marketingCampaigns MarketingCampaign[]
   id               String            @id @default(cuid())
   organizationId   String
   organization     Organization      @relation(fields: [organizationId], references: [id])
@@ -246,6 +250,8 @@ model Branch {
   shifts           Shift[]
   serviceOrders    ServiceOrder[]
   stockMovements   StockMovement[]
+  issuedWashAgreements WashAgreement[] @relation("WashSource")
+  receivingWashAgreements WashAgreement[] @relation("WashReceiver")
   redeemedCoupons  Coupon[]          @relation("CouponRedemptionBranch")
   purchaseRequests PurchaseRequest[]
   purchaseOrders   PurchaseOrder[]
@@ -352,6 +358,10 @@ model Employee {
 }
 
 model Customer {
+  loyaltyCode String @unique @default(uuid())
+  loyaltyEntries LoyaltyEntry[]
+  marketingConsents MarketingConsent[]
+  customerNo    String         @unique @default(cuid())
   id            String         @id @default(cuid())
   name          String
   phone         String?
@@ -380,6 +390,8 @@ model Vehicle {
 }
 
 model Product {
+  earningPrograms LoyaltyProgram[] @relation("EarningProduct")
+  rewardPrograms LoyaltyProgram[] @relation("RewardProduct")
   id                   String                @id @default(cuid())
   sku                  String                @unique
   nameAr               String
@@ -427,6 +439,8 @@ model Shift {
 }
 
 model ServiceOrder {
+  channel String @default("OIL")
+  loyaltyRedemption LoyaltyEntry? @relation("LoyaltyRedemption")
   id           String             @id @default(cuid())
   orderNo      String             @unique
   branchId     String
@@ -476,6 +490,7 @@ model StockMovement {
 }
 
 model Invoice {
+  loyaltyEarning LoyaltyEntry? @relation("LoyaltyEarning")
   id             String        @id @default(cuid())
   invoiceNo      String        @unique
   serviceOrderId String        @unique
@@ -565,6 +580,7 @@ model SalesReturnItem {
 model Coupon {
   id               String       @id @default(cuid())
   serial           String       @unique
+  washService      WashService?
   invoiceId        String
   invoice          Invoice      @relation(fields: [invoiceId], references: [id])
   status           CouponStatus @default(ACTIVE)
@@ -961,6 +977,8 @@ model FinancialTransaction {
   relatedEntityId   String?
   performedBy       String
   idempotencyKey    String?                  @unique
+  washPaymentSource WashSettlement? @relation("WashPaymentSource")
+  washPaymentReceipt WashSettlement? @relation("WashPaymentReceipt")
   groupFunding      GroupFunding?
   createdAt         DateTime                 @default(now())
   @@index([branchId, createdAt])
@@ -1233,4 +1251,133 @@ model OfflineReceipt {
   recordedAt  DateTime
   createdAt   DateTime @default(now())
   @@index([userId, branchId, createdAt])
+}
+
+// Internal settlement subledger. The invoice and original service remain the customer-facing sale.
+model WashAgreement {
+  id String @id @default(cuid())
+  sourceBranchId String @unique
+  sourceBranch Branch @relation("WashSource", fields: [sourceBranchId], references: [id])
+  washBranchId String
+  washBranch Branch @relation("WashReceiver", fields: [washBranchId], references: [id])
+  nameAr String
+  unitAmount Decimal? @db.Decimal(12,2)
+  cadence String @default("DAILY")
+  issueMode String @default("ELIGIBLE")
+  active Boolean @default(true)
+  services WashService[]
+  batches WashBatch[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WashService {
+  id String @id @default(cuid())
+  serviceNo String @unique
+  couponId String @unique
+  coupon Coupon @relation(fields: [couponId], references: [id])
+  agreementId String
+  agreement WashAgreement @relation(fields: [agreementId], references: [id])
+  status String @default("OPEN")
+  amount Decimal? @db.Decimal(12,2)
+  receivedBy String
+  receivedAt DateTime @default(now())
+  completedAt DateTime?
+  completedBy String?
+  batchId String?
+  batch WashBatch? @relation(fields: [batchId], references: [id])
+  @@index([agreementId, status, completedAt])
+}
+
+model WashBatch {
+  id String @id @default(cuid())
+  batchNo String @unique
+  agreementId String
+  agreement WashAgreement @relation(fields: [agreementId], references: [id])
+  businessDate String
+  status String @default("SUBMITTED")
+  total Decimal @db.Decimal(12,2)
+  submittedBy String
+  submittedAt DateTime @default(now())
+  postedBy String?
+  postedAt DateTime?
+  services WashService[]
+  payments WashSettlement[]
+  idempotencyKey String @unique
+  @@index([agreementId, businessDate])
+}
+
+model WashSettlement {
+  id String @id @default(cuid())
+  settlementNo String @unique
+  batchId String
+  batch WashBatch @relation(fields: [batchId], references: [id])
+  amount Decimal @db.Decimal(12,2)
+  reference String
+  paidBy String
+  paidAt DateTime @default(now())
+  sourceTransactionId String @unique
+  sourceTransaction FinancialTransaction @relation("WashPaymentSource", fields: [sourceTransactionId], references: [id], map: "WashSettlement_source_fkey")
+  receiptTransactionId String @unique
+  receiptTransaction FinancialTransaction @relation("WashPaymentReceipt", fields: [receiptTransactionId], references: [id], map: "WashSettlement_receipt_fkey")
+  idempotencyKey String @unique
+  @@index([batchId, paidAt])
+}
+
+model LoyaltyProgram {
+  id                 String   @id @default(cuid())
+  branchId           String   @unique
+  branch             Branch   @relation(fields: [branchId], references: [id])
+  active             Boolean  @default(true)
+  paidWashesRequired Int      @default(4)
+  earningProductId   String
+  earningProduct     Product  @relation("EarningProduct", fields: [earningProductId], references: [id])
+  rewardProductId    String
+  rewardProduct      Product  @relation("RewardProduct", fields: [rewardProductId], references: [id])
+  updatedAt          DateTime @updatedAt
+}
+
+model LoyaltyEntry {
+  id         String        @id @default(cuid())
+  branchId   String
+  branch     Branch        @relation(fields: [branchId], references: [id])
+  customerId String
+  customer   Customer      @relation(fields: [customerId], references: [id])
+  points     Int
+  revoked    Boolean       @default(false)
+  invoiceId  String?       @unique
+  invoice    Invoice?      @relation("LoyaltyEarning", fields: [invoiceId], references: [id])
+  orderId    String?       @unique
+  order      ServiceOrder? @relation("LoyaltyRedemption", fields: [orderId], references: [id])
+  createdAt  DateTime      @default(now())
+
+  @@index([branchId, customerId])
+}
+
+model MarketingConsent {
+  phone      String
+  id         String   @id @default(cuid())
+  branchId   String
+  branch     Branch   @relation(fields: [branchId], references: [id])
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+  channel    String
+  allowed    Boolean
+  evidence   String
+  recordedBy String
+  updatedAt  DateTime @updatedAt
+
+  @@unique([branchId, customerId, channel])
+}
+
+model MarketingCampaign {
+  idempotencyKey String   @unique
+  id             String   @id @default(cuid())
+  branchId       String
+  branch         Branch   @relation(fields: [branchId], references: [id])
+  title          String
+  message        String
+  channel        String
+  createdBy      String
+  createdAt      DateTime @default(now())
 }
