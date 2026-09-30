@@ -131,7 +131,7 @@ export default async function DashboardPage() {
   if(hasPermission(session.permissions,PERMISSIONS.HR_VIEW)||hasPermission(session.permissions,PERMISSIONS.PAYROLL_PREPARE)){
     const index=navigation.findIndex(n=>n.label==="الموظفون والعمال");navigation.splice(index+1,0,{label:"الرواتب",href:"/dashboard/hr",icon:"money"});
   }
-  if (hasPermission(session.permissions, PERMISSIONS.USER_MANAGE)) navigation.push({label:"الإعدادات",href:"/dashboard/admin/users",icon:"settings"});
+  if (hasPermission(session.permissions, PERMISSIONS.USER_MANAGE)) navigation.push({label:"مدير النظام",href:"/dashboard/admin",icon:"admin"});
   const actionList = [
     {label:"استقبال سيارة",detail:"زيوت وخدمات",href:"/dashboard/service-orders",icon:"car",permission:PERMISSIONS.SERVICE_ORDER_CREATE},
     {label:"كوبونات المغسلة",detail:"غسيل السيارات",href:"/dashboard/coupons",icon:"car",permission:PERMISSIONS.COUPON_REDEEM},
