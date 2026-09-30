@@ -35,7 +35,7 @@ export default async function UserManagementPage() {
     <main className="workspace">
       <div className="workspaceTop">
         <div>
-          <a href="/dashboard" className="backLink">← لوحة التحكم</a>
+          <a href="/dashboard/admin" className="backLink">← مدير النظام</a>
           <h1>المستخدمون والصلاحيات</h1>
           <p>إنشاء الحسابات وتعديل اسم المستخدم والبريد وكلمة المرور وإدارة الحالة والأدوار، مع حماية صلاحيات حسابك الحالي.</p>
         </div>
