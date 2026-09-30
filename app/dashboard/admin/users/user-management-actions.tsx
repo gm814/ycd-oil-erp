@@ -45,31 +45,39 @@ export default function UserManagementActions({
   async function post(url: string, body: unknown, success: string) {
     setBusy(true);
     setMessage("");
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const result = await response.json().catch(() => ({}));
-    setBusy(false);
-    if (!response.ok) {
-      const messages: Record<string, string> = {
-        EMPLOYEE_NOT_FOUND: "الموظف غير موجود أو غير نشط.",
-        EMPLOYEE_ALREADY_HAS_USER: "الموظف لديه حساب دخول بالفعل.",
-        USERNAME_ALREADY_USED: "اسم المستخدم مستخدم في حساب آخر.",
-        EMAIL_ALREADY_USED: "البريد الإلكتروني مستخدم في حساب آخر.",
-        INVALID_ROLE: "أحد الأدوار المحددة غير صالح.",
-        USER_NOT_FOUND: "حساب المستخدم غير موجود.",
-        SELF_ACCESS_CHANGE_NOT_ALLOWED: "لا يمكن تغيير حالة أو أدوار حسابك الحالي من هذه الشاشة.",
-        LAST_GENERAL_MANAGER_PROTECTED: "لا يمكن إيقاف أو إزالة صلاحية آخر مدير عام نشط.",
-        FORBIDDEN: "لا تملك صلاحية إدارة المستخدمين.",
-      };
-      setMessage(messages[result.error] || "تعذر تنفيذ العملية.");
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const messages: Record<string, string> = {
+          INVALID_INPUT: "راجع اسم المستخدم والبريد وكلمة المرور والأدوار المحددة.",
+          UNAUTHENTICATED: "انتهت الجلسة. سجل الدخول مجددًا.",
+          EMPLOYEE_NOT_FOUND: "الموظف غير موجود أو غير نشط.",
+          EMPLOYEE_ALREADY_HAS_USER: "الموظف لديه حساب دخول بالفعل.",
+          USERNAME_ALREADY_USED: "اسم المستخدم مستخدم في حساب آخر.",
+          EMAIL_ALREADY_USED: "البريد الإلكتروني مستخدم في حساب آخر.",
+          INVALID_ROLE: "أحد الأدوار المحددة غير صالح.",
+          USER_NOT_FOUND: "حساب المستخدم غير موجود.",
+          SELF_ACCESS_CHANGE_NOT_ALLOWED: "لا يمكن تغيير حالة أو أدوار حسابك الحالي من هذه الشاشة.",
+          LAST_GENERAL_MANAGER_PROTECTED: "لا يمكن إيقاف أو إزالة صلاحية آخر مدير عام نشط.",
+          FORBIDDEN: "لا تملك صلاحية إدارة المستخدمين.",
+        };
+        setMessage(messages[result.error] || "تعذر تنفيذ العملية.");
+        return false;
+      }
+      setMessage(success);
+      router.refresh();
+      return true;
+    } catch {
+      setMessage("تعذر الاتصال. تحقق من الشبكة ثم أعد المحاولة.");
       return false;
+    } finally {
+      setBusy(false);
     }
-    setMessage(success);
-    router.refresh();
-    return true;
   }
 
   async function provisionTeam() {
@@ -122,13 +130,16 @@ export default function UserManagementActions({
     const password = String(data.get("password") || "");
     const isSelf = userId === currentUserId;
     void post(`/api/secure/admin/users/${userId}`, {
+      username: data.get("username"),
+      email: data.get("email"),
       ...(!isSelf ? { status: data.get("status"), roleCodes } : {}),
       ...(password ? { password } : {}),
-    }, isSelf ? "تم تحديث كلمة مرور حسابك." : "تم تحديث حالة المستخدم وأدواره.")
+    }, isSelf && password ? "تم تحديث حسابك. سجل الدخول بكلمة المرور الجديدة." : "تم حفظ بيانات المستخدم وإعدادات حسابه.")
       .then((ok) => {
         if (ok) {
           const passwordInput = form.elements.namedItem("password") as HTMLInputElement | null;
           if (passwordInput) passwordInput.value = "";
+          if (isSelf && password) router.replace("/");
         }
       });
   }
@@ -206,10 +217,14 @@ export default function UserManagementActions({
               </form>
             ) : (
               <form className="intakeForm userAccessForm" onSubmit={(event) => updateUser(event, employee.user!.id)}>
-                <p className="userEmail">
-                  <b>{employee.user.username}</b>
-                  {employee.user.email ? ` · ${employee.user.email}` : ""}
-                </p>
+                <label>اسم المستخدم
+                  <input name="username" type="text" autoComplete="off" required minLength={3} maxLength={40}
+                    pattern="[A-Za-z0-9._-]+" defaultValue={employee.user.username} dir="ltr" />
+                  <small className="muted">من 3 إلى 40 حرفًا: أحرف إنجليزية وأرقام ونقطة وشرطة. يستخدم الاسم الجديد عند الدخول التالي.</small>
+                </label>
+                <label>البريد الإلكتروني — اختياري
+                  <input name="email" type="email" autoComplete="off" maxLength={200} defaultValue={employee.user.email ?? ""} dir="ltr" />
+                </label>
                 {employee.user.mustChangePassword && (
                   <p className="alertBadge">كلمة مرور مؤقتة — يجب تغييرها عند أول دخول</p>
                 )}
@@ -242,14 +257,14 @@ export default function UserManagementActions({
                 )}
                 <button disabled={busy}>حفظ إعدادات المستخدم</button>
                 {employee.user.id === currentUserId && (
-                  <small className="muted">حسابك الحالي: تغيير الأدوار أو الإيقاف محمي، ويمكن فقط إعادة تعيين كلمة المرور.</small>
+                  <small className="muted">حسابك الحالي: يمكنك تعديل اسم المستخدم والبريد وكلمة المرور. تغيير الأدوار أو الإيقاف محمي. تغيير كلمة المرور يتطلب تسجيل الدخول مجددًا.</small>
                 )}
               </form>
             )}
           </article>
         ))}
       </section>
-      {message && <p className="formNotice globalNotice">{message}</p>}
+      {message && <p role="status" aria-live="polite" className="formNotice globalNotice">{message}</p>}
     </>
   );
 }
