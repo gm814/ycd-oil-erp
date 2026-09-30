@@ -72,6 +72,13 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ycd_oil_erp_uat?schema=public
           ALLOW_UAT_FIXTURES: "true"
         run: npm run verify:offline
+      - name: Verify wash settlement workflow in isolated database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ycd_oil_erp_uat?schema=public
+          ALLOW_UAT_FIXTURES: "true"
+        run: |
+          npm run verify:wash
+          npm run verify:loyalty
       - name: Install test browser
         run: npx playwright install --with-deps chromium
       - run: npm run verify:offline-browser

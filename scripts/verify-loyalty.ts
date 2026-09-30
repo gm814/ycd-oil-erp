@@ -1,0 +1,64 @@
+import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import { db } from "../lib/db";
+import { PERMISSIONS } from "../lib/rbac";
+import type { SessionPayload } from "../lib/auth";
+import { completeServiceOrder } from "../services/service-order";
+import { earnLoyalty, loyaltyBalance, redeemLoyalty, redeemLoyaltyInTransaction } from "../services/loyalty";
+import { marketingPhone, marketingRecipient, marketingLink } from "../services/marketing";
+import { processSalesReturn } from "../services/sales-return";
+async function main() {
+ assert(process.env.ALLOW_UAT_FIXTURES === "true" && new URL(process.env.DATABASE_URL!).pathname.includes("uat") && process.env.NODE_ENV !== "production", "Isolated UAT database required");
+ const suffix=randomUUID();
+ const org=await db.organization.create({data:{nameAr:"Loyalty UAT",brandName:"TEST"}});
+ const branch=await db.branch.create({data:{organizationId:org.id,nameAr:"Wash UAT",operationalStatus:"LIVE"}});
+ const other=await db.branch.create({data:{organizationId:org.id,nameAr:"Other UAT",operationalStatus:"LIVE"}});
+ const user=await db.user.create({data:{username:`loyalty-${suffix}`,name:"Operator",branchId:branch.id}});
+ const session:SessionPayload={userId:user.id,branchId:branch.id,name:user.name,username:user.username,mustChangePassword:false,sessionVersion:0,roles:[],permissions:Object.values(PERMISSIONS)};
+ const customer=await db.customer.create({data:{name:"Loyalty customer",phone:"+966500000000",creditAllowed:true,creditLimit:1000,creditDays:30}});
+ const vehicle=await db.vehicle.create({data:{customerId:customer.id,plate:suffix}});
+ const shift=await db.shift.create({data:{branchId:branch.id,openedBy:user.id}});
+ await db.financialAccount.create({data:{branchId:branch.id,code:"CASH",nameAr:"Cash",type:"CASH"}});
+ const product=await db.product.create({data:{sku:suffix,nameAr:"Basic wash",category:"SERVICE",unit:"wash",salePrice:20,costPrice:0,grantsWashCoupon:true}});
+ await db.loyaltyProgram.create({data:{branchId:branch.id,paidWashesRequired:4,earningProductId:product.id,rewardProductId:product.id}});
+ async function order(items=true,channel="WASH") {return db.serviceOrder.create({data:{orderNo:randomUUID(),branchId:branch.id,customerId:customer.id,vehicleId:vehicle.id,shiftId:shift.id,status:"OPEN",channel,...(items?{items:{create:{productId:product.id,descriptionAr:product.nameAr,quantity:1,unitPrice:20}}}:{})}});}
+ const complete=(id:string,paymentMethod:"CASH"|"CREDIT"="CASH")=>completeServiceOrder({serviceOrderId:id,branchId:branch.id,actorId:user.id,paymentMethod,idempotencyReference:randomUUID()});
+ const balance=()=>loyaltyBalance(db,branch.id,customer.id);
+ const free=await order(false);
+ await assert.rejects(()=>redeemLoyalty(session,free.id),/LOYALTY_BALANCE_LOW/);
+ const invoices=[];
+ for(let i=0;i<4;i++){const o=await order();const invoice=await complete(o.id);invoices.push(invoice);assert.equal(invoice.coupons.length,0);await complete(o.id);assert.equal(await balance(),i+1);}
+ assert.equal(await loyaltyBalance(db,other.id,customer.id),0);
+ await assert.rejects(()=>redeemLoyalty({...session,branchId:other.id},free.id),/ORDER_NOT_FOUND/);
+ await assert.rejects(()=>redeemLoyalty({...session,permissions:[]},free.id),/FORBIDDEN/);
+ await assert.rejects(()=>db.$transaction(async tx=>{await redeemLoyaltyInTransaction(tx,session,free.id);throw Error("ROLLBACK")}),/ROLLBACK/);
+ assert.equal(await balance(),4);assert.equal(await db.serviceOrderItem.count({where:{serviceOrderId:free.id}}),0);
+ const competing=await order(false);
+ const results=await Promise.allSettled([free.id,competing.id].map(id=>redeemLoyalty(session,id)));
+ assert.equal(results.filter(r=>r.status==="fulfilled").length,1);
+ const winner=results[0].status==="fulfilled"?free:competing;
+ await redeemLoyalty(session,winner.id);assert.equal(await balance(),0);
+ const freeInvoice=await complete(winner.id);assert.equal(Number(freeInvoice.total),0);assert.equal(freeInvoice.coupons.length,0);assert.equal(await balance(),0);
+ // Credit earns nothing until collection, repeated hook still yields one stamp.
+ const credit=await order();const creditInvoice=await complete(credit.id,"CREDIT");assert.equal(await balance(),0);
+ await db.$transaction(async tx=>{await tx.payment.create({data:{invoiceId:creditInvoice.id,shiftId:shift.id,method:"CASH",amount:creditInvoice.total,idempotencyKey:randomUUID()}});await tx.invoice.update({where:{id:creditInvoice.id},data:{status:"PAID"}});await earnLoyalty(tx,creditInvoice.id);await earnLoyalty(tx,creditInvoice.id);});assert.equal(await balance(),1);
+ const oil=await order(true,"OIL");await complete(oil.id);assert.equal(await balance(),1);
+ await db.loyaltyProgram.update({where:{branchId:branch.id},data:{paidWashesRequired:3}});
+ for(let i=0;i<2;i++)await complete((await order()).id);
+ const third=await order(false);await redeemLoyalty(session,third.id);assert.equal(await balance(),0);assert.equal((await db.loyaltyEntry.findUniqueOrThrow({where:{orderId:third.id}})).points,-3);
+ const returned=invoices[0];const line=await db.serviceOrderItem.findFirstOrThrow({where:{serviceOrderId:returned.serviceOrderId}});
+ await processSalesReturn({invoiceId:returned.id,branchId:branch.id,actorId:user.id,reason:"UAT",refundMethod:"CASH",idempotencyReference:randomUUID(),items:[{serviceOrderItemId:line.id,quantity:1}]});assert.equal(await balance(),-1);
+ await db.$transaction(tx=>earnLoyalty(tx,returned.id));assert.equal(await balance(),-1);
+ assert(customer.loyaltyCode);assert.equal(marketingPhone("0500000000"),null);
+ assert.equal(await marketingRecipient(db,branch.id,customer.id,"WHATSAPP"),null);
+ const consent=await db.marketingConsent.create({data:{branchId:branch.id,customerId:customer.id,channel:"WHATSAPP",allowed:true,phone:customer.phone!,evidence:"UAT consent",recordedBy:user.id}});
+ assert((await marketingRecipient(db,branch.id,customer.id,"WHATSAPP"))?.id===customer.id);
+ assert.equal(await marketingRecipient(db,branch.id,customer.id,"SMS"),null);
+ assert.equal(await marketingRecipient(db,other.id,customer.id,"WHATSAPP"),null);
+ await db.customer.update({where:{id:customer.id},data:{phone:"+966500000001"}});assert.equal(await marketingRecipient(db,branch.id,customer.id,"WHATSAPP"),null);
+ await db.customer.update({where:{id:customer.id},data:{phone:customer.phone}});await db.marketingConsent.update({where:{id:consent.id},data:{allowed:false}});assert.equal(await marketingRecipient(db,branch.id,customer.id,"WHATSAPP"),null);
+ assert.equal(marketingLink("WHATSAPP","+966500000000","عرض & جديد"),"https://wa.me/966500000000?text="+encodeURIComponent("عرض & جديد"));
+ assert(marketingLink("SMS","+966500000000","Offer").startsWith("sms:+966500000000?body="));
+ console.log("PASS: direct wash invoice; four paid then fifth free; configurable threshold; no coupon/reward loops; credit collection; one stamp per visit; concurrent redemption; rollback; branch/permission checks; returned stamps revoked; scoped channel consent, changed phones, opt-out and manual message links. No external messages sent.");
+}
+main().catch(e=>{console.error(e);process.exitCode=1}).finally(()=>db.$disconnect());

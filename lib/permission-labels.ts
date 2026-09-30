@@ -1,4 +1,5 @@
 export const permissionLabels: Record<string, string> = {
+  "marketing.manage": "إدارة العروض وموافقات الرسائل التسويقية",
   "dashboard.view": "عرض لوحة التحكم",
   "user.manage": "إدارة المستخدمين والصلاحيات",
   "operations.go_live": "اعتماد التشغيل التجاري",

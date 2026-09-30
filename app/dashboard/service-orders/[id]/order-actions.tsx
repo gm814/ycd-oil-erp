@@ -76,6 +76,8 @@ export default function OrderActions({
 
     if (!response.ok) {
       const errors: Record<string, string> = {
+        NEXT_SERVICE_KM_INVALID: "كيلومترات الخدمة القادمة يجب أن تكون أكبر من قراءة العداد الحالية.",
+        NEXT_SERVICE_DATE_INVALID: "تاريخ الخدمة القادمة غير صالح.",
         INSUFFICIENT_STOCK: "المخزون غير كافٍ لإقفال الأمر.",
         SHIFT_REQUIRED: "أمر الخدمة غير مرتبط بورديّة مفتوحة.",
         SERVICE_ORDER_EMPTY: "أضف بندًا واحدًا على الأقل قبل الإقفال.",

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { riyadhDateRange } from "@/lib/time";
 import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import { completeServiceOrder } from "@/services/service-order";
@@ -8,7 +9,7 @@ const schema = z.object({
   paymentMethod: z.enum(["CASH", "CARD", "TRANSFER", "CREDIT"]),
   paymentReference: z.string().trim().max(120).optional(),
   nextServiceKm: z.number().int().min(0).max(3_000_000).optional(),
-  nextServiceAt: z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/).optional(),
+  nextServiceAt: z.string().refine(value => Boolean(riyadhDateRange(value, value)), "INVALID_DATE").optional(),
   idempotencyReference: z.string().trim().min(12).max(120),
 });
 

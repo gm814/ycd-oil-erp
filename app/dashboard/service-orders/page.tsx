@@ -4,7 +4,8 @@ import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import IntakeForm from "./intake-form";
 
-export default async function ServiceOrdersPage() {
+export default async function ServiceOrdersPage({ searchParams }: { searchParams: Promise<{ channel?: string }> }) {
+  const channel = (await searchParams).channel === "WASH" ? "WASH" : "OIL";
   const session = await getSession();
   if (!session) redirect("/");
   if (!hasPermission(session.permissions, PERMISSIONS.SERVICE_ORDER_CREATE)) {
@@ -13,7 +14,7 @@ export default async function ServiceOrdersPage() {
 
   const orders = session.branchId
     ? await db.serviceOrder.findMany({
-        where: { branchId: session.branchId },
+        where: { branchId: session.branchId, channel },
         include: { customer: true, vehicle: true },
         orderBy: { createdAt: "desc" },
         take: 25,
@@ -25,7 +26,7 @@ export default async function ServiceOrdersPage() {
       <div className="workspaceTop">
         <div>
           <a href="/dashboard" className="backLink">← لوحة التحكم</a>
-          <h1>استقبال السيارات وأوامر الخدمة</h1>
+          <h1>{channel === "WASH" ? "المغسلة — استقبال عميل مباشر" : "استقبال السيارات وأوامر الخدمة"}</h1>
           <p>تسجيل العميل والمركبة وفتح أمر خدمة برقم مرجعي قابل للتتبع.</p>
         </div>
         <div className="logoPlaceholder">YCD <span>OIL</span></div>
@@ -34,7 +35,7 @@ export default async function ServiceOrdersPage() {
       <section className="workGrid">
         <article className="panel">
           <h2>استقبال سيارة جديدة</h2>
-          <IntakeForm />
+          <IntakeForm channel={channel} />
         </article>
 
         <article className="panel">

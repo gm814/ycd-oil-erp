@@ -23,7 +23,9 @@
     "verify:zatca-qr": "tsx scripts/verify-zatca-qr.ts",
     "verify:offline": "tsx scripts/verify-offline.ts",
     "verify:offline-browser": "node tests/offline-browser.cjs",
-    "verify:user-admin": "node tests/user-admin.cjs"
+    "verify:user-admin": "node tests/user-admin.cjs",
+    "verify:loyalty": "tsx scripts/verify-loyalty.ts",
+    "verify:wash": "tsx scripts/verify-wash.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",

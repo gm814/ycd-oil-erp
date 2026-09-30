@@ -6,6 +6,7 @@ const prisma = new PrismaClient();
 const permissionCodes = [
   "dashboard.view",
   "user.manage",
+  "marketing.manage",
   "operations.go_live",
   "operations.uat",
   "service_order.create",
@@ -100,7 +101,7 @@ const roleDefinitions: Record<string, { nameAr: string; permissions: readonly st
   },
   WASH_SUPERVISOR: {
     nameAr: "مشرف المغسلة",
-    permissions: ["dashboard.view", "shift.open", "shift.close", "coupon.redeem"],
+    permissions: ["dashboard.view", "shift.open", "shift.close", "coupon.redeem", "service_order.create", "inventory.issue", "invoice.issue", "payment.receive", "customer.view"],
   },
   TECHNICIAN: {
     nameAr: "الفني",

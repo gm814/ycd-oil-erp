@@ -17,6 +17,9 @@ const groups = [
   {
     title: "إعدادات التشغيل والبيانات",
     items: [
+      { title: "برنامج الولاء", description: "إعداد الغسلات المدفوعة والمجانية وبطاقات العملاء.", href: "/dashboard/loyalty", any: [PERMISSIONS.USER_MANAGE] },
+      { title: "عروض المراكز والرسائل", description: "إدارة الحملات وموافقات العملاء وفتح رسائل SMS وواتساب.", href: "/dashboard/marketing", any: [PERMISSIONS.MARKETING_MANAGE] },
+      { title: "كوبونات وتسويات الغسيل", description: "اتفاق المغسلة والمستحقات والمطالبات اليومية والسداد وكشف الحساب.", href: "/dashboard/wash", any: [PERMISSIONS.COUPON_REDEEM, PERMISSIONS.FINANCE_VIEW] },
       { title: "الإدارة والحوكمة", description: "الجاهزية والبنود المتبقية وقرار تفعيل التشغيل التجاري للمخوّلين.", href: "/dashboard/readiness", any: [PERMISSIONS.REPORTS_VIEW] },
       { title: "استيراد البيانات الافتتاحية", description: "قوالب الأصناف والخدمات والموردين والموظفين والجرد الافتتاحي.", href: "/dashboard/readiness/import", any: [PERMISSIONS.INVENTORY_MANAGE, PERMISSIONS.PROCUREMENT_QUOTE, PERMISSIONS.HR_MANAGE] },
       { title: "الأصناف والخدمات والمخزون", description: "إدارة بيانات الأصناف والأسعار والكميات حسب صلاحياتك.", href: "/dashboard/inventory", any: [PERMISSIONS.INVENTORY_MANAGE, PERMISSIONS.INVENTORY_ISSUE] },

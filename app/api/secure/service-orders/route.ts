@@ -5,6 +5,9 @@ import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 
 const intakeSchema = z.object({
+  channel: z.enum(["OIL", "WASH"]).default("OIL"),
+  customerId: z.string().min(1).max(100).optional(),
+  vehicleId: z.string().min(1).max(100).optional(),
   customerName: z.string().trim().min(2).max(120),
   phone: z.string().trim().min(7).max(20).optional().or(z.literal("")),
   plate: z.string().trim().min(2).max(30),
@@ -38,51 +41,27 @@ export async function POST(request: Request) {
       });
       if (!shift) throw new Error("OPEN_SHIFT_REQUIRED");
 
-      let customer = data.phone
-        ? await tx.customer.findFirst({ where: { phone: data.phone } })
-        : null;
-
-      if (!customer) {
-        customer = await tx.customer.create({
-          data: { name: data.customerName, phone: data.phone || null },
-        });
-      } else if (customer.name !== data.customerName) {
-        customer = await tx.customer.update({
-          where: { id: customer.id },
-          data: { name: data.customerName },
-        });
-      }
-
-      let vehicle = await tx.vehicle.findFirst({ where: { plate: normalizedPlate } });
-
+      // Reuse branch-visible vehicle/customer records; intake must not silently transfer ownership.
+      let vehicle = await tx.vehicle.findFirst({ where: { ...(data.vehicleId ? { id: data.vehicleId } : { plate: normalizedPlate }), serviceOrders: { some: { branchId: session.branchId! } } }, include: { customer: true } });
+      if (data.vehicleId && (!vehicle || vehicle.plate !== normalizedPlate)) throw new Error("VEHICLE_SELECTION_MISMATCH");
+      let customer = vehicle?.customer ?? (data.customerId
+        ? await tx.customer.findFirst({ where: { id: data.customerId, serviceOrders: { some: { branchId: session.branchId! } } } })
+        : data.phone ? await tx.customer.findFirst({ where: { phone: data.phone, serviceOrders: { some: { branchId: session.branchId! } } } }) : null);
+      if (vehicle && data.phone && customer?.phone && data.phone !== customer.phone) throw new Error("CUSTOMER_SELECTION_MISMATCH");
+      if (data.customerId && (!customer || customer.id !== data.customerId)) throw new Error("CUSTOMER_SELECTION_MISMATCH");
+      if (!customer) customer = await tx.customer.create({ data: { customerNo: `CUST-${crypto.randomUUID().slice(0, 12).toUpperCase()}`, name: data.customerName, phone: data.phone || null } });
+      if (vehicle && data.odometer !== undefined && vehicle.currentOdometer !== null && data.odometer < vehicle.currentOdometer) throw new Error("ODOMETER_DECREASE");
       if (!vehicle) {
-        vehicle = await tx.vehicle.create({
-          data: {
-            customerId: customer.id,
-            plate: normalizedPlate,
-            make: data.make || null,
-            model: data.model || null,
-            year: data.year,
-            currentOdometer: data.odometer,
-          },
-        });
+        vehicle = await tx.vehicle.create({ data: { customerId: customer.id, plate: normalizedPlate, make: data.make || null, model: data.model || null, year: data.year, currentOdometer: data.odometer }, include: { customer: true } });
       } else {
-        vehicle = await tx.vehicle.update({
-          where: { id: vehicle.id },
-          data: {
-            customerId: customer.id,
-            make: data.make || vehicle.make,
-            model: data.model || vehicle.model,
-            year: data.year ?? vehicle.year,
-            currentOdometer: data.odometer ?? vehicle.currentOdometer,
-          },
-        });
+        vehicle = await tx.vehicle.update({ where: { id: vehicle.id }, data: { currentOdometer: data.odometer ?? vehicle.currentOdometer }, include: { customer: true } });
       }
 
-      const orderNo = `SO-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+      const orderNo = `${data.channel === "WASH" ? "WS-DIRECT" : "SO"}-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
       const created = await tx.serviceOrder.create({
         data: {
           orderNo,
+          channel: data.channel,
           branchId: session.branchId!,
           shiftId: shift.id,
           customerId: customer.id,

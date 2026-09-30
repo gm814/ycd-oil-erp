@@ -148,6 +148,7 @@ export async function processSalesReturn(input: ReturnInput) {
       ? "PAID"
       : netPaidAfter.greaterThan(0) ? "PARTIALLY_PAID" : "ISSUED";
     await tx.invoice.update({ where: { id: invoice.id }, data: { status } });
+    await tx.loyaltyEntry.updateMany({ where: { invoiceId: invoice.id }, data: { revoked: true } });
 
     await tx.auditLog.create({
       data: {

@@ -1,3 +1,4 @@
+import ActionForm from "@/app/dashboard/loyalty/action-form";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
@@ -50,6 +51,7 @@ export default async function ServiceOrderPage({
         </div>
       </div>
 
+      {order.channel === "WASH" && <section className="panel"><h2>غسيل مباشر — برنامج الولاء</h2><a href={`/dashboard/loyalty/${order.customerId}`}>بطاقة العميل ورصيد الغسلات</a>{!order.invoice && order.status !== "CANCELLED" && order.items.length === 0 && <><p>لاستخدام المجانية، استبدل الرصيد أولًا ثم أضف أي خدمات إضافية وأصدر الفاتورة.</p><ActionForm action="redeem" values={{orderId:order.id}} label="استخدام غسلة الولاء المجانية" /></>}</section>}
       <section className="workGrid">
         <article className="panel">
           <h2>إضافة خدمة / مادة</h2>

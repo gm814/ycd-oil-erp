@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -28,15 +29,18 @@ export async function POST(
   }
 
   const { id } = await params;
-  const order = await db.serviceOrder.findUnique({ where: { id } });
+  try {
+  const item = await db.$transaction(async tx => {
+  const order = await tx.serviceOrder.findUnique({ where: { id } });
   if (!order || order.branchId !== session.branchId) {
-    return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+    throw new Error("NOT_FOUND");
   }
   if (["COMPLETED", "CANCELLED"].includes(order.status)) {
-    return NextResponse.json({ error: "ORDER_LOCKED" }, { status: 409 });
+    throw new Error("ORDER_LOCKED");
   }
 
-  const item = await db.serviceOrderItem.create({
+  if (parsed.data.discount > parsed.data.quantity * parsed.data.unitPrice) throw new Error("INVALID_DISCOUNT");
+  const item = await tx.serviceOrderItem.create({
     data: {
       serviceOrderId: order.id,
       productId: parsed.data.productId || null,
@@ -47,7 +51,7 @@ export async function POST(
     },
   });
 
-  await db.auditLog.create({
+  await tx.auditLog.create({
     data: {
       actorId: session.userId,
       action: "SERVICE_ORDER_ITEM_ADDED",
@@ -57,5 +61,11 @@ export async function POST(
     },
   });
 
+  return item;
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   return NextResponse.json({ item }, { status: 201 });
+  } catch (error) {
+    const code = error instanceof Error ? error.message : "CONCURRENT_CHANGE";
+    return NextResponse.json({ error: ["NOT_FOUND","ORDER_LOCKED","INVALID_DISCOUNT"].includes(code) ? code : "CONCURRENT_CHANGE" }, { status: 409 });
+  }
 }
