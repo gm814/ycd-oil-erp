@@ -22,7 +22,8 @@
     "verify:deployment-contract": "tsx scripts/verify-deployment-contract.ts",
     "verify:zatca-qr": "tsx scripts/verify-zatca-qr.ts",
     "verify:offline": "tsx scripts/verify-offline.ts",
-    "verify:offline-browser": "node tests/offline-browser.cjs"
+    "verify:offline-browser": "node tests/offline-browser.cjs",
+    "verify:user-admin": "node tests/user-admin.cjs"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
