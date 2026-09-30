@@ -75,6 +75,7 @@ jobs:
       - name: Install test browser
         run: npx playwright install --with-deps chromium
       - run: npm run verify:offline-browser
+      - run: npm run verify:user-admin
       - run: npm run typecheck
       - run: npm run build
       - name: Validate production Compose stack

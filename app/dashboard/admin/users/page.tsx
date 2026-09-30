@@ -35,9 +35,9 @@ export default async function UserManagementPage() {
     <main className="workspace">
       <div className="workspaceTop">
         <div>
-          <a href="/dashboard" className="backLink">← لوحة التحكم</a>
+          <a href="/dashboard/admin" className="backLink">← مدير النظام</a>
           <h1>المستخدمون والصلاحيات</h1>
-          <p>ربط الموظفين بحسابات دخول فعلية وتحديد الأدوار مع منع تغيير صلاحيات المستخدم لنفسه.</p>
+          <p>إنشاء الحسابات وتعديل اسم المستخدم والبريد وكلمة المرور وإدارة الحالة والأدوار، مع حماية صلاحيات حسابك الحالي.</p>
         </div>
         <img className="documentCenterLogo" src="/brand/ycd-logo-source.svg" alt="YCD OIL" />
       </div>
