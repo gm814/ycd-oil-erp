@@ -1,3 +1,4 @@
+import { captureMedad } from "@/services/medad/outbox";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 
@@ -166,6 +167,7 @@ export async function processSalesReturn(input: ReturnInput) {
       },
     });
 
+    await captureMedad(tx, input.branchId, "RETURN", salesReturn.id, salesReturn.returnNo);
     return salesReturn;
   }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }

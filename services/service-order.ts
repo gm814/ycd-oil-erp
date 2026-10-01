@@ -1,3 +1,4 @@
+import { captureMedad } from "@/services/medad/outbox";
 import { Prisma, StockMovementType } from "@prisma/client";
 import { earnLoyalty } from "@/services/loyalty";
 import { db } from "@/lib/db";
@@ -236,6 +237,9 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
     });
 
     await earnLoyalty(tx, invoice.id);
+    await captureMedad(tx, order.branchId, "INVOICE", invoice.id, invoice.invoiceNo);
+    const receipts = await tx.payment.findMany({ where: { invoiceId: invoice.id } });
+    for (const receipt of receipts) await captureMedad(tx, order.branchId, "PAYMENT", receipt.id, `${invoice.invoiceNo} / ${receipt.id}`);
     return tx.invoice.findUniqueOrThrow({
       where: { id: invoice.id },
       include: { coupons: true, payments: true },
