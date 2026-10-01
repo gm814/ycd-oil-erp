@@ -25,6 +25,7 @@
     "verify:offline-browser": "node tests/offline-browser.cjs",
     "verify:user-admin": "node tests/user-admin.cjs",
     "verify:loyalty": "tsx scripts/verify-loyalty.ts",
+    "verify:medad": "tsx scripts/verify-medad.ts",
     "verify:wash": "tsx scripts/verify-wash.ts"
   },
   "dependencies": {

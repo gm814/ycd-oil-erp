@@ -132,6 +132,7 @@ export default async function DashboardPage() {
     const index=navigation.findIndex(n=>n.label==="الموظفون والعمال");navigation.splice(index+1,0,{label:"الرواتب",href:"/dashboard/hr",icon:"money"});
   }
   if (hasPermission(session.permissions, PERMISSIONS.USER_MANAGE)) navigation.push({label:"مدير النظام",href:"/dashboard/admin",icon:"admin"});
+  if ([PERMISSIONS.INTEGRATION_VIEW, PERMISSIONS.INTEGRATION_MANAGE].some(p=>hasPermission(session.permissions,p))) navigation.push({label:"الربط المحاسبي — مداد",href:"/dashboard/integrations/medad",icon:"document"});
   if (hasPermission(session.permissions, PERMISSIONS.MARKETING_MANAGE)) navigation.push({label:"عروض المراكز والرسائل",href:"/dashboard/marketing",icon:"ticket"});
   if (hasPermission(session.permissions, PERMISSIONS.SERVICE_ORDER_CREATE)) navigation.push({label:"برنامج الولاء",href:"/dashboard/loyalty",icon:"ticket"});
   if ([PERMISSIONS.COUPON_REDEEM, PERMISSIONS.FINANCE_VIEW, PERMISSIONS.FINANCE_EXPENSE_APPROVE, PERMISSIONS.FINANCE_EXPENSE_PAY].some(p=>hasPermission(session.permissions,p))) navigation.push({label:"كوبونات غسيل السيارات — YCD OIL",href:"/dashboard/wash",icon:"ticket"});

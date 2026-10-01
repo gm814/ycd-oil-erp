@@ -1,3 +1,4 @@
+import { captureMedad } from "@/services/medad/outbox";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { SessionPayload } from "@/lib/auth";
@@ -110,6 +111,7 @@ export async function washActionInTransaction(tx: Prisma.TransactionClient, sess
     const status = input.action === "post" ? "POSTED" : "REJECTED";
     await tx.washBatch.update({ where: { id: batch.id }, data: { status, postedAt: input.action === "post" ? new Date() : null, postedBy: session.userId } });
     if (input.action === "reject") await tx.washService.updateMany({ where: { batchId: batch.id }, data: { batchId: null } });
+    if (status === "POSTED") await captureMedad(tx, branchId, "WASH_CLAIM", batch.id, batch.batchNo);
     await audit(`WASH_BATCH_${status}`, batch.id, { batchNo: batch.batchNo, total: batch.total.toString() });
     return { batchId: batch.id };
   }
@@ -138,5 +140,6 @@ export async function washActionInTransaction(tx: Prisma.TransactionClient, sess
   const receipt = await tx.financialTransaction.create({ data: { branchId: batch.agreement.washBranchId, accountId: to.id, type: "CUSTOMER_RECEIPT", amount, reference: input.reference, descriptionAr: `تحصيل مستحقات كوبونات YCD OIL ${batch.batchNo}`, relatedEntityType: "WashBatch", relatedEntityId: batch.id, performedBy: session.userId, idempotencyKey: `wash-in:${input.key}` } });
   const payment = await tx.washSettlement.create({ data: { settlementNo, batchId: batch.id, amount, reference: input.reference, paidBy: session.userId, sourceTransactionId: debit.id, receiptTransactionId: receipt.id, idempotencyKey: input.key } });
   await audit("WASH_SETTLEMENT_PAID", payment.id, { batchId: batch.id, amount: amount.toString(), sourceTransactionId: debit.id, receiptTransactionId: receipt.id });
+  await captureMedad(tx, branchId, "WASH_SETTLEMENT", payment.id, payment.settlementNo);
   return { settlementId: payment.id };
 }

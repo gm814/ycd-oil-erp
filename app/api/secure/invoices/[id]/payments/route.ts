@@ -1,3 +1,4 @@
+import { captureMedad } from "@/services/medad/outbox";
 import { earnLoyalty } from "@/services/loyalty";
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
@@ -139,6 +140,7 @@ export async function POST(
       });
 
       await earnLoyalty(tx, invoice.id);
+      await captureMedad(tx, session.branchId!, "PAYMENT", payment.id, `${invoice.invoiceNo} / ${payment.id}`);
       return { payment, invoice: updatedInvoice };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
