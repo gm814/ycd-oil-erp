@@ -13,12 +13,13 @@ export default function LoginPage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (loading) return;
+    // React clears currentTarget after the synchronous submit handler returns.
+    const form = new FormData(event.currentTarget);
     setError("");
     setLoading(true);
     try {
     await lockOfflineProfile();
 
-    const form = new FormData(event.currentTarget);
     const response = await fetch("/api/auth/login", {
       method: "POST",
       signal: AbortSignal.timeout(15000),
