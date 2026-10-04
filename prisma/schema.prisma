@@ -285,6 +285,7 @@ model Department {
 }
 
 model User {
+  recoveryTokens AccountRecoveryToken[]
   id                 String     @id @default(cuid())
   username           String     @unique
   email              String?    @unique
@@ -1428,4 +1429,19 @@ model MedadOutbox {
   updatedAt DateTime @updatedAt
   @@unique([branchId, kind, sourceId])
   @@index([branchId, status, capturedAt])
+}
+
+model AccountRecoveryToken {
+ tokenHash String @id
+ email String
+ userId String
+ user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ sessionVersion Int
+ expiresAt DateTime
+ @@index([userId])
+}
+model RecoveryRateLimit {
+ key String @id
+ count Int
+ windowStart DateTime
 }

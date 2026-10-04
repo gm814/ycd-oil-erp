@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { lockOfflineProfile } from "@/lib/offline/lock";
 import { PasswordInput } from "@/components/password-input";
 
@@ -33,7 +34,7 @@ export default function LoginPage() {
     setLoading(false);
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {
-      setError("تعذر تسجيل الدخول. تحقق من اسم المستخدم أو البريد وكلمة المرور.");
+      setError(response.status >= 500 ? "خدمة الدخول غير جاهزة حاليًا. تواصل مع مدير النظام لاستكمال إعداد قاعدة البيانات." : "تعذر تسجيل الدخول. تحقق من اسم المستخدم أو البريد وكلمة المرور.");
       return;
     }
 
@@ -64,6 +65,8 @@ export default function LoginPage() {
             {loading ? "جارٍ التحقق..." : "دخول النظام"}
           </button>
         </form>
+        <p><Link href="/recover?kind=password">نسيت كلمة المرور؟</Link></p>
+        <p><Link href="/recover?kind=username">نسيت اسم الدخول؟</Link></p>
         <small>شركة وجهتك الإبداعية لزيوت وخدمات السيارات</small>
       </section>
     </main>
