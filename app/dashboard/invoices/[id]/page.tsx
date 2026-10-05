@@ -79,7 +79,7 @@ export default async function InvoicePage({
     <main className="workspace invoiceWorkspace">
       <div className="invoiceActions noPrint">
         <a href={`/dashboard/customers/${invoice.customerId}`} className="backLink">← ملف العميل</a>
-        <PrintButton />
+        <PrintButton invoiceId={invoice.id} />
       </div>
 
       <article className="invoiceDocument">
