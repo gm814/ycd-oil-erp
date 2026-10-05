@@ -172,3 +172,33 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--orange);outline-off
   .invoicePolicy,.invoiceFooter,.invoiceTable tr { break-inside:avoid; }
   .invoiceTable thead { display:table-header-group; }
 }
+
+.invoicePrintControls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.invoicePrintControls select{padding:8px;border:1px solid #ccc;border-radius:8px;background:#fff}
+.invoicePrintControls small{flex-basis:100%}
+@media print {
+  @page epsonReceipt { size:80mm 297mm; margin:3mm; }
+  html[data-invoice-print="epson80"] .invoiceWorkspace { page:epsonReceipt; width:74mm; }
+  html[data-invoice-print="epson80"] .invoiceDocument { padding:0; font-size:8pt; line-height:1.25; }
+  html[data-invoice-print="epson80"] .invoiceHeader { flex-direction:column; gap:2mm; text-align:center; }
+  html[data-invoice-print="epson80"] .invoiceHeader > div { width:100%; }
+  html[data-invoice-print="epson80"] .invoiceTitle { text-align:center; }
+  html[data-invoice-print="epson80"] .invoiceTitle h1 { font-size:10pt; }
+  html[data-invoice-print="epson80"] .invoiceBrandLogo { width:27mm; margin:0 auto 2mm; }
+  html[data-invoice-print="epson80"] .invoiceLegal { grid-template-columns:1fr 1fr; gap:1mm; }
+  html[data-invoice-print="epson80"] .invoiceLegal div { padding:1mm; overflow-wrap:anywhere; }
+  html[data-invoice-print="epson80"] .invoiceParties,
+  html[data-invoice-print="epson80"] .invoiceBottom,
+  html[data-invoice-print="epson80"] .invoiceBankDetails { grid-template-columns:1fr; gap:2mm; }
+  html[data-invoice-print="epson80"] .invoiceQrBlock { grid-template-columns:28mm 1fr; padding:1mm; }
+  html[data-invoice-print="epson80"] .invoiceTable table { table-layout:fixed; font-size:7pt; }
+  html[data-invoice-print="epson80"] .invoiceTable th,
+  html[data-invoice-print="epson80"] .invoiceTable td { padding:1mm .5mm; white-space:normal; overflow-wrap:anywhere; }
+  html[data-invoice-print="epson80"] .invoiceTable th:first-child { width:5%; }
+  html[data-invoice-print="epson80"] .invoiceTable th:nth-child(2) { width:31%; }
+  html[data-invoice-print="epson80"] .invoiceTable th:nth-child(3) { width:10%; }
+  html[data-invoice-print="epson80"] .invoiceBottom { break-inside:auto; }
+  html[data-invoice-print="epson80"] .invoiceTotals { break-inside:avoid; }
+  html[data-invoice-print="epson80"] .invoiceTotals .grandTotal { font-size:9pt; }
+  html[data-invoice-print="epson80"] .invoiceTotals > div { padding:1mm; }
+}
