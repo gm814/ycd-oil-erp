@@ -200,7 +200,7 @@ export default async function ReadinessPage() {
           <p>{statusBadge(noOperationsYet)} <b>{noOperationsYet ? "لم يبدأ التشغيل التجاري بعد" : "توجد حركات تشغيلية مسجلة"}</b></p>
           <p><span className="okBadge">المركز مجهز</span> التشطيبات والديكورات والعدد والمعدات والتراخيص مؤكدة من الإدارة.</p>
           <p><span className={branchState.operationalStatus === "LIVE" ? "okBadge" : "alertBadge"}>بوابة الإطلاق {branchState.operationalStatus === "LIVE" ? "مفتوحة" : "مقفلة"}</span> {branchState.operationalStatus === "LIVE" ? "الفرع مفعّل للتشغيل التجاري وفتح الورديات الحقيقية." : "فتح وردية تشغيل حقيقية محظور أثناء PREOPENING؛ يسمح به فقط في بيئة UAT المصرح بها."}</p>
-          {branchState.goLiveAt && <p>تاريخ التفعيل: <b>{branchState.goLiveAt.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</b></p>}
+          {branchState.goLiveAt && <p>تاريخ التفعيل: <b>{branchState.goLiveAt.toLocaleString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</b></p>}
           <GoLiveControl canGoLive={canGoLive} status={branchState.operationalStatus} />
           <p>الرصيد البنكي عند الإطلاق: <b>{openingBalance.toFixed(2)} ر.س</b></p>
           <p>عمليات التمويل المسجلة: <b>{groupFunding._count}</b></p>

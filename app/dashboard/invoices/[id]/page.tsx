@@ -9,7 +9,7 @@ import CollectionForm from "./collection-form";
 import SalesReturnForm from "./sales-return-form";
 
 function money(value: number) {
-  return value.toLocaleString("ar-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
+  return value.toLocaleString("ar-SA-u-nu-latn", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
 }
 
 const paymentLabels: Record<string, string> = {
@@ -93,9 +93,9 @@ export default async function InvoicePage({
           <div className="invoiceTitle">
             <span>فاتورة ضريبية مبسطة</span>
             <h1>{invoice.invoiceNo}</h1>
-            <p>{invoice.createdAt.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</p>
+            <p>{invoice.createdAt.toLocaleString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</p>
             <p><b>الحالة:</b> {invoice.status === "PAID" ? "مسددة" : invoice.status === "PARTIALLY_PAID" ? "مسددة جزئيًا" : invoice.status === "ISSUED" ? "مستحقة" : invoice.status}</p>
-            {invoice.dueAt && <p><b>تاريخ الاستحقاق:</b> {invoice.dueAt.toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" })}</p>}
+            {invoice.dueAt && <p><b>تاريخ الاستحقاق:</b> {invoice.dueAt.toLocaleDateString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</p>}
           </div>
         </header>
 
@@ -125,7 +125,7 @@ export default async function InvoicePage({
             <h3>بيانات السيارة والخدمة</h3>
             <p><span>اللوحة:</span> <b>{invoice.serviceOrder.vehicle.plate}</b></p>
             <p><span>السيارة:</span> <b>{[invoice.serviceOrder.vehicle.make, invoice.serviceOrder.vehicle.model, invoice.serviceOrder.vehicle.year].filter(Boolean).join(" · ") || "—"}</b></p>
-            <p><span>العداد:</span> <b>{invoice.serviceOrder.odometer?.toLocaleString("ar-SA") ?? "—"} كم</b></p>
+            <p><span>العداد:</span> <b>{invoice.serviceOrder.odometer?.toLocaleString("ar-SA-u-nu-latn") ?? "—"} كم</b></p>
             <p><span>أمر الخدمة:</span> <a className="orderLink noPrint" href={`/dashboard/service-orders/${invoice.serviceOrderId}`}>{invoice.serviceOrder.orderNo}</a><b className="printOnly">{invoice.serviceOrder.orderNo}</b></p>
           </div>
         </section>
@@ -152,7 +152,7 @@ export default async function InvoicePage({
                       <b>{item.descriptionAr}</b>
                       {item.product?.sku && <small className="invoiceSku">{item.product.sku}</small>}
                     </td>
-                    <td>{Number(item.quantity).toLocaleString("ar-SA")}</td>
+                    <td>{Number(item.quantity).toLocaleString("ar-SA-u-nu-latn")}</td>
                     <td>{money(Number(item.unitPrice))}</td>
                     <td>{money(Number(item.discount))}</td>
                     <td>{money(lineTotal)}</td>
@@ -170,7 +170,7 @@ export default async function InvoicePage({
               <div key={payment.id}>
                 <span>{paymentLabels[payment.method] || payment.method}</span>
                 <b>{money(Number(payment.amount))}</b>
-                <small>{payment.reference || "بدون مرجع"} · {payment.paidAt.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</small>
+                <small>{payment.reference || "بدون مرجع"} · {payment.paidAt.toLocaleString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</small>
               </div>
             ))}
             {invoice.payments.length === 0 && <p className="empty">لا توجد دفعات مسجلة.</p>}
@@ -205,7 +205,7 @@ export default async function InvoicePage({
             <h3>المرتجعات والتسويات</h3>
             {invoice.returns.map((salesReturn) => (
               <div className="returnHistoryRow" key={salesReturn.id}>
-                <div><b>{salesReturn.returnNo}</b><small>{salesReturn.createdAt.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</small></div>
+                <div><b>{salesReturn.returnNo}</b><small>{salesReturn.createdAt.toLocaleString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</small></div>
                 <div><span>قيمة المرتجع</span><b>{money(Number(salesReturn.total))}</b></div>
                 <div><span>المبلغ المسترد</span><b>{money(Number(salesReturn.refundAmount))}</b></div>
                 <div><span>السبب</span><b>{salesReturn.reason}</b></div>

@@ -67,7 +67,7 @@ export default function ShiftControls({
         {openShift ? (
           <>
             <div className="shiftSummary">
-              <b>بدأت: {new Date(openShift.openedAt).toLocaleString("ar-SA")}</b>
+              <b>بدأت: {new Date(openShift.openedAt).toLocaleString("ar-SA-u-nu-latn")}</b>
               <span>رصيد البداية: {money(openShift.openingCash)}</span>
             </div>
             <div className="agingGrid">

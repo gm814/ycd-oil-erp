@@ -102,8 +102,8 @@ export default async function ShiftsPage() {
             <tbody>
               {shifts.map((shift) => (
                 <tr key={shift.id}>
-                  <td>{shift.openedAt.toLocaleString("ar-SA")}</td>
-                  <td>{shift.closedAt?.toLocaleString("ar-SA") ?? "مفتوحة"}</td>
+                  <td>{shift.openedAt.toLocaleString("ar-SA-u-nu-latn")}</td>
+                  <td>{shift.closedAt?.toLocaleString("ar-SA-u-nu-latn") ?? "مفتوحة"}</td>
                   <td>{money(shift.expectedCash === null ? null : Number(shift.expectedCash))}</td>
                   <td>{money(shift.countedCash === null ? null : Number(shift.countedCash))}</td>
                   <td>{money(shift.cashVariance === null ? null : Number(shift.cashVariance))}</td>

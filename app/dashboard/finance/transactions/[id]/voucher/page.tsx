@@ -21,7 +21,7 @@ const transactionTypeLabel: Record<string, string> = {
 };
 
 function money(value: number) {
-  return value.toLocaleString("ar-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
+  return value.toLocaleString("ar-SA-u-nu-latn", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
 }
 
 export default async function VoucherPage({ params }: { params: Promise<{ id: string }> }) {
@@ -50,7 +50,7 @@ export default async function VoucherPage({ params }: { params: Promise<{ id: st
         <YcdDocumentHeader title={isReceipt ? "سند قبض" : "سند صرف"} titleEn={isReceipt ? "RECEIPT VOUCHER" : "PAYMENT VOUCHER"} number={voucherNo} />
         <YcdLegalStrip />
         <section className="ycdDocMeta">
-          <div><span>التاريخ</span><b>{transaction.createdAt.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</b></div>
+          <div><span>التاريخ</span><b>{transaction.createdAt.toLocaleString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</b></div>
           <div><span>الحساب</span><b>{transaction.account.nameAr}</b></div>
           <div><span>المبلغ</span><b>{money(Math.abs(Number(transaction.amount)))}</b></div>
           <div><span>المرجع</span><b>{transaction.reference || "—"}</b></div>

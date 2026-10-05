@@ -54,7 +54,7 @@ const actionLabels: Record<string, string> = {
 };
 
 function money(value: number) {
-  return value.toLocaleString("ar-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
+  return value.toLocaleString("ar-SA-u-nu-latn", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
 }
 
 export default async function ReportsPage({
@@ -266,10 +266,10 @@ export default async function ReportsPage({
       <section className="kpis reportKpis">
         <article><span>إجمالي المبيعات</span><b>{money(sales)}</b></article>
         <article><span>التحصيلات المسجلة</span><b>{money(collections)}</b></article>
-        <article><span>عدد الفواتير</span><b>{invoices.length.toLocaleString("ar-SA")}</b></article>
+        <article><span>عدد الفواتير</span><b>{invoices.length.toLocaleString("ar-SA-u-nu-latn")}</b></article>
         <article><span>متوسط الفاتورة</span><b>{money(averageInvoice)}</b></article>
-        <article><span>السيارات المستلمة</span><b>{serviceOrders.length.toLocaleString("ar-SA")}</b></article>
-        <article><span>أوامر مكتملة</span><b>{completedOrders.toLocaleString("ar-SA")}</b></article>
+        <article><span>السيارات المستلمة</span><b>{serviceOrders.length.toLocaleString("ar-SA-u-nu-latn")}</b></article>
+        <article><span>أوامر مكتملة</span><b>{completedOrders.toLocaleString("ar-SA-u-nu-latn")}</b></article>
         <article><span>ضريبة القيمة المضافة</span><b>{money(vat)}</b></article>
         <article><span>قيمة المخزون بالتكلفة</span><b>{money(inventoryValue)}</b></article>
       </section>
@@ -314,7 +314,7 @@ export default async function ReportsPage({
             {controlAlerts.map(([label, count, href]) => (
               <a className="reportAlert" href={href} key={label}>
                 <span>{label}</span>
-                <b className={count > 0 ? "alertBadge" : "okBadge"}>{count.toLocaleString("ar-SA")}</b>
+                <b className={count > 0 ? "alertBadge" : "okBadge"}>{count.toLocaleString("ar-SA-u-nu-latn")}</b>
               </a>
             ))}
           </div>
@@ -350,7 +350,7 @@ export default async function ReportsPage({
             <tbody>
               {shifts.map((shift) => (
                 <tr key={shift.id}>
-                  <td>{shift.openedAt.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</td>
+                  <td>{shift.openedAt.toLocaleString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</td>
                   <td>{shift.closedAt ? <span className="okBadge">مقفلة</span> : <span className="alertBadge">مفتوحة</span>}</td>
                   <td>{money(Number(shift.expectedCash ?? 0))}</td>
                   <td>{shift.countedCash === null ? "—" : money(Number(shift.countedCash))}</td>
@@ -398,7 +398,7 @@ export default async function ReportsPage({
               <tbody>
                 {recentAudits.map((audit) => (
                   <tr key={audit.id}>
-                    <td>{audit.createdAt.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</td>
+                    <td>{audit.createdAt.toLocaleString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</td>
                     <td>{audit.actor?.name || "النظام"}</td>
                     <td>{actionLabels[audit.action] || audit.action}</td>
                     <td>{audit.entityType}{audit.entityId ? ` · ${audit.entityId.slice(0, 8)}` : ""}</td>

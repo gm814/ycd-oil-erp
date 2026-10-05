@@ -34,17 +34,17 @@ export default async function ServiceReminderPage({ params }: { params: Promise<
         <section className="reminderGrid">
           <div><span>رقم العميل</span><b>{order.customer.customerNo}</b></div>
           <div><span>رقم الزيارة / الخدمة</span><b>{order.orderNo}</b></div>
-          <div><span>التاريخ</span><b>{order.createdAt.toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" })}</b></div>
+          <div><span>التاريخ</span><b>{order.createdAt.toLocaleDateString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</b></div>
           <div><span>نوع السيارة</span><b>{order.vehicle.make || "—"}</b></div>
           <div><span>الموديل</span><b>{[order.vehicle.model, order.vehicle.year].filter(Boolean).join(" · ") || "—"}</b></div>
           <div><span>رقم اللوحة</span><b>{order.vehicle.plate}</b></div>
-          <div><span>العداد عند الخدمة</span><b>{order.odometer?.toLocaleString("ar-SA") ?? "—"} كم</b></div>
+          <div><span>العداد عند الخدمة</span><b>{order.odometer?.toLocaleString("ar-SA-u-nu-latn") ?? "—"} كم</b></div>
           <div><span>نوع الزيت المستخدم</span><b>{oilItem?.descriptionAr || "—"}</b></div>
         </section>
         <section className="nextServiceBand">
           <b>موعد الخدمة / الغيار القادم</b>
-          <div><span>التاريخ</span><strong>{history?.nextServiceAt?.toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" }) ?? "—"}</strong></div>
-          <div><span>أو عند الوصول إلى</span><strong>{history?.nextServiceKm?.toLocaleString("ar-SA") ?? "—"} كم</strong></div>
+          <div><span>التاريخ</span><strong>{history?.nextServiceAt?.toLocaleDateString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" }) ?? "—"}</strong></div>
+          <div><span>أو عند الوصول إلى</span><strong>{history?.nextServiceKm?.toLocaleString("ar-SA-u-nu-latn") ?? "—"} كم</strong></div>
         </section>
         <section className="serviceChecks">
           {["OIL", "FILTER", "BATTERY", "PART", "SERVICE"].map((category) => (

@@ -43,10 +43,10 @@ export default async function UserManagementPage() {
       </div>
 
       <section className="kpis reportKpis">
-        <article><span>الموظفون النشطون</span><b>{employees.length.toLocaleString("ar-SA")}</b></article>
-        <article><span>حسابات مفعلة</span><b>{employees.filter((employee) => employee.user?.status === "ACTIVE").length.toLocaleString("ar-SA")}</b></article>
-        <article><span>بدون حساب دخول</span><b>{employees.filter((employee) => !employee.user).length.toLocaleString("ar-SA")}</b></article>
-        <article><span>حسابات موقوفة</span><b>{employees.filter((employee) => employee.user?.status === "SUSPENDED").length.toLocaleString("ar-SA")}</b></article>
+        <article><span>الموظفون النشطون</span><b>{employees.length.toLocaleString("ar-SA-u-nu-latn")}</b></article>
+        <article><span>حسابات مفعلة</span><b>{employees.filter((employee) => employee.user?.status === "ACTIVE").length.toLocaleString("ar-SA-u-nu-latn")}</b></article>
+        <article><span>بدون حساب دخول</span><b>{employees.filter((employee) => !employee.user).length.toLocaleString("ar-SA-u-nu-latn")}</b></article>
+        <article><span>حسابات موقوفة</span><b>{employees.filter((employee) => employee.user?.status === "SUSPENDED").length.toLocaleString("ar-SA-u-nu-latn")}</b></article>
       </section>
 
       <UserManagementActions

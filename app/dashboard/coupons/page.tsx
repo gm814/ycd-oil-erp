@@ -40,8 +40,8 @@ export default async function CouponsPage() {
                     <td>{coupon.serial}</td>
                     <td>{coupon.invoice.customer.name}</td>
                     <td><span className={coupon.status === "ACTIVE" ? "okBadge" : "statusBadge"}>{coupon.status}</span></td>
-                    <td>{coupon.issuedAt.toLocaleDateString("ar-SA")}</td>
-                    <td>{coupon.usedAt?.toLocaleString("ar-SA") ?? "—"}</td>
+                    <td>{coupon.issuedAt.toLocaleDateString("ar-SA-u-nu-latn")}</td>
+                    <td>{coupon.usedAt?.toLocaleString("ar-SA-u-nu-latn") ?? "—"}</td>
                     <td><a className="orderLink" href={`/dashboard/coupons/${coupon.id}/print`}>طباعة الكوبون</a></td>
                   </tr>
                 ))}

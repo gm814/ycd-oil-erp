@@ -136,3 +136,39 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--orange);outline-off
 @media(prefers-reduced-motion:reduce){button{transition:none}.navigationProgress{animation:none}}
 .offlinePilotLink{display:inline-block;margin:10px;padding:10px 14px;border:1px solid var(--orange);border-radius:10px;background:#fff8e8;color:#754300;font-weight:700}
 @media print{.offlinePilotLink,.navigationProgress{display:none}}
+
+/* Keep the invoice's desktop columns on paper; screen breakpoints must not stack them. */
+@media print {
+  .workspace.invoiceWorkspace { width:100%; max-width:none; margin:0; padding:0; }
+  .invoiceDocument { padding:3mm; font-size:10pt; line-height:1.3; border-top:2px solid #111; }
+  .invoiceHeader { display:flex; flex-direction:row; gap:5mm; padding-bottom:2mm; margin:0; }
+  .invoiceHeader > div { flex:1; min-width:0; }
+  .invoiceTitle { text-align:left; }
+  .invoiceTitle h1 { font-size:14pt; overflow-wrap:anywhere; margin:2mm 0; }
+  .invoiceBrandLogo { width:36mm; max-width:100%; margin-bottom:1mm; }
+  .invoiceHeader p,.invoiceParties p { margin:1mm 0; }
+  .invoiceLegal { grid-template-columns:repeat(4,1fr); gap:2mm; margin:2mm 0; }
+  .invoiceLegal div { padding:2mm; }
+  .invoiceLegal span { font-size:8pt; margin-bottom:1mm; }
+  .invoiceQrBlock { grid-template-columns:28mm 1fr; gap:3mm; margin:2mm 0; padding:2mm; }
+  .invoiceQr { width:28mm; height:28mm; padding:1mm; }
+  .invoiceQrBlock p,.invoiceQrBlock small { display:none; }
+  .invoiceQrBlock h3 { font-size:10pt; margin:0; }
+  .invoiceParties { grid-template-columns:1fr 1fr; gap:3mm; margin:2mm 0; }
+  .invoiceParties > div { padding:2mm; }
+  .invoiceParties h3,.paymentSummary h3 { font-size:10pt; margin:0 0 1mm; }
+  .invoiceTable table { width:100%; min-width:0; font-size:9pt; }
+  .invoiceTable th,.invoiceTable td { padding:2mm; }
+  .invoiceBottom { grid-template-columns:1fr 72mm; gap:4mm; margin-top:3mm; }
+  .paymentSummary > div { padding:1.5mm 0; }
+  .couponLine { padding:2mm; overflow-wrap:anywhere; }
+  .invoiceTotals > div { padding:1.3mm 2mm; }
+  .invoiceTotals .grandTotal { font-size:10pt; color:#000; background:#eee; }
+  .invoiceBankDetails { grid-template-columns:1fr 1fr; padding:2mm; margin:2mm 0; }
+  .invoicePolicy p { margin:1mm 0; }
+  .invoiceFooter { margin-top:2mm; padding-top:2mm; }
+  .invoiceFooter p { margin:0; }
+  .invoiceHeader,.invoiceLegal,.invoiceQrBlock,.invoiceParties,.invoiceBottom,
+  .invoicePolicy,.invoiceFooter,.invoiceTable tr { break-inside:avoid; }
+  .invoiceTable thead { display:table-header-group; }
+}

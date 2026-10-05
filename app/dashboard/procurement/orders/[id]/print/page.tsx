@@ -4,7 +4,7 @@ import { getSession } from "@/lib/auth";
 import { YcdDocumentFooter, YcdDocumentHeader, YcdLegalStrip } from "@/components/ycd-document-brand";
 import PrintDocumentButton from "@/components/print-document-button";
 
-function money(value: number) { return value.toLocaleString("ar-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س"; }
+function money(value: number) { return value.toLocaleString("ar-SA-u-nu-latn", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س"; }
 
 export default async function PurchaseOrderPrintPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
@@ -29,7 +29,7 @@ export default async function PurchaseOrderPrintPage({ params }: { params: Promi
         <YcdLegalStrip />
         <section className="ycdDocMeta">
           <div><span>الفرع</span><b>{order.branch.nameAr}</b></div>
-          <div><span>التاريخ</span><b>{order.createdAt.toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" })}</b></div>
+          <div><span>التاريخ</span><b>{order.createdAt.toLocaleDateString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</b></div>
           <div><span>المورد</span><b>{order.supplier.nameAr}</b></div>
           <div><span>طلب الشراء</span><b>{order.purchaseRequest.requestNo}</b></div>
         </section>

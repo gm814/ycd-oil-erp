@@ -6,7 +6,7 @@ import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import PrintButton from "./print-button";
 
 function money(value: number) {
-  return value.toLocaleString("ar-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
+  return value.toLocaleString("ar-SA-u-nu-latn", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
 }
 
 const statusLabel: Record<string, string> = {
@@ -60,7 +60,7 @@ export default async function FinancialCloseReport({ params }: { params: Promise
           <div className="invoiceTitle">
             <span>{close.type === "DAILY" ? "تقرير الإقفال المالي اليومي" : "تقرير الإقفال المالي الشهري"}</span>
             <h1>{close.closeNo}</h1>
-            <p>الفترة: {close.periodStart.toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" })} — {inclusiveEnd.toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" })}</p>
+            <p>الفترة: {close.periodStart.toLocaleDateString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })} — {inclusiveEnd.toLocaleDateString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</p>
             <p>الحالة: {statusLabel[close.status] ?? close.status}</p>
           </div>
         </header>
@@ -68,8 +68,8 @@ export default async function FinancialCloseReport({ params }: { params: Promise
         <section className="kpis statementKpis">
           <article><span>المبيعات</span><b>{money(Number(close.salesTotal))}</b></article>
           <article><span>صافي الحركة</span><b>{money(Number(close.netFinancialMovement))}</b></article>
-          <article><span>فروقات ورديات غير معالجة</span><b>{close.unresolvedShiftVariances.toLocaleString("ar-SA")}</b></article>
-          <article><span>مطابقات بنكية معلقة</span><b>{close.unresolvedBankReconciliations.toLocaleString("ar-SA")}</b></article>
+          <article><span>فروقات ورديات غير معالجة</span><b>{close.unresolvedShiftVariances.toLocaleString("ar-SA-u-nu-latn")}</b></article>
+          <article><span>مطابقات بنكية معلقة</span><b>{close.unresolvedBankReconciliations.toLocaleString("ar-SA-u-nu-latn")}</b></article>
         </section>
 
         <article className="panel inventoryPanel">

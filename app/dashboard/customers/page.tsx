@@ -6,7 +6,7 @@ import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import { riyadhDateRange, riyadhMonthToDateStrings } from "@/lib/time";
 
 function money(value: number) {
-  return value.toLocaleString("ar-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
+  return value.toLocaleString("ar-SA-u-nu-latn", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
 }
 
 const statusLabels: Record<string, string> = {
@@ -110,10 +110,10 @@ export default async function CustomersPage({
       </div>
 
       <section className="kpis">
-        <article><span>العملاء المسجلون</span><b>{customerCount.toLocaleString("ar-SA")}</b></article>
-        <article><span>السيارات المسجلة</span><b>{vehicleCount.toLocaleString("ar-SA")}</b></article>
+        <article><span>العملاء المسجلون</span><b>{customerCount.toLocaleString("ar-SA-u-nu-latn")}</b></article>
+        <article><span>السيارات المسجلة</span><b>{vehicleCount.toLocaleString("ar-SA-u-nu-latn")}</b></article>
         <article><span>مبيعات الشهر حتى اليوم</span><b>{money(monthSales)}</b></article>
-        <article><span>فواتير الشهر</span><b>{monthInvoices.length.toLocaleString("ar-SA")}</b></article>
+        <article><span>فواتير الشهر</span><b>{monthInvoices.length.toLocaleString("ar-SA-u-nu-latn")}</b></article>
       </section>
 
       <article className="panel customerSearch">
@@ -153,7 +153,7 @@ export default async function CustomersPage({
                         {customer.vehicles.length > 3 && <small>+{customer.vehicles.length - 3}</small>}
                       </div>
                     </td>
-                    <td>{customer.serviceOrders.length.toLocaleString("ar-SA")}</td>
+                    <td>{customer.serviceOrders.length.toLocaleString("ar-SA-u-nu-latn")}</td>
                     <td>{money(totalCustomerSales(customer))}</td>
                     <td>{customer.serviceOrders[0] ? statusLabels[customer.serviceOrders[0].status] : "—"}</td>
                   </tr>

@@ -41,11 +41,11 @@ export default async function CouponPrintPage({ params }: { params: Promise<{ id
           <div><span>نوع السيارة</span><b>{order.vehicle.make || "—"}</b></div>
           <div><span>الموديل</span><b>{[order.vehicle.model, order.vehicle.year].filter(Boolean).join(" · ") || "—"}</b></div>
           <div><span>رقم اللوحة</span><b>{order.vehicle.plate}</b></div>
-          <div><span>العداد الحالي</span><b>{order.odometer?.toLocaleString("ar-SA") ?? "—"} كم</b></div>
-          <div><span>تاريخ الخدمة</span><b>{coupon.issuedAt.toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" })}</b></div>
+          <div><span>العداد الحالي</span><b>{order.odometer?.toLocaleString("ar-SA-u-nu-latn") ?? "—"} كم</b></div>
+          <div><span>تاريخ الخدمة</span><b>{coupon.issuedAt.toLocaleDateString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</b></div>
           <div><span>العميل</span><b>{coupon.invoice.customer.name}</b></div>
           <div><span>الحالة</span><b>{coupon.status}</b></div>
-          <div><span>صالح حتى</span><b>{coupon.expiresAt?.toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" }) ?? "حسب سياسة المركز"}</b></div>
+          <div><span>صالح حتى</span><b>{coupon.expiresAt?.toLocaleDateString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" }) ?? "حسب سياسة المركز"}</b></div>
         </section>
         <section className="couponTerms">
           <b>شروط الاستخدام</b>

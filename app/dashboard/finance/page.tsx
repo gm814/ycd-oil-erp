@@ -195,7 +195,7 @@ export default async function FinancePage() {
             <tbody>
               {transactions.map((transaction) => (
                 <tr key={transaction.id}>
-                  <td>{transaction.createdAt.toLocaleString("ar-SA")}</td>
+                  <td>{transaction.createdAt.toLocaleString("ar-SA-u-nu-latn")}</td>
                   <td>{transaction.account.nameAr}</td>
                   <td>{transactionLabel[transaction.type] ?? transaction.type}</td>
                   <td>{transaction.descriptionAr}</td>
