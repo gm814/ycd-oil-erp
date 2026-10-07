@@ -60,9 +60,13 @@ export function invoicePdfHtml(invoice: Invoice, format: "a4" | "epson80", logo:
   .closing .qr { display:table-cell; width:30mm; float:none; margin:0; }
   footer.contacts { position:running(contacts); font-size:${receipt ? "6" : "8"}pt; direction:rtl; width:100%; }
   ${receipt ? "footer.contacts { position:static; }" : ""}
+  footer.contacts { border-top:0.6mm solid #F7A81D; }
+  .addresses { display:table; width:100%; table-layout:fixed; direction:rtl; font-size:${receipt ? "5.5" : "7"}pt; }
+  .addresses > div { display:table-cell; width:50%; text-align:right; padding:0 1mm; }
+  .addresses > div[lang=en] { text-align:left; direction:ltr; }
   </style></head><body>
 
-${receipt ? "" : `  <footer class="contacts"><p>عنوان الشركة: ${pdfText(company.companyAddress)}</p><p>عنوان الفرع: ${pdfText(company.branchAddress)}</p><p dir="ltr">${company.phone} | ${company.email} | ${company.website}</p></footer>`}
+${receipt ? "" : `  <footer class="contacts"><div class="addresses"><div><p>عنوان الشركة: ${pdfText(company.companyAddress)}</p><p>عنوان الفرع: ${pdfText(company.branchAddress)}</p></div><div lang="en" dir="ltr"><p>Company: Riyadh - Tuwaiq District</p><p>Branch: Riyadh - Tuwaiq District - Ahmad Ibn Al Khattab Street</p></div></div><p dir="ltr">${company.phone} | ${company.email} | ${company.website}</p></footer>`}
   <div class="brand-header"><div class="brand-ar"><b>${pdfText(company.legalNameAr)}</b><p>السجل التجاري: ${company.crNumber}</p><p>الرقم الموحد: ${company.unifiedNumber}</p></div><div class="brand-logo"><img src="data:image/svg+xml;base64,${logo}" alt="YCD OIL"></div><div class="brand-en"><b>${pdfText(company.legalNameEn)}</b><p>CR: ${company.crNumber}</p><p>Unified No.: ${company.unifiedNumber}</p></div></div>
   <header>
   <h2>فاتورة ضريبية مبسطة</h2><h1 class="number">${pdfText(invoice.invoiceNo)}</h1>
@@ -71,7 +75,7 @@ ${receipt ? "" : `  <footer class="contacts"><p>عنوان الشركة: ${pdfTe
   <p>الرقم الضريبي: <b class="number">${company.vatNumber}</b></p>
   <p>نسبة الضريبة: <span class="number">${money(Number(invoice.vatRate) * 100)}%</span></p>
   <div style="clear:both"></div>
-  <table class="details"><tr><td><b>بيانات العميل</b><p>${pdfText(invoice.customer.name)}</p><p class="number">${pdfText(invoice.customer.phone)}</p></td>
+  <table class="details"><tr><td><b>بيانات العميل</b><p>${pdfText(invoice.customer.name)}</p>${invoice.buyerCompanyName ? `<p>الشركة / المؤسسة: ${pdfText(invoice.buyerCompanyName)}</p>` : ""}${invoice.buyerVatNumber ? `<p>الرقم الضريبي: <span class="number">${pdfText(invoice.buyerVatNumber)}</span></p>` : ""}<p class="number">${pdfText(invoice.customer.phone)}</p></td>
   <td><b>بيانات السيارة والخدمة</b><p>${pdfText(vehicle.plate)}</p><p>${pdfText([vehicle.make,vehicle.model,vehicle.year].filter(Boolean).join(" · "))}</p>
   <p>العداد: ${pdfText(invoice.serviceOrder.odometer)} كم</p><p class="number">${pdfText(invoice.serviceOrder.orderNo)}</p></td></tr></table>
   ${receipt ? '<p class="muted">أسعار البنود وإجمالياتها قبل الضريبة (ر.س)</p>' : ''}
@@ -87,6 +91,6 @@ ${receipt ? "" : `  <footer class="contacts"><p>عنوان الشركة: ${pdfTe
   ${invoice.returns.map(r=>`<p>مرتجع: ${pdfText(r.returnNo)} | ${date(r.createdAt)} | ${money(r.total)} ر.س | ${pdfText(r.reason)}</p>`).join("")}
   ${remaining > 0 ? `<p>السداد: ${pdfText(company.bank.nameAr)} | ${pdfText(company.bank.accountNameAr)}</p><p class="number">${company.bank.accountNumber} | ${company.bank.iban}</p>` : ""}
   <div class="closing"><div class="policy"><b>سياسة الخدمة</b><p>لا يوجد استرجاع أو استبدال بعد تنفيذ الخدمة. في حال وجود ملاحظة على الخدمة يرجى التواصل معنا خلال 7 أيام.</p><p>شكرًا لاختياركم YCD OIL</p></div><div class="qr">${qr}</div></div>
-${receipt ? `  <footer class="contacts"><p>عنوان الشركة: ${pdfText(company.companyAddress)}</p><p>عنوان الفرع: ${pdfText(company.branchAddress)}</p><p dir="ltr">${company.phone} | ${company.email} | ${company.website}</p></footer>` : ""}
+${receipt ? `  <footer class="contacts"><div class="addresses"><div><p>عنوان الشركة: ${pdfText(company.companyAddress)}</p><p>عنوان الفرع: ${pdfText(company.branchAddress)}</p></div><div lang="en" dir="ltr"><p>Company: Riyadh - Tuwaiq District</p><p>Branch: Riyadh - Tuwaiq District - Ahmad Ibn Al Khattab Street</p></div></div><p dir="ltr">${company.phone} | ${company.email} | ${company.website}</p></footer>` : ""}
   </body></html>`;
 }

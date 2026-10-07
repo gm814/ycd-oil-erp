@@ -4,6 +4,7 @@ import { companyConfig } from "@/lib/config";
 import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import { buildZatcaPhase1QrPayload, buildZatcaPhase1QrSvg } from "@/lib/zatca";
+import BuyerForm from "./buyer-form";
 import PrintButton from "./print-button";
 import CollectionForm from "./collection-form";
 import SalesReturnForm from "./sales-return-form";
@@ -108,6 +109,10 @@ export default async function InvoicePage({
             <h3>بيانات العميل</h3>
             <p><span>الاسم:</span> <b>{invoice.customer.name}</b></p>
             <p><span>الجوال:</span> <b>{invoice.customer.phone || "—"}</b></p>
+            {invoice.buyerCompanyName && <p><span>الشركة / المؤسسة:</span> <b>{invoice.buyerCompanyName}</b></p>}
+            {invoice.buyerVatNumber && <p><span>الرقم الضريبي:</span> <b dir="ltr">{invoice.buyerVatNumber}</b></p>}
+            {hasPermission(session.permissions, PERMISSIONS.INVOICE_ISSUE) && <BuyerForm invoiceId={invoice.id} companyName={invoice.buyerCompanyName} vatNumber={invoice.buyerVatNumber} canRenumber={hasPermission(session.permissions, PERMISSIONS.USER_MANAGE) && !invoice.invoiceNo.startsWith("YCD-")} />}
+
           </div>
           <div>
             <h3>بيانات السيارة والخدمة</h3>
@@ -232,7 +237,7 @@ export default async function InvoicePage({
           <div className="invoiceQr" aria-label="رمز الاستجابة السريعة للفاتورة" dangerouslySetInnerHTML={{ __html: zatcaQrSvg }} />
         </div>
         <footer className="invoiceFooter">
-          <p>عنوان الشركة: {companyConfig.companyAddress} · عنوان الفرع: {companyConfig.branchAddress}</p>
+          <div className="invoiceAddresses"><div><p>عنوان الشركة: {companyConfig.companyAddress}</p><p>عنوان الفرع: {companyConfig.branchAddress}</p></div><div lang="en" dir="ltr"><p>Company: Riyadh - Tuwaiq District</p><p>Branch: Riyadh - Tuwaiq District - Ahmad Ibn Al Khattab Street</p></div></div>
           <p dir="ltr">{companyConfig.phone} · {companyConfig.email} · {companyConfig.website}</p>
         </footer>
       </article>

@@ -493,6 +493,8 @@ model StockMovement {
 }
 
 model Invoice {
+  buyerCompanyName String?
+  buyerVatNumber String?
   loyaltyEarning LoyaltyEntry? @relation("LoyaltyEarning")
   id             String        @id @default(cuid())
   invoiceNo      String        @unique

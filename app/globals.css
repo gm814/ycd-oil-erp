@@ -230,3 +230,8 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--orange);outline-off
  html[data-invoice-print="epson80"] .invoiceBilingualHeader .invoiceBrandLogo{width:19mm}
  html[data-invoice-print="epson80"] .invoiceFooter{font-size:6pt}
 }
+
+.invoiceFooter{border-top:2px solid #F7A81D}
+.invoiceAddresses{display:grid;grid-template-columns:1fr 1fr;gap:12px;direction:rtl;text-align:right}
+.invoiceAddresses [lang="en"]{text-align:left}
+@media print{.invoiceFooter{border-top:0.6mm solid #F7A81D;print-color-adjust:exact;-webkit-print-color-adjust:exact}.invoiceAddresses{font-size:7pt;gap:3mm}}
