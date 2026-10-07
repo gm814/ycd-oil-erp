@@ -19,8 +19,15 @@ export default function PrintButton({ invoiceId }: { invoiceId: string }) {
       const blob = await response.blob();
       const name = response.headers.get("content-disposition")?.match(/filename="([^"]+)"/)?.[1] || `invoice-${format}.pdf`;
       setPdfFile(new File([blob], name, { type: "application/pdf" }));
-      setPdfUrl(URL.createObjectURL(blob));
-      setNotice("الملف جاهز. اختر حفظ الملف أو مشاركته.");
+      const url = URL.createObjectURL(blob);
+      setPdfUrl(url);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setNotice("تم طلب تنزيل الفاتورة. إذا طلب المتصفح تأكيد التنزيل فوافق عليه. إذا لم يبدأ، استخدم حفظ ملف PDF بالجهاز.");
     } catch { setNotice("تعذر تجهيز الملف. تأكد من تسجيل الدخول ثم حاول مجددًا."); }
     finally { setBusy(false); }
   }
