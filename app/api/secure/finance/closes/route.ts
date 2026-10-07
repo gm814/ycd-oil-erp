@@ -1,3 +1,4 @@
+import { nextDocumentNumber } from "@/lib/document-number";
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -144,7 +145,7 @@ export async function POST(request: Request) {
         : 0;
       const unresolvedBankReconciliations = pendingBankReconciliations + missingMonthlyBankReconciliations;
 
-      const closeNo = `FC-${parsed.data.type === "DAILY" ? "D" : "M"}-${parsed.data.period.replaceAll("-", "")}-${session.branchId!.slice(-6).toUpperCase()}`;
+      const closeNo = existing?.closeNo ?? await nextDocumentNumber(tx);
       const data = {
         closeNo,
         branchId: session.branchId!,

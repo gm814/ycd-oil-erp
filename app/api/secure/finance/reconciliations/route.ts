@@ -1,3 +1,4 @@
+import { nextDocumentNumber } from "@/lib/document-number";
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
       const systemBalance = balanceResult._sum.amount ?? new Prisma.Decimal(0);
       const statementBalance = new Prisma.Decimal(parsed.data.statementBalance);
       const difference = statementBalance.minus(systemBalance);
-      const reconciliationNo = `REC-${parsed.data.statementDate.replaceAll("-", "")}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+      const reconciliationNo = await nextDocumentNumber(tx);
 
       const created = await tx.bankReconciliation.create({
         data: {

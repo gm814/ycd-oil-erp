@@ -1,3 +1,4 @@
+import { nextDocumentNumber } from "@/lib/document-number";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
         vehicle = await tx.vehicle.update({ where: { id: vehicle.id }, data: { currentOdometer: data.odometer ?? vehicle.currentOdometer }, include: { customer: true } });
       }
 
-      const orderNo = `${data.channel === "WASH" ? "WS-DIRECT" : "SO"}-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+      const orderNo = await nextDocumentNumber(tx);
       const created = await tx.serviceOrder.create({
         data: {
           orderNo,

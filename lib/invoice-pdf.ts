@@ -37,7 +37,7 @@ export function invoicePdfHtml(invoice: Invoice, format: "a4" | "epson80", logo:
   const row = (label: string, value: unknown) => `<tr><td>${label}</td><td class="number">${money(value)}</td></tr>`;
   return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${pdfText(invoice.invoiceNo)}</title>
   <style>
-  @page { size: ${receipt ? "80mm 297mm" : "A4"}; margin:${receipt ? "4mm" : "10mm"}; }
+  @page { size: ${receipt ? "80mm 297mm" : "A4"}; margin:${receipt ? "4mm" : "10mm 10mm 25mm"}; @bottom-center { content: element(contacts); } }
   * { box-sizing:border-box } body { font-family:"DejaVu Sans",sans-serif; color:#111; font-size:${receipt ? "8" : "9"}pt; line-height:1.5; margin:0; }
   h1 { font-size:${receipt ? "8" : "16"}pt; margin:2mm 0; } h2 { font-size:10pt; margin:1mm 0; } p { margin:1mm 0; }
   header { text-align:center; border-top:2mm solid #f18f21; padding-top:2mm; } .logo { width:${receipt ? "26" : "34"}mm; }
@@ -51,17 +51,24 @@ export function invoicePdfHtml(invoice: Invoice, format: "a4" | "epson80", logo:
   .totals td { padding:1mm; border-bottom:1px solid #ddd; } .total { background:#fff1d9; font-weight:bold; }
   .payment { border-bottom:1px solid #eee; padding:1mm 0; } footer { margin-top:3mm; border-top:1px solid #ddd; padding-top:2mm; font-size:7pt; text-align:center; }
   ${receipt ? ".details,.details tbody,.details tr,.details td { display:block; width:100%; } .items .number { white-space:normal; } .items th { font-size:6pt; padding:1.5mm .5mm; overflow-wrap:normal; }" : ".qr { float:left; margin:2mm 3mm; }"}
+  .brand-header { display:table; width:100%; table-layout:fixed; direction:rtl; border-bottom:1px solid #ddd; padding-bottom:2mm; }
+  .brand-header > div { display:table-cell; vertical-align:middle; width:38%; font-size:${receipt ? "5.5" : "9"}pt; }
+  .brand-header .brand-logo { width:24%; text-align:center; } .brand-logo img { width:${receipt ? "17" : "30"}mm; }
+  .brand-en { direction:ltr; text-align:left; } .brand-ar { text-align:right; }
+  .closing { display:table; width:100%; margin-top:3mm; break-inside:avoid; }
+  .closing .policy { display:table-cell; vertical-align:middle; padding-left:3mm; font-size:8pt; }
+  .closing .qr { display:table-cell; width:30mm; float:none; margin:0; }
+  footer.contacts { position:running(contacts); font-size:${receipt ? "6" : "8"}pt; direction:rtl; width:100%; }
+  ${receipt ? "footer.contacts { position:static; }" : ""}
   </style></head><body>
-  <header><img class="logo" src="data:image/svg+xml;base64,${logo}" alt="YCD OIL">
-  <p><b>${pdfText(company.legalNameAr)}</b></p><p>${pdfText(company.branch)} | <span class="number">${company.phone}</span></p>
-  <p class="muted">${company.website} | ${company.email}</p>
+
+${receipt ? "" : `  <footer class="contacts"><p>عنوان الشركة: ${pdfText(company.companyAddress)}</p><p>عنوان الفرع: ${pdfText(company.branchAddress)}</p><p dir="ltr">${company.phone} | ${company.email} | ${company.website}</p></footer>`}
+  <div class="brand-header"><div class="brand-ar"><b>${pdfText(company.legalNameAr)}</b><p>السجل التجاري: ${company.crNumber}</p><p>الرقم الموحد: ${company.unifiedNumber}</p></div><div class="brand-logo"><img src="data:image/svg+xml;base64,${logo}" alt="YCD OIL"></div><div class="brand-en"><b>${pdfText(company.legalNameEn)}</b><p>CR: ${company.crNumber}</p><p>Unified No.: ${company.unifiedNumber}</p></div></div>
+  <header>
   <h2>فاتورة ضريبية مبسطة</h2><h1 class="number">${pdfText(invoice.invoiceNo)}</h1>
   <p>${date(invoice.createdAt)} | ${pdfText(statuses[invoice.status] || invoice.status)}</p>
   ${invoice.dueAt ? `<p>الاستحقاق: ${date(invoice.dueAt)}</p>` : ""}</header>
-  <div class="qr">${qr}</div>
   <p>الرقم الضريبي: <b class="number">${company.vatNumber}</b></p>
-  <p>السجل التجاري: <span class="number">${company.crNumber}</span></p>
-  <p>الرقم الموحد: <span class="number">${company.unifiedNumber}</span></p>
   <p>نسبة الضريبة: <span class="number">${money(Number(invoice.vatRate) * 100)}%</span></p>
   <div style="clear:both"></div>
   <table class="details"><tr><td><b>بيانات العميل</b><p>${pdfText(invoice.customer.name)}</p><p class="number">${pdfText(invoice.customer.phone)}</p></td>
@@ -79,6 +86,7 @@ export function invoicePdfHtml(invoice: Invoice, format: "a4" | "epson80", logo:
   ${invoice.coupons.map(c=>`<p>كوبون غسيل: <span class="number">${pdfText(c.serial)}</span> | ${pdfText(c.status)}</p>`).join("")}
   ${invoice.returns.map(r=>`<p>مرتجع: ${pdfText(r.returnNo)} | ${date(r.createdAt)} | ${money(r.total)} ر.س | ${pdfText(r.reason)}</p>`).join("")}
   ${remaining > 0 ? `<p>السداد: ${pdfText(company.bank.nameAr)} | ${pdfText(company.bank.accountNameAr)}</p><p class="number">${company.bank.accountNumber} | ${company.bank.iban}</p>` : ""}
-  <footer><b>سياسة الخدمة</b><p>لا يوجد استرجاع أو استبدال بعد تنفيذ الخدمة. في حال وجود ملاحظة على الخدمة يرجى التواصل معنا خلال 7 أيام.</p><p>شكرًا لاختياركم YCD OIL</p></footer>
+  <div class="closing"><div class="policy"><b>سياسة الخدمة</b><p>لا يوجد استرجاع أو استبدال بعد تنفيذ الخدمة. في حال وجود ملاحظة على الخدمة يرجى التواصل معنا خلال 7 أيام.</p><p>شكرًا لاختياركم YCD OIL</p></div><div class="qr">${qr}</div></div>
+${receipt ? `  <footer class="contacts"><p>عنوان الشركة: ${pdfText(company.companyAddress)}</p><p>عنوان الفرع: ${pdfText(company.branchAddress)}</p><p dir="ltr">${company.phone} | ${company.email} | ${company.website}</p></footer>` : ""}
   </body></html>`;
 }

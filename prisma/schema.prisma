@@ -911,6 +911,7 @@ model GroupFunding {
 }
 
 model ExpenseRequest {
+  idempotencyKey String? @unique
   id             String               @id @default(cuid())
   requestNo      String               @unique
   branchId       String
@@ -965,6 +966,7 @@ model BankReconciliation {
 }
 
 model FinancialTransaction {
+  documentNo String? @unique @default(dbgenerated("ycd_document_number()"))
   id                String                   @id @default(cuid())
   branchId          String
   branch            Branch                   @relation(fields: [branchId], references: [id])

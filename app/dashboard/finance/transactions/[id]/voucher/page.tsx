@@ -38,7 +38,7 @@ export default async function VoucherPage({ params }: { params: Promise<{ id: st
   if (!transaction) notFound();
 
   const isReceipt = Number(transaction.amount) >= 0;
-  const voucherNo = `${isReceipt ? "RV" : "PV"}-${transaction.id.slice(-8).toUpperCase()}`;
+  const voucherNo = transaction.documentNo ?? `${isReceipt ? "RV" : "PV"}-${transaction.id.slice(-8).toUpperCase()}`;
 
   return (
     <main className="workspace invoiceWorkspace">

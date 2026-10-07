@@ -202,3 +202,31 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--orange);outline-off
   html[data-invoice-print="epson80"] .invoiceTotals .grandTotal { font-size:9pt; }
   html[data-invoice-print="epson80"] .invoiceTotals > div { padding:1mm; }
 }
+
+/* Approved bilingual invoice identity. */
+.invoiceBilingualHeader{display:grid;grid-template-columns:1fr 125px 1fr;gap:16px;align-items:center;border-bottom:1px solid #ddd;padding-bottom:12px;direction:rtl}
+.invoiceBilingualHeader .invoiceBrandLogo{width:100%;margin:0}
+.invoiceBilingualHeader p{margin:5px 0;font-size:12px}
+.invoiceNameEn{text-align:left}.invoiceNameAr{text-align:right}
+.invoiceHeading{text-align:center;margin:12px 0}.invoiceHeading .invoiceTitle{text-align:center}
+.invoiceLegal{grid-template-columns:1fr 1fr}
+.invoiceClosing{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-top:15px;break-inside:avoid}
+.invoiceClosing .invoicePolicy{flex:1}.invoiceClosing .invoiceQr{flex:none;width:100px;height:100px}
+.invoiceFooter p{margin:4px 0}
+@media(max-width:600px){.invoiceBilingualHeader{grid-template-columns:1fr 65px 1fr;gap:8px;font-size:10px}.invoiceBilingualHeader p{font-size:9px}.invoiceFooter{font-size:11px}}
+@media print{
+ .invoiceDocument{min-height:275mm;display:flex;flex-direction:column}
+ .invoiceBilingualHeader{grid-template-columns:1fr 32mm 1fr;gap:5mm;font-size:10pt;break-inside:avoid;padding-bottom:2mm}
+ .invoiceBilingualHeader p{font-size:8pt;margin:1mm 0}
+ .invoiceBilingualHeader .invoiceBrandLogo{width:32mm}
+ .invoiceHeading{margin:2mm 0}.invoiceHeading .invoiceTitle h1{margin:1mm 0}
+ .invoiceLegal{grid-template-columns:1fr 1fr;margin:1mm 0}
+ .invoiceClosing{margin-top:auto;padding-top:3mm;gap:4mm}
+ .invoiceClosing .invoiceQr{width:28mm;height:28mm}
+ .invoiceFooter{font-size:8pt;margin-top:2mm}
+ html[data-invoice-print="epson80"] .invoiceDocument{min-height:0;display:block}
+ html[data-invoice-print="epson80"] .invoiceBilingualHeader{grid-template-columns:1fr 19mm 1fr;gap:1mm;font-size:6pt}
+ html[data-invoice-print="epson80"] .invoiceBilingualHeader p{font-size:5.5pt;overflow-wrap:anywhere}
+ html[data-invoice-print="epson80"] .invoiceBilingualHeader .invoiceBrandLogo{width:19mm}
+ html[data-invoice-print="epson80"] .invoiceFooter{font-size:6pt}
+}

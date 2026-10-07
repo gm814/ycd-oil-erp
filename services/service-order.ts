@@ -1,3 +1,4 @@
+import { nextDocumentNumber } from "@/lib/document-number";
 import { captureMedad } from "@/services/medad/outbox";
 import { Prisma, StockMovementType } from "@prisma/client";
 import { earnLoyalty } from "@/services/loyalty";
@@ -138,10 +139,9 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
       });
     }
 
-    const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
     const invoice = await tx.invoice.create({
       data: {
-        invoiceNo: `INV-${date}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+        invoiceNo: await nextDocumentNumber(tx),
         serviceOrderId: order.id,
         customerId: order.customerId,
         subtotal,
@@ -186,7 +186,7 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
     const grantsWashCoupon = order.channel === "OIL" && (washPolicy?.issueMode === "ALL" || order.items.some((item) => item.product?.grantsWashCoupon));
     let couponSerial: string | null = null;
     if (grantsWashCoupon) {
-      couponSerial = `WASH-${date}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+      couponSerial = await nextDocumentNumber(tx);
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + companyConfig.washCouponValidityDays);
       await tx.coupon.create({

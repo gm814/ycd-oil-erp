@@ -1,3 +1,4 @@
+import { nextDocumentNumber } from "@/lib/document-number";
 import { captureMedad } from "@/services/medad/outbox";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
@@ -14,7 +15,6 @@ export type WashAction =
   | { action: "post"; batchId: string }
   | { action: "reject"; batchId: string }
   | { action: "pay"; batchId: string; amount: string; accountId: string; receiptAccountId: string; reference: string; key: string };
-const number = (prefix: string) => `${prefix}-${riyadhDateKey(new Date()).replaceAll("-", "")}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
 const zero = () => new Prisma.Decimal(0);
 export function settlementAmount(value: string) {
   if (!/^\d{1,9}(\.\d{1,2})?$/.test(value)) throw new Error("INVALID_AMOUNT");
@@ -58,7 +58,7 @@ export async function washActionInTransaction(tx: Prisma.TransactionClient, sess
     if (branch.operationalStatus !== "LIVE" && process.env.ALLOW_PREOPENING_OPERATIONS !== "true") throw new Error("BRANCH_NOT_LIVE");
     const updated = await tx.coupon.updateMany({ where: { id: coupon.id, status: "ACTIVE" }, data: { status: "USED", usedAt: new Date(), redeemedBranchId: branchId, redeemedBy: session.userId } });
     if (updated.count !== 1) throw new Error("COUPON_NOT_ACTIVE");
-    const service = await tx.washService.create({ data: { serviceNo: number("WS"), couponId: coupon.id, agreementId: agreement.id, amount: agreement.unitAmount, receivedBy: session.userId } });
+    const service = await tx.washService.create({ data: { serviceNo: await nextDocumentNumber(tx), couponId: coupon.id, agreementId: agreement.id, amount: agreement.unitAmount, receivedBy: session.userId } });
     await audit("WASH_SERVICE_OPENED", service.id, { source: "YCD OIL", serial: coupon.serial, invoiceNo: coupon.invoice.invoiceNo, serviceNo: service.serviceNo, amount: service.amount?.toString() ?? null });
     return { serviceId: service.id, serviceNo: service.serviceNo };
   }
@@ -96,7 +96,7 @@ export async function washActionInTransaction(tx: Prisma.TransactionClient, sess
     if (!services.length) throw new Error("NO_COMPLETED_SERVICES");
     if (services.some((s) => !s.amount || s.amount.lte(0))) throw new Error("VALUATION_REQUIRED");
     const total = services.reduce((n, s) => n.plus(s.amount!), zero());
-    const batch = await tx.washBatch.create({ data: { batchNo: number("WB"), agreementId: agreement.id, businessDate: input.businessDate, total, submittedBy: session.userId, idempotencyKey: input.key } });
+    const batch = await tx.washBatch.create({ data: { batchNo: await nextDocumentNumber(tx), agreementId: agreement.id, businessDate: input.businessDate, total, submittedBy: session.userId, idempotencyKey: input.key } });
     const linked = await tx.washService.updateMany({ where: { id: { in: services.map((s) => s.id) }, batchId: null }, data: { batchId: batch.id } });
     if (linked.count !== services.length) throw new Error("CONCURRENT_CHANGE");
     await audit("WASH_BATCH_SUBMITTED", batch.id, { total: total.toString(), count: services.length, businessDate: input.businessDate });
@@ -135,7 +135,7 @@ export async function washActionInTransaction(tx: Prisma.TransactionClient, sess
   if (!from || !to || from.id === to.id) throw new Error("INVALID_ACCOUNTS");
   const balance = await tx.financialTransaction.aggregate({ where: { accountId: from.id }, _sum: { amount: true } });
   if ((balance._sum.amount ?? zero()).lt(amount)) throw new Error("INSUFFICIENT_FUNDS");
-  const settlementNo = number("WP");
+  const settlementNo = await nextDocumentNumber(tx);
   const debit = await tx.financialTransaction.create({ data: { branchId, accountId: from.id, type: "EXPENSE", amount: amount.negated(), reference: input.reference, descriptionAr: `سداد كوبونات غسيل ${batch.batchNo} — ${batch.agreement.nameAr}`, relatedEntityType: "WashBatch", relatedEntityId: batch.id, performedBy: session.userId, idempotencyKey: `wash-out:${input.key}` } });
   const receipt = await tx.financialTransaction.create({ data: { branchId: batch.agreement.washBranchId, accountId: to.id, type: "CUSTOMER_RECEIPT", amount, reference: input.reference, descriptionAr: `تحصيل مستحقات كوبونات YCD OIL ${batch.batchNo}`, relatedEntityType: "WashBatch", relatedEntityId: batch.id, performedBy: session.userId, idempotencyKey: `wash-in:${input.key}` } });
   const payment = await tx.washSettlement.create({ data: { settlementNo, batchId: batch.id, amount, reference: input.reference, paidBy: session.userId, sourceTransactionId: debit.id, receiptTransactionId: receipt.id, idempotencyKey: input.key } });

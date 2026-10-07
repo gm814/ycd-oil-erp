@@ -1,3 +1,4 @@
+import { nextDocumentNumber } from "@/lib/document-number";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
@@ -42,8 +43,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       const vatRate = new Prisma.Decimal(companyConfig.vatRate);
       const vatAmount = subtotal.mul(vatRate).toDecimalPlaces(2);
       const total = subtotal.plus(vatAmount);
-      const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
-      const orderNo = `PO-${date}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+
+      const orderNo = await nextDocumentNumber(tx);
 
       const created = await tx.purchaseOrder.create({
         data: {

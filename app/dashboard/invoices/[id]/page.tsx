@@ -83,13 +83,12 @@ export default async function InvoicePage({
       </div>
 
       <article className="invoiceDocument">
-        <header className="invoiceHeader">
-          <div>
-            <img className="invoiceBrandLogo" src="/brand/ycd-logo-source.svg" alt="YCD OIL" />
-            <b>{companyConfig.legalNameAr}</b>
-            <p>{companyConfig.branch} · {companyConfig.phone}</p>
-            <p>{companyConfig.email} · {companyConfig.website}</p>
-          </div>
+        <header className="invoiceBilingualHeader">
+          <div className="invoiceNameAr"><b>{companyConfig.legalNameAr}</b><p>السجل التجاري: <b dir="ltr">{companyConfig.crNumber}</b></p><p>الرقم الموحد: <b dir="ltr">{companyConfig.unifiedNumber}</b></p></div>
+          <img className="invoiceBrandLogo" src="/brand/ycd-logo-source.svg" alt="YCD OIL" />
+          <div className="invoiceNameEn" lang="en" dir="ltr"><b>{companyConfig.legalNameEn}</b><p>CR: {companyConfig.crNumber}</p><p>Unified No.: {companyConfig.unifiedNumber}</p></div>
+        </header>
+        <section className="invoiceHeading">
           <div className="invoiceTitle">
             <span>فاتورة ضريبية مبسطة</span>
             <h1>{invoice.invoiceNo}</h1>
@@ -97,22 +96,11 @@ export default async function InvoicePage({
             <p><b>الحالة:</b> {invoice.status === "PAID" ? "مسددة" : invoice.status === "PARTIALLY_PAID" ? "مسددة جزئيًا" : invoice.status === "ISSUED" ? "مستحقة" : invoice.status}</p>
             {invoice.dueAt && <p><b>تاريخ الاستحقاق:</b> {invoice.dueAt.toLocaleDateString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</p>}
           </div>
-        </header>
-
-        <section className="invoiceLegal">
-          <div><span>الرقم الموحد</span><b>{companyConfig.unifiedNumber}</b></div>
-          <div><span>السجل التجاري</span><b>{companyConfig.crNumber}</b></div>
-          <div><span>الرقم الضريبي</span><b>{companyConfig.vatNumber}</b></div>
-          <div><span>نسبة الضريبة</span><b>{(Number(invoice.vatRate) * 100).toFixed(0)}%</b></div>
         </section>
 
-        <section className="invoiceQrBlock">
-          <div className="invoiceQr" aria-label="رمز الاستجابة السريعة للفاتورة" dangerouslySetInnerHTML={{ __html: zatcaQrSvg }} />
-          <div>
-            <h3>رمز الفاتورة الإلكترونية</h3>
-            <p>QR بصيغة TLV للبيانات الأساسية: اسم البائع، الرقم الضريبي، وقت الإصدار، الإجمالي شامل الضريبة، وإجمالي ضريبة القيمة المضافة.</p>
-            <small>هذا الرمز يحقق طبقة QR الأساسية للفاتورة المبسطة. متطلبات الربط مع منصة فاتورة - المرحلة الثانية - تُدار كمسار تكامل مستقل عند انطباقها على المنشأة.</small>
-          </div>
+        <section className="invoiceLegal">
+          <div><span>الرقم الضريبي</span><b>{companyConfig.vatNumber}</b></div>
+          <div><span>نسبة الضريبة</span><b>{(Number(invoice.vatRate) * 100).toFixed(0)}%</b></div>
         </section>
 
         <section className="invoiceParties">
@@ -239,13 +227,13 @@ export default async function InvoicePage({
           </section>
         )}
 
-        <section className="invoicePolicy">
-          <b>سياسة الخدمة</b>
-          <p>لا يوجد استرجاع أو استبدال بعد تنفيذ الخدمة. في حال وجود ملاحظة على الخدمة يرجى التواصل معنا خلال 7 أيام.</p>
-        </section>
-
+        <div className="invoiceClosing">
+          <section className="invoicePolicy"><b>سياسة الخدمة</b><p>لا يوجد استرجاع أو استبدال بعد تنفيذ الخدمة. في حال وجود ملاحظة على الخدمة يرجى التواصل معنا خلال 7 أيام.</p></section>
+          <div className="invoiceQr" aria-label="رمز الاستجابة السريعة للفاتورة" dangerouslySetInnerHTML={{ __html: zatcaQrSvg }} />
+        </div>
         <footer className="invoiceFooter">
-          <p>شكرًا لاختياركم YCD OIL — وجهتك الإبداعية لزيوت وخدمات السيارات.</p>
+          <p>عنوان الشركة: {companyConfig.companyAddress} · عنوان الفرع: {companyConfig.branchAddress}</p>
+          <p dir="ltr">{companyConfig.phone} · {companyConfig.email} · {companyConfig.website}</p>
         </footer>
       </article>
     </main>

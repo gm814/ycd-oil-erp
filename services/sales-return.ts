@@ -1,3 +1,4 @@
+import { nextDocumentNumber } from "@/lib/document-number";
 import { captureMedad } from "@/services/medad/outbox";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
@@ -91,10 +92,9 @@ export async function processSalesReturn(input: ReturnInput) {
       accountId = account.id;
     }
 
-    const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
     const salesReturn = await tx.salesReturn.create({
       data: {
-        returnNo: `RET-${date}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+        returnNo: await nextDocumentNumber(tx),
         invoiceId: invoice.id,
         branchId: input.branchId,
         reason: input.reason,
