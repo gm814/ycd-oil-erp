@@ -235,3 +235,9 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--orange);outline-off
 .invoiceAddresses{display:grid;grid-template-columns:1fr 1fr;gap:12px;direction:rtl;text-align:right}
 .invoiceAddresses [lang="en"]{text-align:left}
 @media print{.invoiceFooter{border-top:0.6mm solid #F7A81D;print-color-adjust:exact;-webkit-print-color-adjust:exact}.invoiceAddresses{font-size:7pt;gap:3mm}}
+
+/* Readable gold section links in workspace headers. */
+.workspaceTop .actionStack a.secondaryButton{display:flex;align-items:center;justify-content:center;min-height:46px;padding:12px 18px;border:1px solid #d58b10;border-radius:12px;background:var(--gold);color:var(--black);font-size:14px;font-weight:800;line-height:1.6;text-align:center;white-space:normal;overflow-wrap:anywhere;text-decoration:none}
+.workspaceTop .actionStack a.secondaryButton:hover{background:#f5b83e}
+.workspaceTop .actionStack a.secondaryButton:focus-visible{outline:3px solid #111;outline-offset:3px}
+@media(max-width:900px){.workspaceTop .actionStack{width:100%;min-width:0}.workspaceTop .actionStack a.secondaryButton{width:100%}}
