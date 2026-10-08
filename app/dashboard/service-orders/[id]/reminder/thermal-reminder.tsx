@@ -1,91 +1,125 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 export type ThermalReminderData = {
   serviceDate: string; vehicle: string; plate: string; odometer: string;
   service: string; nextKm: string; nextDate: string; phone: string; website: string;
+  customerName: string; customerPhone: string;
 };
 
-// Millimetres are physical dimensions, independent of the printer's DPI.
-export const thermalReminderCss = `
-.ycdThermalLabel,.ycdThermalLabel *{box-sizing:border-box}
-.ycdThermalLabel{direction:rtl;width:100mm;height:150mm;padding:5mm;margin:0;background:white;color:black;font-family:Arial,"Noto Sans Arabic",sans-serif;font-size:12pt;line-height:1.3;display:grid;grid-template-rows:22mm 10mm 34mm 20mm 12mm 22mm 8mm;row-gap:2mm;border:0;box-shadow:none;text-align:right}
-.ycdThermalLabel h1,.ycdThermalLabel p{margin:0}
-.ycdThermalLabel .labelHeader{display:flex;justify-content:space-between;align-items:center;border-bottom:.25mm solid black;gap:2mm}
-.ycdThermalLabel .labelHeader img{width:32mm;height:18mm;object-fit:contain;filter:grayscale(1) contrast(3)}
-.ycdThermalLabel h1{font-size:16pt;font-weight:700}
-.ycdThermalLabel small{font-size:9pt}
-.ycdThermalLabel .labelMeta{display:flex;justify-content:space-between;align-items:center}
-.ycdThermalLabel .labelNext{border:.25mm solid black;border-radius:1mm;display:grid;grid-template-columns:1fr 1fr;gap:3mm;padding:4mm 2mm;text-align:center}
-.ycdThermalLabel .labelNext>div+div{border-right:.25mm solid black}
-.ycdThermalLabel .labelNext span{display:block;font-size:11pt}
-.ycdThermalLabel .labelNext strong{display:block;font-size:20pt;line-height:1.2;margin-top:3mm;white-space:nowrap}
-.ycdThermalLabel .labelVehicle{display:grid;grid-template-columns:1.25fr 1fr;gap:2mm;align-items:center}
-.ycdThermalLabel .labelVehicle b{display:block;font-size:13pt;overflow-wrap:anywhere}.ycdThermalLabel .labelVehicle small{display:block;margin-bottom:2mm}
-.ycdThermalLabel .labelCurrent{display:flex;align-items:center;justify-content:space-between;border-bottom:.2mm solid black}
-.ycdThermalLabel .labelService{font-size:7pt;display:block;padding-top:.4mm;overflow-wrap:anywhere}
-.ycdThermalLabel .labelFooter{display:flex;justify-content:space-between;align-items:center;border-top:.2mm solid black;font-size:7pt}
-.ycdThermalLabel [data-fit]{min-width:0;max-height:100%}
-@media print{@page{size:100mm 150mm;margin:0}html,body{margin:0!important;padding:0!important;width:100mm;background:white}body:has(.ycdThermalLabel){height:auto}.workspace:has(.ycdThermalLabel){padding:0!important;margin:0!important;width:100mm!important;max-width:none!important}.labelPreview{border:0!important;overflow:visible!important}.ycdThermalLabel{break-inside:avoid;break-after:avoid;print-color-adjust:exact;-webkit-print-color-adjust:exact}}
-`;
-
-export function ThermalLabel({ data }: { data: ThermalReminderData }) {
-  return <article className="ycdThermalLabel" aria-label="ملصق تذكير الخدمة 100 × 150 ملم">
-    <header className="labelHeader"><img src="/brand/ycd-logo-source.svg" alt="YCD OIL" /><div><h1>تذكير الخدمة</h1><small>SERVICE REMINDER</small></div></header>
-    <div className="labelMeta"><span>تاريخ الخدمة</span><b dir="ltr">{data.serviceDate}</b></div>
-    <section className="labelNext"><div><span>العداد القادم · كم</span><strong data-fit>{data.nextKm}</strong></div><div><span>التاريخ القادم</span><strong data-fit>{data.nextDate}</strong></div></section>
-    <div className="labelVehicle"><div><small>السيارة / الموديل</small><b data-fit>{data.vehicle}</b></div><div><small>رقم اللوحة</small><b data-fit>{data.plate}</b></div></div>
-    <div className="labelCurrent"><span>العداد الحالي · كم</span><b dir="ltr">{data.odometer}</b></div>
-    <p className="labelService" data-fit><b>الخدمة / الزيت: </b>{data.service}</p>
-    <footer className="labelFooter"><b dir="ltr">{data.phone}</b><span dir="ltr">{data.website}</span></footer>
-  </article>;
+export function whatsappNumber(value: string): string | null {
+  let digits = value.replace(/[٠-٩]/g, c => String(c.charCodeAt(0) - 1632)).replace(/[۰-۹]/g, c => String(c.charCodeAt(0) - 1776)).replace(/[\s()+.-]/g, "");
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (/^05\d{8}$/.test(digits)) digits = "966" + digits.slice(1);
+  else if (/^5\d{8}$/.test(digits)) digits = "966" + digits;
+  return /^[1-9]\d{7,14}$/.test(digits) ? digits : null;
 }
 
-export default function ThermalReminder({ data }: { data: ThermalReminderData }) {
-  const preview = useRef<HTMLDivElement>(null);
-  const [busy,setBusy]=useState(false);
+// One canvas is both the preview and exported image, preserving Arabic and layout.
+async function createCard(data: ThermalReminderData): Promise<Blob> {
+  await document.fonts.ready;
+  const logo = new Image();
+  logo.src = "/brand/ycd-logo-source.svg";
+  await logo.decode();
+  const canvas = document.createElement("canvas");
+  canvas.width = 1200; canvas.height = 1800; // Portrait, same 10:15 proportions.
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("تعذر تجهيز صورة البطاقة.");
+  const gold = "#b8860b", ink = "#252b35", muted = "#656565";
+  ctx.fillStyle = "white"; ctx.fillRect(0, 0, 1200, 1800);
+  function box(x: number, y: number, w: number, h: number, fill = "white", stroke = "#d9c797", r = 22) {
+    ctx!.beginPath(); ctx!.roundRect(x, y, w, h, r);
+    ctx!.fillStyle = fill; ctx!.fill(); ctx!.strokeStyle = stroke; ctx!.lineWidth = 2; ctx!.stroke();
+  }
+  box(22,22,1156,1756,"white",gold,48);
+  ctx.save(); ctx.beginPath(); ctx.roundRect(28,28,1144,1744,42); ctx.clip();
+  function ribbon(bottom: boolean) {
+    ctx!.save(); if (bottom) { ctx!.translate(1200,1800); ctx!.rotate(Math.PI); }
+    const gradient = ctx!.createLinearGradient(0,0,320,220);
+    gradient.addColorStop(0,"#986300"); gradient.addColorStop(.5,"#f6cf55"); gradient.addColorStop(1,"#b8860b");
+    ctx!.fillStyle=gradient; ctx!.beginPath(); ctx!.moveTo(0,0); ctx!.lineTo(380,0); ctx!.quadraticCurveTo(120,85,0,340); ctx!.closePath(); ctx!.fill();
+    ctx!.strokeStyle="white"; ctx!.lineWidth=55; ctx!.beginPath(); ctx!.moveTo(0,260); ctx!.quadraticCurveTo(115,90,320,0); ctx!.stroke();
+    ctx!.strokeStyle="#bfc0c3"; ctx!.lineWidth=29; ctx!.stroke(); ctx!.restore();
+  }
+  ribbon(false); ribbon(true); ctx.restore();
+  function text(value: string, x: number, y: number, width: number, size = 34, color = ink, bold = true) {
+    ctx!.textAlign="center"; ctx!.textBaseline="middle"; ctx!.direction="rtl";
+    let fontSize=size;
+    do {ctx!.font=`${bold?700:400} ${fontSize}px Arial, sans-serif`; if(ctx!.measureText(value).width<=width) break; fontSize--;} while(fontSize>20);
+    ctx!.fillStyle=color; ctx!.fillText(value,x,y,width);
+  }
+  ctx.drawImage(logo,390,55,420,242);
+  text("وجهتك الإبداعية لزيوت وخدمات السيارات",600,312,930,35,muted);
+  text("OIL & AUTO SERVICE",600,357,700,28,muted,false);
+  text("تذكير الخدمة القادمة",600,443,950,64,gold);
+  text("SERVICE REMINDER",600,504,900,30,muted,false);
+  text(`عزيزي العميل: ${data.customerName}`,600,565,1000,29,muted,false);
+  box(75,615,1050,285,"#fffaf0");
+  text("موعد خدمتك القادمة",600,659,960,32,gold);
+  ctx.strokeStyle="#d9c797"; ctx.beginPath(); ctx.moveTo(600,707); ctx.lineTo(600,868); ctx.stroke();
+  text("العداد القادم · كم",860,739,460,30,muted,false);
+  text(data.nextKm,860,809,450,52);
+  text("التاريخ القادم",337,739,460,30,muted,false);
+  text(data.nextDate,337,809,450,48);
+  function cell(label: string, value: string, x: number, y: number, width: number) {
+    box(x,y,width,146); text(label,x+width/2,y+39,width-32,27,muted,false);
+    text(value,x+width/2,y+96,width-36,36);
+  }
+  cell("السيارة / الموديل",data.vehicle,75,930,1050);
+  cell("رقم اللوحة",data.plate,613,1095,512);
+  cell("العداد الحالي · كم",data.odometer,75,1095,512);
+  cell("تاريخ الخدمة",data.serviceDate,75,1260,1050);
+  box(75,1425,1050,160,"#fffaf0");
+  text("الخدمة / الزيت",600,1465,990,27,muted,false);
+  // Wrap long descriptions instead of clipping or silently omitting them.
+  const words=data.service.split(/\s+/); const lines:string[]=[]; let line="";
+  ctx.font="700 30px Arial, sans-serif";
+  for(const word of words){const next=line?`${line} ${word}`:word;if(ctx.measureText(next).width>980&&line){lines.push(line);line=word;}else line=next;}
+  if(line) lines.push(line);
+  if(lines.length>3) throw new Error("وصف الخدمة طويل على البطاقة؛ يرجى اختصاره قبل المشاركة.");
+  lines.forEach((value,i)=>text(value,600,1505+i*29,990,30));
+  ctx.strokeStyle=gold; ctx.beginPath(); ctx.moveTo(115,1630); ctx.lineTo(1085,1630); ctx.stroke();
+  text(data.phone,600,1668,800,32);
+  text(data.website,600,1711,800,27,muted,false);
+  return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error("تعذر حفظ صورة البطاقة.")),"image/png"));
+}
+
+export default function ServiceReminder({ data }: { data: ThermalReminderData }) {
+  const [image,setImage]=useState("");
+  const [blob,setBlob]=useState<Blob|null>(null);
   const [error,setError]=useState("");
-  async function printLabel() {
-    if (busy || !preview.current) return;
-    setBusy(true);setError("");
-    const frame=document.createElement("iframe");
-    frame.title="طباعة ملصق تذكير الخدمة";
-    frame.style.cssText="position:fixed;left:-10000px;top:0;width:100mm;height:150mm;border:0";
-    document.body.appendChild(frame);
-    try {
-      const doc=frame.contentDocument,win=frame.contentWindow;
-      if(!doc||!win) throw new Error("تعذر فتح معاينة الطباعة.");
-      doc.open();
-      doc.write('<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>YCD OIL — 100 × 150 mm</title><style>'+thermalReminderCss+'</style></head><body></body></html>');
-      doc.close();
-      const label=preview.current.querySelector(".ycdThermalLabel")!.cloneNode(true) as HTMLElement;
-      label.querySelectorAll("img").forEach(img=>{img.src=new URL(img.getAttribute("src")!,window.location.origin).href});
-      doc.body.appendChild(label);
-      await doc.fonts.ready;
-      await Promise.all(Array.from(doc.images).map(img=>img.decode()));
-      // Never silently crop long vehicle/oil descriptions.
-      for(const el of Array.from(label.querySelectorAll<HTMLElement>("[data-fit]"))){
-        let size=parseFloat(win.getComputedStyle(el).fontSize);
-        while((el.scrollWidth>el.clientWidth+1||el.scrollHeight>el.clientHeight+1)&&size>8){size-=.25;el.style.fontSize=size+"px";}
-        if(el.scrollWidth>el.clientWidth+1||el.scrollHeight>el.clientHeight+1) throw new Error("وصف السيارة أو الخدمة طويل على الملصق. اختصره قبل الطباعة.");
-      }
-      if(label.scrollHeight>label.clientHeight+1) throw new Error("المحتوى يتجاوز مقاس الملصق؛ راجع البيانات قبل الطباعة.");
-      win.addEventListener("afterprint",()=>frame.remove(),{once:true});
-      win.focus();win.print();
-      // Fallback for browsers that do not dispatch afterprint from a frame.
-      window.setTimeout(()=>frame.remove(),120000);
-    } catch(e) {frame.remove();setError(e instanceof Error?e.message:"تعذرت الطباعة.");}
-    finally {setBusy(false);}
+  const [notice,setNotice]=useState("");
+  useEffect(()=>{
+    let cancelled=false; let url="";
+    createCard(data).then(result=>{if(cancelled)return;url=URL.createObjectURL(result);setBlob(result);setImage(url);}).catch(e=>{if(!cancelled)setError(e instanceof Error?e.message:"تعذر تجهيز البطاقة.");});
+    return()=>{cancelled=true;if(url)URL.revokeObjectURL(url);};
+  },[data]);
+  const number=whatsappNumber(data.customerPhone);
+  const message=[`مرحبًا ${data.customerName}، بطاقة تذكير الخدمة من YCD OIL.`,`السيارة: ${data.vehicle}`,`اللوحة: ${data.plate}`,`تاريخ الخدمة: ${data.serviceDate}`,`العداد الحالي: ${data.odometer} كم`,`الخدمة: ${data.service}`,`العداد القادم: ${data.nextKm}`,`التاريخ القادم: ${data.nextDate}`,`للتواصل: ${data.phone}`].join("\n");
+  const whatsapp=number?`https://wa.me/${number}?text=${encodeURIComponent(message)}`:null;
+  function download(){const a=document.createElement("a");a.href=image;a.download="YCD-OIL-service-reminder.png";a.click();}
+  async function share(){
+    if(!blob)return;
+    const file=new File([blob],"YCD-OIL-service-reminder.png",{type:"image/png"});
+    if(navigator.canShare?.({files:[file]})){
+      try{await navigator.share({files:[file],title:"YCD OIL — تذكير الخدمة",text:message});setNotice("تمت المشاركة عبر الجهاز. راجع واتساب للتأكد من إرسالها للعميل.");}
+      catch(e){if(!(e instanceof Error&&e.name==="AbortError"))setError("تعذرت المشاركة؛ نزّل الصورة وأرفقها في واتساب.");}
+    }else{download();setNotice("تم طلب تنزيل الصورة. افتح واتساب العميل وأرفق الصورة في المحادثة.");}
   }
   return <section>
-    <div className="noPrint" style={{marginBottom:16}}>
-      <button type="button" onClick={printLabel} disabled={busy}>{busy?"تجهيز الملصق…":"طباعة ملصق 100 × 150 ملم"}</button>
-      <p>اختر Zebra ZD421T ومقاس الورق 100 × 150 ملم بالاتجاه الرأسي. المقياس 100%، الهوامش «بدون»، وأوقف رؤوس وتذييلات المتصفح.</p>
-      <p>يجب أن تكون اللفة المركّبة بالمقاس نفسه. المعاينة أحادية اللون للطباعة بشريط أسود.</p>
-      {error&&<p role="alert">{error}</p>}
+    <div className="noPrint" style={{marginBottom:20}}>
+      <h1>بطاقة تذكير الخدمة عبر واتساب</h1>
+      <p>جوال العميل: <b dir="ltr">{data.customerPhone||"غير مسجل"}</b></p>
+      {!number&&<p role="alert">رقم جوال العميل غير مسجل أو غير صالح. حدّثه من بيانات العميل قبل فتح محادثة واتساب.</p>}
+      <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"center"}}>
+        <button type="button" disabled={!blob} onClick={share}>مشاركة صورة البطاقة</button>
+        <button type="button" disabled={!image} onClick={download}>تنزيل صورة البطاقة</button>
+        {whatsapp&&<a className="secondaryLink" href={whatsapp} target="_blank" rel="noopener noreferrer">فتح واتساب العميل</a>}
+      </div>
+      <p>على الجوال: اختر واتساب من المشاركة ثم العميل. على الكمبيوتر: نزّل الصورة، وافتح واتساب العميل ثم أرفقها وأرسلها.</p>
+      <p>فتح واتساب يجهز نص التذكير؛ الصورة تُرفق من جهازك. لا يتم الإرسال تلقائيًا.</p>
+      {notice&&<p role="status">{notice}</p>}{error&&<p role="alert">{error}</p>}
     </div>
-    <style>{thermalReminderCss}</style>
-    <div ref={preview} className="labelPreview" style={{width:"fit-content",maxWidth:"100%",overflowX:"auto",border:"1px solid #ddd",background:"white"}}><ThermalLabel data={data} /></div>
+    {image?<img src={image} alt={`بطاقة تذكير الخدمة — ${data.vehicle} — العداد القادم ${data.nextKm} — التاريخ القادم ${data.nextDate}`} width={1200} height={1800} style={{display:"block",width:"100%",maxWidth:600,height:"auto"}}/>:!error&&<p role="status">جاري تجهيز البطاقة…</p>}
   </section>;
 }
-

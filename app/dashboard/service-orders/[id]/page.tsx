@@ -47,7 +47,7 @@ export default async function ServiceOrderPage({
         </div>
         <div className="actionStack">
           <span className="statusBadge">{order.status}</span>
-          {order.status === "COMPLETED" && <a className="secondaryLink" href={`/dashboard/service-orders/${order.id}/reminder`}>طباعة تذكير الخدمة</a>}
+          {order.status === "COMPLETED" && <a className="secondaryLink" href={`/dashboard/service-orders/${order.id}/reminder`}>تذكير الخدمة عبر واتساب</a>}
         </div>
       </div>
 

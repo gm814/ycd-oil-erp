@@ -45,6 +45,8 @@ export default async function ServiceReminderPage({ params }: { params: Promise<
         <form action={saveMake}><label>الشركة المصنّعة<input name="make" required maxLength={60} placeholder="مثال: Toyota" /></label><button type="submit">حفظ بيانات السيارة</button></form>
       </aside>}
       <ThermalReminder data={{
+        customerName: order.customer.name,
+        customerPhone: order.customer.phone || "",
         serviceDate: date(order.createdAt),
         vehicle: [order.vehicle.make, order.vehicle.model, order.vehicle.year].filter(Boolean).join(" · ") || "السيارة غير مسجلة",
         plate: order.vehicle.plate,
