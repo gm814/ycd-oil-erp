@@ -22,19 +22,19 @@ async function createCard(data: ThermalReminderData): Promise<Blob> {
   logo.src = "/brand/ycd-logo-source.svg";
   await logo.decode();
   const canvas = document.createElement("canvas");
-  canvas.width = 1200; canvas.height = 1800; // Portrait, same 10:15 proportions.
+  canvas.width = 1200; canvas.height = 2400; // Portrait, 5 cm wide × 10 cm high proportions (1:2).
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("تعذر تجهيز صورة البطاقة.");
   const gold = "#b8860b", ink = "#252b35", muted = "#656565";
-  ctx.fillStyle = "white"; ctx.fillRect(0, 0, 1200, 1800);
+  ctx.fillStyle = "white"; ctx.fillRect(0, 0, 1200, 2400);
   function box(x: number, y: number, w: number, h: number, fill = "white", stroke = "#d9c797", r = 22) {
     ctx!.beginPath(); ctx!.roundRect(x, y, w, h, r);
     ctx!.fillStyle = fill; ctx!.fill(); ctx!.strokeStyle = stroke; ctx!.lineWidth = 2; ctx!.stroke();
   }
-  box(22,22,1156,1756,"white",gold,48);
-  ctx.save(); ctx.beginPath(); ctx.roundRect(28,28,1144,1744,42); ctx.clip();
+  box(22,22,1156,2356,"white",gold,48);
+  ctx.save(); ctx.beginPath(); ctx.roundRect(28,28,1144,2344,42); ctx.clip();
   function ribbon(bottom: boolean) {
-    ctx!.save(); if (bottom) { ctx!.translate(1200,1800); ctx!.rotate(Math.PI); }
+    ctx!.save(); if (bottom) { ctx!.translate(1200,2400); ctx!.rotate(Math.PI); }
     const gradient = ctx!.createLinearGradient(0,0,320,220);
     gradient.addColorStop(0,"#986300"); gradient.addColorStop(.5,"#f6cf55"); gradient.addColorStop(1,"#b8860b");
     ctx!.fillStyle=gradient; ctx!.beginPath(); ctx!.moveTo(0,0); ctx!.lineTo(380,0); ctx!.quadraticCurveTo(120,85,0,340); ctx!.closePath(); ctx!.fill();
@@ -54,33 +54,33 @@ async function createCard(data: ThermalReminderData): Promise<Blob> {
   text("تذكير الخدمة القادمة",600,443,950,64,gold);
   text("SERVICE REMINDER",600,504,900,30,muted,false);
   text(`عزيزي العميل: ${data.customerName}`,600,565,1000,29,muted,false);
-  box(75,615,1050,285,"#fffaf0");
-  text("موعد خدمتك القادمة",600,659,960,32,gold);
-  ctx.strokeStyle="#d9c797"; ctx.beginPath(); ctx.moveTo(600,707); ctx.lineTo(600,868); ctx.stroke();
-  text("العداد القادم · كم",860,739,460,30,muted,false);
-  text(data.nextKm,860,809,450,52);
-  text("التاريخ القادم",337,739,460,30,muted,false);
-  text(data.nextDate,337,809,450,48);
+  box(75,615,1050,535,"#fffaf0");
+  text("موعد خدمتك القادمة",600,678,960,40,gold);
+  text("العداد القادم · كم",600,765,960,34,muted,false);
+  text(data.nextKm,600,840,960,66);
+  ctx.strokeStyle="#d9c797"; ctx.beginPath(); ctx.moveTo(140,910); ctx.lineTo(1060,910); ctx.stroke();
+  text("التاريخ القادم",600,975,960,34,muted,false);
+  text(data.nextDate,600,1053,960,60);
   function cell(label: string, value: string, x: number, y: number, width: number) {
-    box(x,y,width,146); text(label,x+width/2,y+39,width-32,27,muted,false);
-    text(value,x+width/2,y+96,width-36,36);
+    box(x,y,width,175); text(label,x+width/2,y+46,width-32,32,muted,false);
+    text(value,x+width/2,y+115,width-36,44);
   }
-  cell("السيارة / الموديل",data.vehicle,75,930,1050);
-  cell("رقم اللوحة",data.plate,613,1095,512);
-  cell("العداد الحالي · كم",data.odometer,75,1095,512);
-  cell("تاريخ الخدمة",data.serviceDate,75,1260,1050);
-  box(75,1425,1050,160,"#fffaf0");
-  text("الخدمة / الزيت",600,1465,990,27,muted,false);
+  cell("السيارة / الموديل",data.vehicle,75,1180,1050);
+  cell("رقم اللوحة",data.plate,75,1380,1050);
+  cell("العداد الحالي · كم",data.odometer,75,1580,1050);
+  cell("تاريخ الخدمة",data.serviceDate,75,1780,1050);
+  box(75,1980,1050,200,"#fffaf0");
+  text("الخدمة / الزيت",600,2025,990,32,muted,false);
   // Wrap long descriptions instead of clipping or silently omitting them.
   const words=data.service.split(/\s+/); const lines:string[]=[]; let line="";
-  ctx.font="700 30px Arial, sans-serif";
+  ctx.font="700 36px Arial, sans-serif";
   for(const word of words){const next=line?`${line} ${word}`:word;if(ctx.measureText(next).width>980&&line){lines.push(line);line=word;}else line=next;}
   if(line) lines.push(line);
   if(lines.length>3) throw new Error("وصف الخدمة طويل على البطاقة؛ يرجى اختصاره قبل المشاركة.");
-  lines.forEach((value,i)=>text(value,600,1505+i*29,990,30));
-  ctx.strokeStyle=gold; ctx.beginPath(); ctx.moveTo(115,1630); ctx.lineTo(1085,1630); ctx.stroke();
-  text(data.phone,600,1668,800,32);
-  text(data.website,600,1711,800,27,muted,false);
+  lines.forEach((value,i)=>text(value,600,2075+i*36,990,36));
+  ctx.strokeStyle=gold; ctx.beginPath(); ctx.moveTo(115,2230); ctx.lineTo(1085,2230); ctx.stroke();
+  text(data.phone,600,2275,800,38);
+  text(data.website,600,2325,800,32,muted,false);
   return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error("تعذر حفظ صورة البطاقة.")),"image/png"));
 }
 
@@ -120,6 +120,6 @@ export default function ServiceReminder({ data }: { data: ThermalReminderData })
       <p>فتح واتساب يجهز نص التذكير؛ الصورة تُرفق من جهازك. لا يتم الإرسال تلقائيًا.</p>
       {notice&&<p role="status">{notice}</p>}{error&&<p role="alert">{error}</p>}
     </div>
-    {image?<img src={image} alt={`بطاقة تذكير الخدمة — ${data.vehicle} — العداد القادم ${data.nextKm} — التاريخ القادم ${data.nextDate}`} width={1200} height={1800} style={{display:"block",width:"100%",maxWidth:600,height:"auto"}}/>:!error&&<p role="status">جاري تجهيز البطاقة…</p>}
+    {image?<img src={image} alt={`بطاقة تذكير الخدمة — ${data.vehicle} — العداد القادم ${data.nextKm} — التاريخ القادم ${data.nextDate}`} width={1200} height={2400} style={{display:"block",width:"100%",maxWidth:450,height:"auto"}}/>:!error&&<p role="status">جاري تجهيز البطاقة…</p>}
   </section>;
 }
