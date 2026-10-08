@@ -15,73 +15,47 @@ export function whatsappNumber(value: string): string | null {
   return /^[1-9]\d{7,14}$/.test(digits) ? digits : null;
 }
 
-// One canvas is both the preview and exported image, preserving Arabic and layout.
+let reminderFonts: Promise<void> | undefined;
+function loadReminderFonts() {
+  if (!reminderFonts) reminderFonts = Promise.all([
+    ["Card", "NotoNaskhArabic-Regular", "400"], ["Card", "NotoNaskhArabic-Bold", "700"],
+    ["Latin", "NotoSans-Regular", "400"], ["Latin", "NotoSans-Bold", "700"],
+  ].map(async ([family, file, weight]) => {
+    const font = new FontFace(family, `url(/brand/fonts/${file}.woff)`, {weight});
+    document.fonts.add(await font.load());
+  })).then(() => undefined).catch(() => {
+    reminderFonts = undefined;
+    throw new Error("تعذر تحميل خط البطاقة المعتمد. تحقق من الاتصال ثم حدّث الصفحة.");
+  });
+  return reminderFonts;
+}
+
 async function createCard(data: ThermalReminderData): Promise<Blob> {
-  await document.fonts.ready;
-  const logo = new Image();
-  logo.src = "/brand/ycd-logo-source.svg";
-  await logo.decode();
-  const canvas = document.createElement("canvas");
-  canvas.width = 1200; canvas.height = 2400; // Portrait, 5 cm wide × 10 cm high proportions (1:2).
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("تعذر تجهيز صورة البطاقة.");
-  const gold = "#b8860b", ink = "#252b35", muted = "#656565";
-  ctx.fillStyle = "white"; ctx.fillRect(0, 0, 1200, 2400);
-  function box(x: number, y: number, w: number, h: number, fill = "white", stroke = "#d9c797", r = 22) {
-    ctx!.beginPath(); ctx!.roundRect(x, y, w, h, r);
-    ctx!.fillStyle = fill; ctx!.fill(); ctx!.strokeStyle = stroke; ctx!.lineWidth = 2; ctx!.stroke();
-  }
-  box(22,22,1156,2356,"white",gold,48);
-  ctx.save(); ctx.beginPath(); ctx.roundRect(28,28,1144,2344,42); ctx.clip();
-  function ribbon(bottom: boolean) {
-    ctx!.save(); if (bottom) { ctx!.translate(1200,2400); ctx!.rotate(Math.PI); }
-    const gradient = ctx!.createLinearGradient(0,0,320,220);
-    gradient.addColorStop(0,"#986300"); gradient.addColorStop(.5,"#f6cf55"); gradient.addColorStop(1,"#b8860b");
-    ctx!.fillStyle=gradient; ctx!.beginPath(); ctx!.moveTo(0,0); ctx!.lineTo(380,0); ctx!.quadraticCurveTo(120,85,0,340); ctx!.closePath(); ctx!.fill();
-    ctx!.strokeStyle="white"; ctx!.lineWidth=55; ctx!.beginPath(); ctx!.moveTo(0,260); ctx!.quadraticCurveTo(115,90,320,0); ctx!.stroke();
-    ctx!.strokeStyle="#bfc0c3"; ctx!.lineWidth=29; ctx!.stroke(); ctx!.restore();
-  }
-  ribbon(false); ribbon(true); ctx.restore();
-  function text(value: string, x: number, y: number, width: number, size = 34, color = ink, bold = true) {
-    ctx!.textAlign="center"; ctx!.textBaseline="middle"; ctx!.direction="rtl";
-    let fontSize=size;
-    do {ctx!.font=`${bold?700:400} ${fontSize}px Arial, sans-serif`; if(ctx!.measureText(value).width<=width) break; fontSize--;} while(fontSize>20);
-    ctx!.fillStyle=color; ctx!.fillText(value,x,y,width);
-  }
-  ctx.drawImage(logo,390,55,420,242);
-  text("وجهتك الإبداعية لزيوت وخدمات السيارات",600,312,930,35,muted);
-  text("OIL & AUTO SERVICE",600,357,700,28,muted,false);
-  text("تذكير الخدمة القادمة",600,443,950,64,gold);
-  text("SERVICE REMINDER",600,504,900,30,muted,false);
-  text(`عزيزي العميل: ${data.customerName}`,600,565,1000,29,muted,false);
-  box(75,615,1050,535,"#fffaf0");
-  text("موعد خدمتك القادمة",600,678,960,40,gold);
-  text("العداد القادم · كم",600,765,960,34,muted,false);
-  text(data.nextKm,600,840,960,66);
-  ctx.strokeStyle="#d9c797"; ctx.beginPath(); ctx.moveTo(140,910); ctx.lineTo(1060,910); ctx.stroke();
-  text("التاريخ القادم",600,975,960,34,muted,false);
-  text(data.nextDate,600,1053,960,60);
-  function cell(label: string, value: string, x: number, y: number, width: number) {
-    box(x,y,width,175); text(label,x+width/2,y+46,width-32,32,muted,false);
-    text(value,x+width/2,y+115,width-36,44);
-  }
-  cell("السيارة / الموديل",data.vehicle,75,1180,1050);
-  cell("رقم اللوحة",data.plate,75,1380,1050);
-  cell("العداد الحالي · كم",data.odometer,75,1580,1050);
-  cell("تاريخ الخدمة",data.serviceDate,75,1780,1050);
-  box(75,1980,1050,200,"#fffaf0");
-  text("الخدمة / الزيت",600,2025,990,32,muted,false);
-  // Wrap long descriptions instead of clipping or silently omitting them.
-  const words=data.service.split(/\s+/); const lines:string[]=[]; let line="";
-  ctx.font="700 36px Arial, sans-serif";
-  for(const word of words){const next=line?`${line} ${word}`:word;if(ctx.measureText(next).width>980&&line){lines.push(line);line=word;}else line=next;}
-  if(line) lines.push(line);
-  if(lines.length>3) throw new Error("وصف الخدمة طويل على البطاقة؛ يرجى اختصاره قبل المشاركة.");
-  lines.forEach((value,i)=>text(value,600,2075+i*36,990,36));
-  ctx.strokeStyle=gold; ctx.beginPath(); ctx.moveTo(115,2230); ctx.lineTo(1085,2230); ctx.stroke();
-  text(data.phone,600,2275,800,38);
-  text(data.website,600,2325,800,32,muted,false);
-  return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error("تعذر حفظ صورة البطاقة.")),"image/png"));
+  await loadReminderFonts();
+  const logo = new Image(); logo.src = "/brand/ycd-logo-source.svg"; await logo.decode();
+  const canvas = document.createElement("canvas"); canvas.width=1200; canvas.height=2400;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("تعذر تجهيز صورة البطاقة.");
+  const c: CanvasRenderingContext2D = context;
+const fontPx=12/(50*72/25.4)*1200;
+const gold='#b8860b',ink='#252b35';
+c.fillStyle='white';c.fillRect(0,0,1200,2400);
+function box(x:number,y:number,w:number,h:number,fill='white',r=20){c.beginPath();c.roundRect(x,y,w,h,r);c.fillStyle=fill;c.fill();c.strokeStyle='#d9c797';c.lineWidth=2;c.stroke();}
+box(22,22,1156,2356,'white',48);
+c.save();c.beginPath();c.roundRect(28,28,1144,2344,42);c.clip();
+for(const bottom of [false,true]){c.save();if(bottom){c.translate(1200,2400);c.rotate(Math.PI);}const g=c.createLinearGradient(0,0,260,180);g.addColorStop(0,'#986300');g.addColorStop(.5,'#f6cf55');g.addColorStop(1,gold);c.fillStyle=g;c.beginPath();c.moveTo(0,0);c.lineTo(300,0);c.quadraticCurveTo(95,65,0,270);c.fill();c.strokeStyle='white';c.lineWidth=42;c.beginPath();c.moveTo(0,205);c.quadraticCurveTo(90,70,250,0);c.stroke();c.strokeStyle='#bfc0c3';c.lineWidth=22;c.stroke();c.restore();}c.restore();
+c.drawImage(logo,450,35,300,173);
+function font(bold:boolean,value=""){c.font=`${bold?700:400} ${fontPx}px ${/[\u0600-\u06ff]/.test(value)?"Card":"Latin"}`;c.direction='rtl';c.textAlign='center';c.textBaseline='middle';}
+function wrap(s:string,bold:boolean){font(bold,s);const a:string[]=[];let line='';for(const word of s.split(' ')){const next=line?line+' '+word:word;if(c.measureText(next).width>1080&&line){a.push(line);line=word;}else line=next;}if(line)a.push(line);for(const l of a)if(c.measureText(l).width>1080)throw Error('يوجد نص طويل لا يتسع للبطاقة بحجم خط 12. يرجى اختصاره قبل المشاركة.');return a;}
+function text(s:string,y:number,bold=true,color=ink){font(bold,s);c.fillStyle=color;c.fillText(s,600,y);}
+text('تذكير الخدمة القادمة',267,true,gold);
+let y=335;
+const rows=[['العداد القادم · كم',data.nextKm],['التاريخ القادم',data.nextDate],['السيارة / الموديل',data.vehicle.replace(/ · /g,' ')],['رقم اللوحة',data.plate],['العداد الحالي · كم',data.odometer],['تاريخ الخدمة',data.serviceDate],['الخدمة / الزيت',data.service]];
+for(let i=0;i<rows.length;i++){const [label,value]=rows[i];const labels=wrap(label,false),values=wrap(value,true);const h=(labels.length+values.length)*110+40;box(50,y,1100,h,i<2||i===6?'#fffaf0':'white');let baseline=y+75;for(const l of labels){text(l,baseline,false,'#656565');baseline+=110;}for(const l of values){text(l,baseline,true);baseline+=110;}y+=h+8;}
+
+if(y>2240)throw Error('البيانات طويلة على البطاقة بحجم خط 12. يرجى اختصار وصف الخدمة أو السيارة قبل المشاركة.');
+c.strokeStyle=gold;c.beginPath();c.moveTo(150,2250);c.lineTo(1050,2250);c.stroke();text(data.phone,2315,true);
+return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error("تعذر حفظ صورة البطاقة.")),"image/png"));
 }
 
 export default function ServiceReminder({ data }: { data: ThermalReminderData }) {
