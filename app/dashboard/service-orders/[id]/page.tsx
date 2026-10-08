@@ -43,11 +43,11 @@ export default async function ServiceOrderPage({
         <div>
           <a href="/dashboard/service-orders" className="backLink">← أوامر الخدمة</a>
           <h1>{order.orderNo}</h1>
-          <p><a className="orderLink" href={`/dashboard/customers/${order.customerId}`}>{order.customer.name}</a> · {order.vehicle.plate} · العداد {order.odometer?.toLocaleString("ar-SA") ?? "—"}</p>
+          <p><a className="orderLink" href={`/dashboard/customers/${order.customerId}`}>{order.customer.name}</a> · {order.vehicle.plate} · العداد {order.odometer?.toLocaleString("ar-SA-u-nu-latn") ?? "—"}</p>
         </div>
         <div className="actionStack">
           <span className="statusBadge">{order.status}</span>
-          {order.status === "COMPLETED" && <a className="secondaryLink" href={`/dashboard/service-orders/${order.id}/reminder`}>طباعة تذكير الخدمة</a>}
+          {order.status === "COMPLETED" && <a className="secondaryLink" href={`/dashboard/service-orders/${order.id}/reminder`}>تذكير الخدمة عبر واتساب</a>}
         </div>
       </div>
 
@@ -76,7 +76,7 @@ export default async function ServiceOrderPage({
                   return (
                     <tr key={item.id}>
                       <td>{item.descriptionAr}</td>
-                      <td>{Number(item.quantity).toLocaleString("ar-SA")}</td>
+                      <td>{Number(item.quantity).toLocaleString("ar-SA-u-nu-latn")}</td>
                       <td>{Number(item.unitPrice).toFixed(2)}</td>
                       <td>{Number(item.discount).toFixed(2)}</td>
                       <td>{lineTotal.toFixed(2)} ر.س</td>

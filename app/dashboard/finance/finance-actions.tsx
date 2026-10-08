@@ -289,7 +289,7 @@ export default function FinanceActions({
               <div key={item.id} className="paymentCard">
                 <div>
                   <b>{item.reconciliationNo} — {item.accountName}</b>
-                  <span>{new Date(item.statementDate).toLocaleDateString("ar-SA")} · النظام {item.systemBalance.toFixed(2)} · البنك {item.statementBalance.toFixed(2)} ر.س</span>
+                  <span>{new Date(item.statementDate).toLocaleDateString("ar-SA-u-nu-latn")} · النظام {item.systemBalance.toFixed(2)} · البنك {item.statementBalance.toFixed(2)} ر.س</span>
                   <span className={Math.abs(item.difference) > 0.01 ? "moneyOut" : "moneyIn"}>الفرق: {item.difference.toFixed(2)} ر.س · {reconciliationStatus[item.status] ?? item.status}</span>
                 </div>
                 <div className="actionStack">

@@ -1,3 +1,6 @@
+import { receiptAccount } from "@/services/cash-drawer";
+import { nextDocumentNumber } from "@/lib/document-number";
+import { captureMedad } from "@/services/medad/outbox";
 import { Prisma, StockMovementType } from "@prisma/client";
 import { earnLoyalty } from "@/services/loyalty";
 import { db } from "@/lib/db";
@@ -45,6 +48,8 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
     if (order.status === "CANCELLED") throw new Error("SERVICE_ORDER_CANCELLED");
     if (order.items.length === 0) throw new Error("SERVICE_ORDER_EMPTY");
     if (!order.shiftId) throw new Error("SHIFT_REQUIRED");
+    const activeShift = await tx.shift.findFirst({ where: { id: order.shiftId, branchId: input.branchId, closedAt: null } });
+    if (!activeShift) throw new Error("OPEN_SHIFT_REQUIRED");
 
     // Sum repeated product lines before checking stock; each individual line can fit
     // while their combined quantity exceeds the available stock.
@@ -107,18 +112,7 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
 
     const financialAccount = input.paymentMethod === "CREDIT" || total.isZero()
       ? null
-      : await tx.financialAccount.findFirst({
-          where: {
-            branchId: input.branchId,
-            active: true,
-            type: input.paymentMethod === "CASH"
-              ? "CASH"
-              : input.paymentMethod === "CARD"
-                ? "POS_CLEARING"
-                : "BANK",
-          },
-          orderBy: { createdAt: "asc" },
-        });
+      : await receiptAccount(tx, input.branchId, input.paymentMethod === "CASH" ? "CASH" : input.paymentMethod === "CARD" ? "POS_CLEARING" : "BANK");
     if (input.paymentMethod !== "CREDIT" && total.gt(0) && !financialAccount) {
       throw new Error("FINANCIAL_ACCOUNT_REQUIRED");
     }
@@ -137,10 +131,9 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
       });
     }
 
-    const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
     const invoice = await tx.invoice.create({
       data: {
-        invoiceNo: `INV-${date}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+        invoiceNo: await nextDocumentNumber(tx),
         serviceOrderId: order.id,
         customerId: order.customerId,
         subtotal,
@@ -185,7 +178,7 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
     const grantsWashCoupon = order.channel === "OIL" && (washPolicy?.issueMode === "ALL" || order.items.some((item) => item.product?.grantsWashCoupon));
     let couponSerial: string | null = null;
     if (grantsWashCoupon) {
-      couponSerial = `WASH-${date}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+      couponSerial = await nextDocumentNumber(tx);
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + companyConfig.washCouponValidityDays);
       await tx.coupon.create({
@@ -236,6 +229,9 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
     });
 
     await earnLoyalty(tx, invoice.id);
+    await captureMedad(tx, order.branchId, "INVOICE", invoice.id, invoice.invoiceNo);
+    const receipts = await tx.payment.findMany({ where: { invoiceId: invoice.id } });
+    for (const receipt of receipts) await captureMedad(tx, order.branchId, "PAYMENT", receipt.id, `${invoice.invoiceNo} / ${receipt.id}`);
     return tx.invoice.findUniqueOrThrow({
       where: { id: invoice.id },
       include: { coupons: true, payments: true },

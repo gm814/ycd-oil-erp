@@ -1,3 +1,4 @@
+import { nextDocumentNumber } from "@/lib/document-number";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -27,8 +28,8 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "INVALID_INPUT" }, { status: 400 });
 
   try {
-    const requestNo = `EXP-${parsed.data.idempotencyReference}`;
-    const existing = await db.expenseRequest.findUnique({ where: { requestNo } });
+    const idempotencyKey = `EXP-${parsed.data.idempotencyReference}`;
+    const existing = await db.expenseRequest.findUnique({ where: { idempotencyKey } });
     if (existing) {
       if (
         existing.branchId !== session.branchId ||
@@ -51,7 +52,8 @@ export async function POST(request: Request) {
     const expenseRequest = await db.$transaction(async (tx) => {
       const created = await tx.expenseRequest.create({
         data: {
-          requestNo,
+          requestNo: await nextDocumentNumber(tx),
+          idempotencyKey,
           branchId: session.branchId!,
           accountId: account.id,
           category: parsed.data.category,

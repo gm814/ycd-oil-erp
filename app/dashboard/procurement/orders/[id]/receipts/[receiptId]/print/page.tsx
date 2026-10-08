@@ -32,7 +32,7 @@ export default async function GoodsReceiptPrintPage({ params }: { params: Promis
           <div><span>أمر الشراء</span><b>{receipt.purchaseOrder.orderNo}</b></div>
           <div><span>المورد</span><b>{receipt.purchaseOrder.supplier.nameAr}</b></div>
           <div><span>مرجع تسليم المورد</span><b>{receipt.supplierDeliveryRef || "—"}</b></div>
-          <div><span>التاريخ</span><b>{receipt.createdAt.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</b></div>
+          <div><span>التاريخ</span><b>{receipt.createdAt.toLocaleString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</b></div>
         </section>
         <div className="tableWrap ycdDocTable"><table>
           <thead><tr><th>م</th><th>رقم الصنف</th><th>الصنف</th><th>الكمية المستلمة</th><th>الوحدة</th><th>الكمية بأمر الشراء</th></tr></thead>

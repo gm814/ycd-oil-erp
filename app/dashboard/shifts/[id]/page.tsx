@@ -1,3 +1,4 @@
+import { drawerSummary } from "@/services/cash-drawer";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { companyConfig } from "@/lib/config";
@@ -6,7 +7,7 @@ import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import PrintButton from "./print-button";
 
 function money(value: number) {
-  return value.toLocaleString("ar-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
+  return value.toLocaleString("ar-SA-u-nu-latn", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
 }
 
 const paymentLabel: Record<string, string> = {
@@ -61,10 +62,11 @@ export default async function ShiftClosingReport({ params }: { params: Promise<{
     refunds.filter((item) => item.refundMethod === method)
       .reduce((sum, item) => sum + Number(item.refundAmount), 0);
 
+  const drawer = await drawerSummary(db, shift);
   const channels = [
     {
       label: "النقد",
-      expected: shift.expectedCash === null ? Number(shift.openingCash) + received("CASH") - refunded("CASH") : Number(shift.expectedCash),
+      expected: shift.expectedCash === null ? (drawer ? Number(drawer.expectedCash) : Number(shift.openingCash) + received("CASH") - refunded("CASH")) : Number(shift.expectedCash),
       actual: shift.countedCash === null ? null : Number(shift.countedCash),
       variance: shift.cashVariance === null ? null : Number(shift.cashVariance),
     },
@@ -104,8 +106,8 @@ export default async function ShiftClosingReport({ params }: { params: Promise<{
           <div className="invoiceTitle">
             <span>تقرير إقفال وردية</span>
             <h1>{shift.id.slice(0, 8).toUpperCase()}</h1>
-            <p>الفتح: {shift.openedAt.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</p>
-            <p>الإقفال: {shift.closedAt?.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" }) ?? "الوردية ما زالت مفتوحة"}</p>
+            <p>الفتح: {shift.openedAt.toLocaleString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</p>
+            <p>الإقفال: {shift.closedAt?.toLocaleString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" }) ?? "الوردية ما زالت مفتوحة"}</p>
           </div>
         </header>
 
@@ -113,7 +115,7 @@ export default async function ShiftClosingReport({ params }: { params: Promise<{
           <article><span>رصيد بداية النقد</span><b>{money(Number(shift.openingCash))}</b></article>
           <article><span>التحصيلات</span><b>{money(totalReceipts)}</b></article>
           <article><span>المبالغ المستردة</span><b>{money(totalRefunds)}</b></article>
-          <article><span>أوامر الخدمة المكتملة</span><b>{completedOrders.toLocaleString("ar-SA")}</b></article>
+          <article><span>أوامر الخدمة المكتملة</span><b>{completedOrders.toLocaleString("ar-SA-u-nu-latn")}</b></article>
         </section>
 
         <article className="panel inventoryPanel">
@@ -143,7 +145,7 @@ export default async function ShiftClosingReport({ params }: { params: Promise<{
               <tbody>
                 {shift.payments.map((payment) => (
                   <tr key={payment.id}>
-                    <td>{payment.paidAt.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</td>
+                    <td>{payment.paidAt.toLocaleString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</td>
                     <td>{payment.invoice.invoiceNo}</td>
                     <td>{paymentLabel[payment.method] ?? payment.method}</td>
                     <td>{payment.reference || "—"}</td>
@@ -165,7 +167,7 @@ export default async function ShiftClosingReport({ params }: { params: Promise<{
                 <tbody>
                   {refunds.map((item) => (
                     <tr key={item.returnNo}>
-                      <td>{item.createdAt.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</td>
+                      <td>{item.createdAt.toLocaleString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</td>
                       <td>{item.returnNo}</td>
                       <td>{item.refundMethod ? paymentLabel[item.refundMethod] : "—"}</td>
                       <td>{item.refundReference || "—"}</td>
@@ -178,6 +180,7 @@ export default async function ShiftClosingReport({ params }: { params: Promise<{
           </article>
         )}
 
+        {drawer && <article className="panel inventoryPanel"><h2>حركة درج الكاشير المعتمدة في المطابقة</h2><p>رصيد البداية + الوارد − الصادر. الحركات السابقة للفصل تبقى بمراجعها الأصلية.</p><table><thead><tr><th>البيان</th><th>المرجع</th><th>المبلغ</th></tr></thead><tbody>{drawer.movements.map(row => <tr key={row.id}><td>{row.descriptionAr}</td><td><a href={`/dashboard/finance/transactions/${row.id}/voucher`}>{row.reference || row.documentNo}</a></td><td>{money(Number(row.amount))}</td></tr>)}</tbody></table></article>}
         {shift.varianceResolution && (
           <section className="invoicePolicy">
             <b>حالة اعتماد فروقات الوردية</b>

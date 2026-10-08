@@ -1,3 +1,4 @@
+import { nextDocumentNumber } from "@/lib/document-number";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -28,8 +29,8 @@ export async function POST(request: Request) {
   const products = await db.product.count({ where: { id: { in: productIds }, active: true } });
   if (products !== productIds.length) return NextResponse.json({ error: "PRODUCT_NOT_FOUND" }, { status: 404 });
 
-  const requestNo = `PR-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
   const purchaseRequest = await db.$transaction(async (tx) => {
+    const requestNo = await nextDocumentNumber(tx);
     const created = await tx.purchaseRequest.create({
       data: {
         requestNo,

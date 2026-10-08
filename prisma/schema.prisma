@@ -232,6 +232,9 @@ model Organization {
 }
 
 model Branch {
+  medadConnection MedadConnection?
+  medadMappings MedadMapping[]
+  medadOutbox MedadOutbox[]
   loyaltyProgram LoyaltyProgram?
   loyaltyEntries LoyaltyEntry[]
   marketingConsents MarketingConsent[]
@@ -414,6 +417,8 @@ model Product {
 }
 
 model Shift {
+  drawerAccountId String?
+  drawerAccount FinancialAccount? @relation(fields: [drawerAccountId], references: [id], onDelete: Restrict)
   id            String         @id @default(cuid())
   branchId      String
   branch        Branch         @relation(fields: [branchId], references: [id])
@@ -490,6 +495,8 @@ model StockMovement {
 }
 
 model Invoice {
+  buyerCompanyName String?
+  buyerVatNumber String?
   loyaltyEarning LoyaltyEntry? @relation("LoyaltyEarning")
   id             String        @id @default(cuid())
   invoiceNo      String        @unique
@@ -754,6 +761,8 @@ model SupplierInvoice {
 }
 
 model FinancialAccount {
+  cashRole String?
+  drawerShifts Shift[]
   id           String                 @id @default(cuid())
   branchId     String
   branch       Branch                 @relation(fields: [branchId], references: [id])
@@ -772,6 +781,7 @@ model FinancialAccount {
   createdAt    DateTime               @default(now())
   updatedAt    DateTime               @updatedAt
   @@unique([branchId, code])
+  @@unique([branchId, cashRole])
   @@index([branchId, type, active])
 }
 
@@ -908,6 +918,7 @@ model GroupFunding {
 }
 
 model ExpenseRequest {
+  idempotencyKey String? @unique
   id             String               @id @default(cuid())
   requestNo      String               @unique
   branchId       String
@@ -962,6 +973,7 @@ model BankReconciliation {
 }
 
 model FinancialTransaction {
+  documentNo String? @unique @default(dbgenerated("ycd_document_number()"))
   id                String                   @id @default(cuid())
   branchId          String
   branch            Branch                   @relation(fields: [branchId], references: [id])
@@ -1380,4 +1392,49 @@ model MarketingCampaign {
   channel        String
   createdBy      String
   createdAt      DateTime @default(now())
+}
+
+model MedadConnection {
+  id String @id @default(cuid())
+  branchId String @unique
+  branch Branch @relation(fields: [branchId], references: [id])
+  captureEnabled Boolean @default(false)
+  subscriptionId String?
+  medadBranch Int?
+  fiscalYear String @default("")
+  warehouseNo String?
+  costCenterNo String?
+  salesmanId String?
+  invoiceAuthority String @default("UNCONFIRMED")
+  revision Int @default(1)
+  updatedAt DateTime @updatedAt
+}
+model MedadMapping {
+  id String @id @default(cuid())
+  branchId String
+  branch Branch @relation(fields: [branchId], references: [id])
+  kind String
+  localId String
+  remoteId String
+  note String
+  updatedAt DateTime @updatedAt
+  @@unique([branchId, kind, localId])
+}
+model MedadOutbox {
+  id String @id @default(cuid())
+  branchId String
+  branch Branch @relation(fields: [branchId], references: [id])
+  kind String
+  sourceId String
+  sourceNo String
+  status String @default("CAPTURED")
+  revision Int?
+  sourceHash String?
+  payload Json?
+  issues Json?
+  capturedAt DateTime @default(now())
+  preparedAt DateTime?
+  updatedAt DateTime @updatedAt
+  @@unique([branchId, kind, sourceId])
+  @@index([branchId, status, capturedAt])
 }

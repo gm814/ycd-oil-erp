@@ -63,8 +63,8 @@ export default async function InventoryPage() {
                     <td>{product.nameAr}</td>
                     <td>{categoryLabels[product.category]}</td>
                     <td>{product.unit}</td>
-                    <td>{stock.toLocaleString("ar-SA")}</td>
-                    <td>{Number(product.minStock).toLocaleString("ar-SA")}</td>
+                    <td>{stock.toLocaleString("ar-SA-u-nu-latn")}</td>
+                    <td>{Number(product.minStock).toLocaleString("ar-SA-u-nu-latn")}</td>
                     <td><span className={low ? "alertBadge" : "okBadge"}>{low ? "يحتاج متابعة" : "متوفر"}</span></td>
                   </tr>
                 );

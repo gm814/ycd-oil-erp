@@ -85,7 +85,7 @@ export default async function HrPage() {
               <tbody>
                 {attendance.map((item) => (
                   <tr key={item.id}>
-                    <td>{item.workDate.toLocaleDateString("ar-SA")}</td><td>{item.employee.nameAr}</td>
+                    <td>{item.workDate.toLocaleDateString("ar-SA-u-nu-latn")}</td><td>{item.employee.nameAr}</td>
                     <td>{attendanceStatus[item.status] ?? item.status}</td><td>{item.lateMin} دقيقة</td><td>{item.overtimeMin} دقيقة</td>
                   </tr>
                 ))}

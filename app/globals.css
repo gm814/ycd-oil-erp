@@ -136,3 +136,108 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--orange);outline-off
 @media(prefers-reduced-motion:reduce){button{transition:none}.navigationProgress{animation:none}}
 .offlinePilotLink{display:inline-block;margin:10px;padding:10px 14px;border:1px solid var(--orange);border-radius:10px;background:#fff8e8;color:#754300;font-weight:700}
 @media print{.offlinePilotLink,.navigationProgress{display:none}}
+
+/* Keep the invoice's desktop columns on paper; screen breakpoints must not stack them. */
+@media print {
+  .workspace.invoiceWorkspace { width:100%; max-width:none; margin:0; padding:0; }
+  .invoiceDocument { padding:3mm; font-size:10pt; line-height:1.3; border-top:2px solid #111; }
+  .invoiceHeader { display:flex; flex-direction:row; gap:5mm; padding-bottom:2mm; margin:0; }
+  .invoiceHeader > div { flex:1; min-width:0; }
+  .invoiceTitle { text-align:left; }
+  .invoiceTitle h1 { font-size:14pt; overflow-wrap:anywhere; margin:2mm 0; }
+  .invoiceBrandLogo { width:36mm; max-width:100%; margin-bottom:1mm; }
+  .invoiceHeader p,.invoiceParties p { margin:1mm 0; }
+  .invoiceLegal { grid-template-columns:repeat(4,1fr); gap:2mm; margin:2mm 0; }
+  .invoiceLegal div { padding:2mm; }
+  .invoiceLegal span { font-size:8pt; margin-bottom:1mm; }
+  .invoiceQrBlock { grid-template-columns:28mm 1fr; gap:3mm; margin:2mm 0; padding:2mm; }
+  .invoiceQr { width:28mm; height:28mm; padding:1mm; }
+  .invoiceQrBlock p,.invoiceQrBlock small { display:none; }
+  .invoiceQrBlock h3 { font-size:10pt; margin:0; }
+  .invoiceParties { grid-template-columns:1fr 1fr; gap:3mm; margin:2mm 0; }
+  .invoiceParties > div { padding:2mm; }
+  .invoiceParties h3,.paymentSummary h3 { font-size:10pt; margin:0 0 1mm; }
+  .invoiceTable table { width:100%; min-width:0; font-size:9pt; }
+  .invoiceTable th,.invoiceTable td { padding:2mm; }
+  .invoiceBottom { grid-template-columns:1fr 72mm; gap:4mm; margin-top:3mm; }
+  .paymentSummary > div { padding:1.5mm 0; }
+  .couponLine { padding:2mm; overflow-wrap:anywhere; }
+  .invoiceTotals > div { padding:1.3mm 2mm; }
+  .invoiceTotals .grandTotal { font-size:10pt; color:#000; background:#eee; }
+  .invoiceBankDetails { grid-template-columns:1fr 1fr; padding:2mm; margin:2mm 0; }
+  .invoicePolicy p { margin:1mm 0; }
+  .invoiceFooter { margin-top:2mm; padding-top:2mm; }
+  .invoiceFooter p { margin:0; }
+  .invoiceHeader,.invoiceLegal,.invoiceQrBlock,.invoiceParties,.invoiceBottom,
+  .invoicePolicy,.invoiceFooter,.invoiceTable tr { break-inside:avoid; }
+  .invoiceTable thead { display:table-header-group; }
+}
+
+.invoicePrintControls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.invoicePrintControls select{padding:8px;border:1px solid #ccc;border-radius:8px;background:#fff}
+.invoicePrintControls small{flex-basis:100%}
+@media print {
+  @page epsonReceipt { size:80mm 297mm; margin:3mm; }
+  html[data-invoice-print="epson80"] .invoiceWorkspace { page:epsonReceipt; width:74mm; }
+  html[data-invoice-print="epson80"] .invoiceDocument { padding:0; font-size:8pt; line-height:1.25; }
+  html[data-invoice-print="epson80"] .invoiceHeader { flex-direction:column; gap:2mm; text-align:center; }
+  html[data-invoice-print="epson80"] .invoiceHeader > div { width:100%; }
+  html[data-invoice-print="epson80"] .invoiceTitle { text-align:center; }
+  html[data-invoice-print="epson80"] .invoiceTitle h1 { font-size:10pt; }
+  html[data-invoice-print="epson80"] .invoiceBrandLogo { width:27mm; margin:0 auto 2mm; }
+  html[data-invoice-print="epson80"] .invoiceLegal { grid-template-columns:1fr 1fr; gap:1mm; }
+  html[data-invoice-print="epson80"] .invoiceLegal div { padding:1mm; overflow-wrap:anywhere; }
+  html[data-invoice-print="epson80"] .invoiceParties,
+  html[data-invoice-print="epson80"] .invoiceBottom,
+  html[data-invoice-print="epson80"] .invoiceBankDetails { grid-template-columns:1fr; gap:2mm; }
+  html[data-invoice-print="epson80"] .invoiceQrBlock { grid-template-columns:28mm 1fr; padding:1mm; }
+  html[data-invoice-print="epson80"] .invoiceTable table { table-layout:fixed; font-size:7pt; }
+  html[data-invoice-print="epson80"] .invoiceTable th,
+  html[data-invoice-print="epson80"] .invoiceTable td { padding:1mm .5mm; white-space:normal; overflow-wrap:anywhere; }
+  html[data-invoice-print="epson80"] .invoiceTable th:first-child { width:5%; }
+  html[data-invoice-print="epson80"] .invoiceTable th:nth-child(2) { width:31%; }
+  html[data-invoice-print="epson80"] .invoiceTable th:nth-child(3) { width:10%; }
+  html[data-invoice-print="epson80"] .invoiceBottom { break-inside:auto; }
+  html[data-invoice-print="epson80"] .invoiceTotals { break-inside:avoid; }
+  html[data-invoice-print="epson80"] .invoiceTotals .grandTotal { font-size:9pt; }
+  html[data-invoice-print="epson80"] .invoiceTotals > div { padding:1mm; }
+}
+
+/* Approved bilingual invoice identity. */
+.invoiceBilingualHeader{display:grid;grid-template-columns:1fr 125px 1fr;gap:16px;align-items:center;border-bottom:1px solid #ddd;padding-bottom:12px;direction:rtl}
+.invoiceBilingualHeader .invoiceBrandLogo{width:100%;margin:0}
+.invoiceBilingualHeader p{margin:5px 0;font-size:12px}
+.invoiceNameEn{text-align:left}.invoiceNameAr{text-align:right}
+.invoiceHeading{text-align:center;margin:12px 0}.invoiceHeading .invoiceTitle{text-align:center}
+.invoiceLegal{grid-template-columns:1fr 1fr}
+.invoiceClosing{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-top:15px;break-inside:avoid}
+.invoiceClosing .invoicePolicy{flex:1}.invoiceClosing .invoiceQr{flex:none;width:100px;height:100px}
+.invoiceFooter p{margin:4px 0}
+@media(max-width:600px){.invoiceBilingualHeader{grid-template-columns:1fr 65px 1fr;gap:8px;font-size:10px}.invoiceBilingualHeader p{font-size:9px}.invoiceFooter{font-size:11px}}
+@media print{
+ .invoiceDocument{min-height:275mm;display:flex;flex-direction:column}
+ .invoiceBilingualHeader{grid-template-columns:1fr 32mm 1fr;gap:5mm;font-size:10pt;break-inside:avoid;padding-bottom:2mm}
+ .invoiceBilingualHeader p{font-size:8pt;margin:1mm 0}
+ .invoiceBilingualHeader .invoiceBrandLogo{width:32mm}
+ .invoiceHeading{margin:2mm 0}.invoiceHeading .invoiceTitle h1{margin:1mm 0}
+ .invoiceLegal{grid-template-columns:1fr 1fr;margin:1mm 0}
+ .invoiceClosing{margin-top:auto;padding-top:3mm;gap:4mm}
+ .invoiceClosing .invoiceQr{width:28mm;height:28mm}
+ .invoiceFooter{font-size:8pt;margin-top:2mm}
+ html[data-invoice-print="epson80"] .invoiceDocument{min-height:0;display:block}
+ html[data-invoice-print="epson80"] .invoiceBilingualHeader{grid-template-columns:1fr 19mm 1fr;gap:1mm;font-size:6pt}
+ html[data-invoice-print="epson80"] .invoiceBilingualHeader p{font-size:5.5pt;overflow-wrap:anywhere}
+ html[data-invoice-print="epson80"] .invoiceBilingualHeader .invoiceBrandLogo{width:19mm}
+ html[data-invoice-print="epson80"] .invoiceFooter{font-size:6pt}
+}
+
+.invoiceFooter{border-top:2px solid #F7A81D}
+.invoiceAddresses{display:grid;grid-template-columns:1fr 1fr;gap:12px;direction:rtl;text-align:right}
+.invoiceAddresses [lang="en"]{text-align:left}
+@media print{.invoiceFooter{border-top:0.6mm solid #F7A81D;print-color-adjust:exact;-webkit-print-color-adjust:exact}.invoiceAddresses{font-size:7pt;gap:3mm}}
+
+/* Readable gold section links in workspace headers. */
+.workspaceTop .actionStack a.secondaryButton{display:flex;align-items:center;justify-content:center;min-height:46px;padding:12px 18px;border:1px solid #d58b10;border-radius:12px;background:var(--gold);color:var(--black);font-size:14px;font-weight:800;line-height:1.6;text-align:center;white-space:normal;overflow-wrap:anywhere;text-decoration:none}
+.workspaceTop .actionStack a.secondaryButton:hover{background:#f5b83e}
+.workspaceTop .actionStack a.secondaryButton:focus-visible{outline:3px solid #111;outline-offset:3px}
+@media(max-width:900px){.workspaceTop .actionStack{width:100%;min-width:0}.workspaceTop .actionStack a.secondaryButton{width:100%}}

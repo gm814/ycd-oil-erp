@@ -1,3 +1,4 @@
+import { drawerSummary } from "@/services/cash-drawer";
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -61,7 +62,9 @@ export async function POST(request: Request) {
           .filter((refund) => refund.refundMethod === method)
           .reduce((sum, refund) => sum.plus(refund.refundAmount), new Prisma.Decimal(0));
 
-      const expectedCash = open.openingCash.plus(receiptTotal("CASH")).minus(refundTotal("CASH"));
+      const closedAt = new Date();
+      const drawer = await drawerSummary(tx, open, closedAt);
+      const expectedCash = drawer?.expectedCash ?? open.openingCash.plus(receiptTotal("CASH")).minus(refundTotal("CASH"));
       const expectedCard = receiptTotal("CARD").minus(refundTotal("CARD"));
       const expectedTransfer = receiptTotal("TRANSFER").minus(refundTotal("TRANSFER"));
 
@@ -76,7 +79,7 @@ export async function POST(request: Request) {
       const closed = await tx.shift.update({
         where: { id: open.id },
         data: {
-          closedAt: new Date(),
+          closedAt,
           closedBy: session.userId,
           expectedCash,
           countedCash,
@@ -142,6 +145,8 @@ export async function POST(request: Request) {
           entityType: "Shift",
           entityId: closed.id,
           afterJson: {
+            drawerAccountId: open.drawerAccountId,
+            drawerMovementIds: drawer?.movements.map(row => row.id) ?? [],
             expectedCash: expectedCash.toString(),
             countedCash: countedCash.toString(),
             cashVariance: cashVariance.toString(),

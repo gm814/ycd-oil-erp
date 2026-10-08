@@ -22,6 +22,15 @@ function sameOriginMutationAllowed(request: NextRequest) {
 }
 
 export async function middleware(request: NextRequest) {
+  // Signed, read-only coupon cards are intended for the customer without a staff login.
+  if (/^\/coupon\/[^/]+\/?$/.test(request.nextUrl.pathname)) {
+    const response = NextResponse.next();
+    response.headers.set("cache-control", "private, no-store, max-age=0");
+    response.headers.set("referrer-policy", "no-referrer");
+    response.headers.set("x-robots-tag", "noindex, nofollow, noarchive");
+    return response;
+  }
+
   if (!sameOriginMutationAllowed(request)) {
     return NextResponse.json({ error: "CROSS_SITE_REQUEST_REJECTED" }, {
       status: 403,
@@ -66,5 +75,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/api/secure/:path*"],
+  matcher: ["/coupon/:path*", "/dashboard/:path*", "/api/secure/:path*"],
 };

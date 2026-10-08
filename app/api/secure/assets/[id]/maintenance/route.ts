@@ -1,3 +1,4 @@
+import { nextDocumentNumber } from "@/lib/document-number";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -25,9 +26,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!asset || asset.branchId !== session.branchId) return NextResponse.json({ error: "ASSET_NOT_FOUND" }, { status: 404 });
   if (asset.status === "DISPOSED") return NextResponse.json({ error: "ASSET_DISPOSED" }, { status: 409 });
 
-  const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
-  const workOrderNo = `MWO-${date}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
   const order = await db.$transaction(async (tx) => {
+    const workOrderNo = await nextDocumentNumber(tx);
     const created = await tx.maintenanceWorkOrder.create({
       data: {
         workOrderNo,

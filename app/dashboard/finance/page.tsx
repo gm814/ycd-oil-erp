@@ -97,6 +97,7 @@ export default async function FinancePage() {
           <p>إدارة الصندوق والبنوك، المصروفات التشغيلية، التحويلات، وتسويات مدى مع رقابة كاملة على الحركة.</p>
         </div>
         <div className="actionStack noPrint">
+          {canManage && <a className="secondaryButton" href="/dashboard/finance/cash-policy">درج الكاشير وصندوق الإدارة</a>}
           <a className="secondaryButton" href="/dashboard/finance/group">شركات المجموعة والتمويل</a>
           <a className="secondaryButton" href="/dashboard/finance/preopening">تكاليف وأصول ما قبل التشغيل</a>
           <a className="secondaryButton" href="/dashboard/finance/closes">الإقفال اليومي والشهري</a>
@@ -195,7 +196,7 @@ export default async function FinancePage() {
             <tbody>
               {transactions.map((transaction) => (
                 <tr key={transaction.id}>
-                  <td>{transaction.createdAt.toLocaleString("ar-SA")}</td>
+                  <td>{transaction.createdAt.toLocaleString("ar-SA-u-nu-latn")}</td>
                   <td>{transaction.account.nameAr}</td>
                   <td>{transactionLabel[transaction.type] ?? transaction.type}</td>
                   <td>{transaction.descriptionAr}</td>

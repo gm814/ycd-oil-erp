@@ -6,7 +6,7 @@ import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import CreditTermsForm from "./credit-terms-form";
 
 function money(value: number) {
-  return value.toLocaleString("ar-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
+  return value.toLocaleString("ar-SA-u-nu-latn", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
 }
 
 const statusLabels: Record<string, string> = {
@@ -99,14 +99,14 @@ export default async function CustomerDetailsPage({
         <div>
           <a href="/dashboard/customers" className="backLink">← المبيعات والعملاء</a>
           <h1>ملف العميل: {customer.name}</h1><p>رقم العميل: <b>{customer.customerNo}</b></p>
-          <p>الجوال: {customer.phone || "غير مسجل"} · عدد السيارات: {customer.vehicles.length.toLocaleString("ar-SA")}</p>
+          <p>الجوال: {customer.phone || "غير مسجل"} · عدد السيارات: {customer.vehicles.length.toLocaleString("ar-SA-u-nu-latn")}</p>
           <p><a className="orderLink" href={`/dashboard/customers/${customer.id}/statement`}>كشف حساب العميل ←</a></p>
         </div>
         <div className="logoPlaceholder">YCD <span>OIL</span></div>
       </div>
 
       <section className="kpis">
-        <article><span>عدد الزيارات</span><b>{customer.serviceOrders.length.toLocaleString("ar-SA")}</b></article>
+        <article><span>عدد الزيارات</span><b>{customer.serviceOrders.length.toLocaleString("ar-SA-u-nu-latn")}</b></article>
         <article><span>صافي المبيعات</span><b>{money(totalSales)}</b></article>
         <article><span>إجمالي المحصل</span><b>{money(totalPaid)}</b></article>
         <article><span>الرصيد المتبقي</span><b>{money(balance)}</b></article>
@@ -117,7 +117,7 @@ export default async function CustomerDetailsPage({
           <div><span>حالة الائتمان</span><b>{customer.creditAllowed ? "مفعّل" : "غير مفعّل"}</b></div>
           <div><span>حد الائتمان</span><b>{money(Number(customer.creditLimit))}</b></div>
           <div><span>المتاح حاليًا</span><b>{money(availableCredit)}</b></div>
-          <div><span>مهلة السداد</span><b>{customer.creditDays.toLocaleString("ar-SA")} يوم</b></div>
+          <div><span>مهلة السداد</span><b>{customer.creditDays.toLocaleString("ar-SA-u-nu-latn")} يوم</b></div>
         </div>
         {canManageCredit && (
           <CreditTermsForm
@@ -137,25 +137,25 @@ export default async function CustomerDetailsPage({
                 <span className="plateTag">{vehicle.plate}</span>
                 <h2>{[vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(" · ") || "بيانات المركبة غير مكتملة"}</h2>
               </div>
-              <b>{vehicle.currentOdometer?.toLocaleString("ar-SA") ?? "—"} كم</b>
+              <b>{vehicle.currentOdometer?.toLocaleString("ar-SA-u-nu-latn") ?? "—"} كم</b>
             </div>
             <div className="vehicleFacts">
-              <div><span>عدد الزيارات</span><b>{orders.length.toLocaleString("ar-SA")}</b></div>
+              <div><span>عدد الزيارات</span><b>{orders.length.toLocaleString("ar-SA-u-nu-latn")}</b></div>
               <div>
                 <span>آخر خدمة</span>
-                <b>{lastOrder ? lastOrder.createdAt.toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" }) : "—"}</b>
+                <b>{lastOrder ? lastOrder.createdAt.toLocaleDateString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" }) : "—"}</b>
               </div>
               <div>
                 <span>آخر تغيير زيت</span>
-                <b>{lastOilOrder ? lastOilOrder.createdAt.toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" }) : "—"}</b>
+                <b>{lastOilOrder ? lastOilOrder.createdAt.toLocaleDateString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" }) : "—"}</b>
               </div>
               <div>
                 <span>الخدمة القادمة</span>
                 <b>
                   {latestHistory?.nextServiceKm
-                    ? `${latestHistory.nextServiceKm.toLocaleString("ar-SA")} كم`
+                    ? `${latestHistory.nextServiceKm.toLocaleString("ar-SA-u-nu-latn")} كم`
                     : latestHistory?.nextServiceAt
-                      ? latestHistory.nextServiceAt.toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" })
+                      ? latestHistory.nextServiceAt.toLocaleDateString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })
                       : "غير محددة"}
                 </b>
               </div>
@@ -187,10 +187,10 @@ export default async function CustomerDetailsPage({
                 const paid = order.invoice?.payments.reduce((sum, payment) => sum + Number(payment.amount), 0) ?? 0;
                 return (
                   <tr key={order.id}>
-                    <td>{order.createdAt.toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" })}</td>
+                    <td>{order.createdAt.toLocaleDateString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</td>
                     <td><a className="orderLink" href={`/dashboard/service-orders/${order.id}`}>{order.orderNo}</a></td>
                     <td>{order.vehicle.plate}</td>
-                    <td>{order.odometer?.toLocaleString("ar-SA") ?? "—"}</td>
+                    <td>{order.odometer?.toLocaleString("ar-SA-u-nu-latn") ?? "—"}</td>
                     <td>
                       <div className="serviceTags">
                         {order.items.slice(0, 4).map((item) => <span key={item.id}>{item.descriptionAr}</span>)}

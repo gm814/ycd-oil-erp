@@ -1,3 +1,4 @@
+import { nextDocumentNumber } from "@/lib/document-number";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -54,10 +55,10 @@ export async function POST(request: Request) {
       if (!vehicle) {
         vehicle = await tx.vehicle.create({ data: { customerId: customer.id, plate: normalizedPlate, make: data.make || null, model: data.model || null, year: data.year, currentOdometer: data.odometer }, include: { customer: true } });
       } else {
-        vehicle = await tx.vehicle.update({ where: { id: vehicle.id }, data: { currentOdometer: data.odometer ?? vehicle.currentOdometer }, include: { customer: true } });
+        vehicle = await tx.vehicle.update({ where: { id: vehicle.id }, data: { currentOdometer: data.odometer ?? vehicle.currentOdometer, ...(data.make ? { make: data.make } : {}), ...(data.model ? { model: data.model } : {}), ...(data.year ? { year: data.year } : {}) }, include: { customer: true } });
       }
 
-      const orderNo = `${data.channel === "WASH" ? "WS-DIRECT" : "SO"}-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+      const orderNo = await nextDocumentNumber(tx);
       const created = await tx.serviceOrder.create({
         data: {
           orderNo,

@@ -1,3 +1,6 @@
+import { couponSerialFromScan } from "@/lib/coupon-link";
+import { nextDocumentNumber } from "@/lib/document-number";
+import { captureMedad } from "@/services/medad/outbox";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { SessionPayload } from "@/lib/auth";
@@ -6,14 +9,14 @@ import { riyadhDateRange, riyadhDateKey } from "@/lib/time";
 
 export type WashAction =
   | { action: "configure"; washBranchId: string; nameAr: string; unitAmount?: string; cadence: string; issueMode?: "ELIGIBLE" | "ALL" }
-  | { action: "redeem"; serial: string }
+  | { action: "inspect"; serial: string }
+  | { action: "redeem"; serial: string; expectedAmount?: string }
   | { action: "complete"; serviceId: string }
   | { action: "value"; serviceId: string; amount: string }
   | { action: "submit"; agreementId: string; businessDate: string; key: string }
   | { action: "post"; batchId: string }
   | { action: "reject"; batchId: string }
   | { action: "pay"; batchId: string; amount: string; accountId: string; receiptAccountId: string; reference: string; key: string };
-const number = (prefix: string) => `${prefix}-${riyadhDateKey(new Date()).replaceAll("-", "")}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
 const zero = () => new Prisma.Decimal(0);
 export function settlementAmount(value: string) {
   if (!/^\d{1,9}(\.\d{1,2})?$/.test(value)) throw new Error("INVALID_AMOUNT");
@@ -44,9 +47,9 @@ export async function washActionInTransaction(tx: Prisma.TransactionClient, sess
     await audit("WASH_AGREEMENT_UPDATED", agreement.id, { before: old ? { nameAr: old.nameAr, unitAmount: old.unitAmount?.toString() ?? null, cadence: old.cadence, issueMode: old.issueMode } : null, nameAr: data.nameAr, unitAmount: data.unitAmount?.toString() ?? null, cadence: data.cadence, issueMode: data.issueMode, washBranchId: receiver.id });
     return { agreementId: agreement.id };
   }
-  if (input.action === "redeem") {
+  if (input.action === "redeem" || input.action === "inspect") {
     allow(P.COUPON_REDEEM);
-    const coupon = await tx.coupon.findUnique({ where: { serial: input.serial.toUpperCase() }, include: { invoice: { include: { serviceOrder: true, returns: true } } } });
+    const coupon = await tx.coupon.findUnique({ where: { serial: couponSerialFromScan(input.serial) }, include: { invoice: { include: { serviceOrder: { include: { vehicle: true } }, customer: true, returns: true } } } });
     if (!coupon) throw new Error("COUPON_NOT_FOUND");
     const agreement = await tx.washAgreement.findFirst({ where: { sourceBranchId: coupon.invoice.serviceOrder.branchId, washBranchId: branchId, active: true } });
     if (!agreement) throw new Error("WASH_AGREEMENT_REQUIRED");
@@ -55,12 +58,32 @@ export async function washActionInTransaction(tx: Prisma.TransactionClient, sess
     if (coupon.invoice.status === "VOID" || coupon.invoice.returns.some((r) => r.status === "COMPLETED")) throw new Error("INVOICE_REVIEW_REQUIRED");
     const branch = await tx.branch.findUniqueOrThrow({ where: { id: branchId } });
     if (branch.operationalStatus !== "LIVE" && process.env.ALLOW_PREOPENING_OPERATIONS !== "true") throw new Error("BRANCH_NOT_LIVE");
+    if (!agreement.unitAmount || agreement.unitAmount.lte(0)) throw new Error("WASH_PRICE_REQUIRED");
+    if (input.action === "inspect") return {
+      serial: coupon.serial, customer: coupon.invoice.customer.name,
+      plate: coupon.invoice.serviceOrder.vehicle.plate,
+      vehicle: [coupon.invoice.serviceOrder.vehicle.make, coupon.invoice.serviceOrder.vehicle.model, coupon.invoice.serviceOrder.vehicle.year].filter(Boolean).join(" · "),
+      amount: agreement.unitAmount.toFixed(2), agreement: agreement.nameAr,
+      expiresAt: coupon.expiresAt?.toISOString() ?? null,
+    };
+    if (input.expectedAmount && !agreement.unitAmount.eq(settlementAmount(input.expectedAmount))) throw new Error("WASH_PRICE_CHANGED");
+    const now = new Date();
     const updated = await tx.coupon.updateMany({ where: { id: coupon.id, status: "ACTIVE" }, data: { status: "USED", usedAt: new Date(), redeemedBranchId: branchId, redeemedBy: session.userId } });
     if (updated.count !== 1) throw new Error("COUPON_NOT_ACTIVE");
-    const service = await tx.washService.create({ data: { serviceNo: number("WS"), couponId: coupon.id, agreementId: agreement.id, amount: agreement.unitAmount, receivedBy: session.userId } });
-    await audit("WASH_SERVICE_OPENED", service.id, { source: "YCD OIL", serial: coupon.serial, invoiceNo: coupon.invoice.invoiceNo, serviceNo: service.serviceNo, amount: service.amount?.toString() ?? null });
-    return { serviceId: service.id, serviceNo: service.serviceNo };
+    // The supervisor's explicit confirmation atomically completes the wash and accrues
+    // the pre-agreed amount. This does not issue a cash payment or change finance roles.
+    const service = await tx.washService.create({ data: { serviceNo: await nextDocumentNumber(tx), couponId: coupon.id, agreementId: agreement.id, amount: agreement.unitAmount, receivedBy: session.userId, status: "COMPLETED", completedAt: now, completedBy: session.userId } });
+    const batch = await tx.washBatch.create({data:{
+      batchNo: await nextDocumentNumber(tx), agreementId: agreement.id,
+      businessDate: riyadhDateKey(now), status: "POSTED", total: agreement.unitAmount,
+      submittedBy: session.userId, postedBy: session.userId, postedAt: now,
+      idempotencyKey: `coupon-accrual:${coupon.id}`, services:{connect:{id:service.id}},
+    }});
+    await captureMedad(tx, agreement.sourceBranchId, "WASH_CLAIM", batch.id, batch.batchNo);
+    await audit("WASH_COUPON_REDEEMED_AND_ACCRUED", service.id, { serial: coupon.serial, serviceNo: service.serviceNo, batchId: batch.id, batchNo: batch.batchNo, agreementId: agreement.id, amount: agreement.unitAmount.toString(), policy: "SUPERVISOR_CONFIRMATION_AT_AGREED_RATE" });
+    return { serviceId: service.id, serviceNo: service.serviceNo, batchId: batch.id, amount: agreement.unitAmount.toFixed(2), status: "USED" };
   }
+
   if (input.action === "complete" || input.action === "value") {
     const service = await tx.washService.findUnique({ where: { id: input.serviceId }, include: { agreement: true } });
     if (!service) throw new Error("SERVICE_NOT_FOUND");
@@ -95,7 +118,7 @@ export async function washActionInTransaction(tx: Prisma.TransactionClient, sess
     if (!services.length) throw new Error("NO_COMPLETED_SERVICES");
     if (services.some((s) => !s.amount || s.amount.lte(0))) throw new Error("VALUATION_REQUIRED");
     const total = services.reduce((n, s) => n.plus(s.amount!), zero());
-    const batch = await tx.washBatch.create({ data: { batchNo: number("WB"), agreementId: agreement.id, businessDate: input.businessDate, total, submittedBy: session.userId, idempotencyKey: input.key } });
+    const batch = await tx.washBatch.create({ data: { batchNo: await nextDocumentNumber(tx), agreementId: agreement.id, businessDate: input.businessDate, total, submittedBy: session.userId, idempotencyKey: input.key } });
     const linked = await tx.washService.updateMany({ where: { id: { in: services.map((s) => s.id) }, batchId: null }, data: { batchId: batch.id } });
     if (linked.count !== services.length) throw new Error("CONCURRENT_CHANGE");
     await audit("WASH_BATCH_SUBMITTED", batch.id, { total: total.toString(), count: services.length, businessDate: input.businessDate });
@@ -110,6 +133,7 @@ export async function washActionInTransaction(tx: Prisma.TransactionClient, sess
     const status = input.action === "post" ? "POSTED" : "REJECTED";
     await tx.washBatch.update({ where: { id: batch.id }, data: { status, postedAt: input.action === "post" ? new Date() : null, postedBy: session.userId } });
     if (input.action === "reject") await tx.washService.updateMany({ where: { batchId: batch.id }, data: { batchId: null } });
+    if (status === "POSTED") await captureMedad(tx, branchId, "WASH_CLAIM", batch.id, batch.batchNo);
     await audit(`WASH_BATCH_${status}`, batch.id, { batchNo: batch.batchNo, total: batch.total.toString() });
     return { batchId: batch.id };
   }
@@ -131,12 +155,16 @@ export async function washActionInTransaction(tx: Prisma.TransactionClient, sess
   const from = await tx.financialAccount.findFirst({ where: { id: input.accountId, branchId, active: true, type: { in: ["CASH", "BANK"] } } });
   const to = await tx.financialAccount.findFirst({ where: { id: input.receiptAccountId, branchId: batch.agreement.washBranchId, active: true, type: { in: ["CASH", "BANK"] } } });
   if (!from || !to || from.id === to.id) throw new Error("INVALID_ACCOUNTS");
+  const drawer = await tx.financialAccount.findFirst({ where: { branchId, cashRole: "DRAWER" } });
+  if (from.cashRole === "DRAWER" || to.cashRole === "DRAWER") throw new Error("CASH_DRAWER_RESTRICTED");
+  if (drawer && from.type === "CASH" && from.cashRole !== "TREASURY") throw new Error("TREASURY_REQUIRED");
   const balance = await tx.financialTransaction.aggregate({ where: { accountId: from.id }, _sum: { amount: true } });
   if ((balance._sum.amount ?? zero()).lt(amount)) throw new Error("INSUFFICIENT_FUNDS");
-  const settlementNo = number("WP");
+  const settlementNo = await nextDocumentNumber(tx);
   const debit = await tx.financialTransaction.create({ data: { branchId, accountId: from.id, type: "EXPENSE", amount: amount.negated(), reference: input.reference, descriptionAr: `سداد كوبونات غسيل ${batch.batchNo} — ${batch.agreement.nameAr}`, relatedEntityType: "WashBatch", relatedEntityId: batch.id, performedBy: session.userId, idempotencyKey: `wash-out:${input.key}` } });
   const receipt = await tx.financialTransaction.create({ data: { branchId: batch.agreement.washBranchId, accountId: to.id, type: "CUSTOMER_RECEIPT", amount, reference: input.reference, descriptionAr: `تحصيل مستحقات كوبونات YCD OIL ${batch.batchNo}`, relatedEntityType: "WashBatch", relatedEntityId: batch.id, performedBy: session.userId, idempotencyKey: `wash-in:${input.key}` } });
   const payment = await tx.washSettlement.create({ data: { settlementNo, batchId: batch.id, amount, reference: input.reference, paidBy: session.userId, sourceTransactionId: debit.id, receiptTransactionId: receipt.id, idempotencyKey: input.key } });
   await audit("WASH_SETTLEMENT_PAID", payment.id, { batchId: batch.id, amount: amount.toString(), sourceTransactionId: debit.id, receiptTransactionId: receipt.id });
+  await captureMedad(tx, branchId, "WASH_SETTLEMENT", payment.id, payment.settlementNo);
   return { settlementId: payment.id };
 }

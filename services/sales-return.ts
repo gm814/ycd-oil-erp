@@ -1,3 +1,6 @@
+import { receiptAccount } from "@/services/cash-drawer";
+import { nextDocumentNumber } from "@/lib/document-number";
+import { captureMedad } from "@/services/medad/outbox";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 
@@ -76,7 +79,7 @@ export async function processSalesReturn(input: ReturnInput) {
         if (!openShift) throw new Error("OPEN_SHIFT_REQUIRED");
       }
       const type = input.refundMethod === "CASH" ? "CASH" : input.refundMethod === "CARD" ? "POS_CLEARING" : "BANK";
-      const account = await tx.financialAccount.findFirst({ where: { branchId: input.branchId, type, active: true } });
+      const account = await receiptAccount(tx, input.branchId, type);
       if (!account) throw new Error("FINANCIAL_ACCOUNT_REQUIRED");
 
       if (input.refundMethod === "CASH" || input.refundMethod === "TRANSFER") {
@@ -90,10 +93,9 @@ export async function processSalesReturn(input: ReturnInput) {
       accountId = account.id;
     }
 
-    const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
     const salesReturn = await tx.salesReturn.create({
       data: {
-        returnNo: `RET-${date}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+        returnNo: await nextDocumentNumber(tx),
         invoiceId: invoice.id,
         branchId: input.branchId,
         reason: input.reason,
@@ -166,6 +168,7 @@ export async function processSalesReturn(input: ReturnInput) {
       },
     });
 
+    await captureMedad(tx, input.branchId, "RETURN", salesReturn.id, salesReturn.returnNo);
     return salesReturn;
   }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }

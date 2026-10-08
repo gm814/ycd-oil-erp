@@ -126,7 +126,7 @@ export default function CloseActions({
               {closes.map((item) => (
                 <tr key={item.id}>
                   <td><b>{item.closeNo}</b></td>
-                  <td>{item.type === "DAILY" ? "يومي" : "شهري"} · {new Date(item.periodStart).toLocaleDateString("ar-SA")} — {new Date(item.periodEnd).toLocaleDateString("ar-SA")}</td>
+                  <td>{item.type === "DAILY" ? "يومي" : "شهري"} · {new Date(item.periodStart).toLocaleDateString("ar-SA-u-nu-latn")} — {new Date(item.periodEnd).toLocaleDateString("ar-SA-u-nu-latn")}</td>
                   <td>{money(item.salesTotal)}</td>
                   <td className={item.netFinancialMovement < 0 ? "moneyOut" : "moneyIn"}>{money(item.netFinancialMovement)}</td>
                   <td>{item.openShifts}</td>

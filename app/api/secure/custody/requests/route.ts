@@ -1,3 +1,4 @@
+import { nextDocumentNumber } from "@/lib/document-number";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -30,10 +31,9 @@ export async function POST(request: Request) {
     }
   }
 
-  const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
-  const custodyNo = `CST-${date}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
 
   const custody = await db.$transaction(async (tx) => {
+    const custodyNo = await nextDocumentNumber(tx);
     const created = await tx.custodyRequest.create({
       data: {
         custodyNo,

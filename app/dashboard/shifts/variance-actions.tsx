@@ -71,7 +71,7 @@ export default function VarianceActions({ items }: { items: Variance[] }) {
       {items.map((item) => (
         <form key={item.id} className="intakeForm paymentCard" onSubmit={(event) => approve(event, item.id)}>
           <div>
-            <b>وردية {item.shiftId.slice(0, 8).toUpperCase()} · {item.closedAt ? new Date(item.closedAt).toLocaleString("ar-SA") : "—"}</b>
+            <b>وردية {item.shiftId.slice(0, 8).toUpperCase()} · {item.closedAt ? new Date(item.closedAt).toLocaleString("ar-SA-u-nu-latn") : "—"}</b>
             <span>النقد: {money(item.cashVariance)} · مدى: {money(item.cardVariance)} · التحويل: {money(item.transferVariance)}</span>
             <span>المبرر عند الإقفال: {item.reason || "لم يسجل مبرر."}</span>
           </div>
