@@ -55,7 +55,7 @@ export async function POST(request: Request) {
       if (!vehicle) {
         vehicle = await tx.vehicle.create({ data: { customerId: customer.id, plate: normalizedPlate, make: data.make || null, model: data.model || null, year: data.year, currentOdometer: data.odometer }, include: { customer: true } });
       } else {
-        vehicle = await tx.vehicle.update({ where: { id: vehicle.id }, data: { currentOdometer: data.odometer ?? vehicle.currentOdometer }, include: { customer: true } });
+        vehicle = await tx.vehicle.update({ where: { id: vehicle.id }, data: { currentOdometer: data.odometer ?? vehicle.currentOdometer, ...(data.make ? { make: data.make } : {}), ...(data.model ? { model: data.model } : {}), ...(data.year ? { year: data.year } : {}) }, include: { customer: true } });
       }
 
       const orderNo = await nextDocumentNumber(tx);
