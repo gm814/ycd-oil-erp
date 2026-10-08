@@ -1,3 +1,4 @@
+import { drawerSummary } from "@/services/cash-drawer";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { companyConfig } from "@/lib/config";
@@ -61,10 +62,11 @@ export default async function ShiftClosingReport({ params }: { params: Promise<{
     refunds.filter((item) => item.refundMethod === method)
       .reduce((sum, item) => sum + Number(item.refundAmount), 0);
 
+  const drawer = await drawerSummary(db, shift);
   const channels = [
     {
       label: "النقد",
-      expected: shift.expectedCash === null ? Number(shift.openingCash) + received("CASH") - refunded("CASH") : Number(shift.expectedCash),
+      expected: shift.expectedCash === null ? (drawer ? Number(drawer.expectedCash) : Number(shift.openingCash) + received("CASH") - refunded("CASH")) : Number(shift.expectedCash),
       actual: shift.countedCash === null ? null : Number(shift.countedCash),
       variance: shift.cashVariance === null ? null : Number(shift.cashVariance),
     },
@@ -178,6 +180,7 @@ export default async function ShiftClosingReport({ params }: { params: Promise<{
           </article>
         )}
 
+        {drawer && <article className="panel inventoryPanel"><h2>حركة درج الكاشير المعتمدة في المطابقة</h2><p>رصيد البداية + الوارد − الصادر. الحركات السابقة للفصل تبقى بمراجعها الأصلية.</p><table><thead><tr><th>البيان</th><th>المرجع</th><th>المبلغ</th></tr></thead><tbody>{drawer.movements.map(row => <tr key={row.id}><td>{row.descriptionAr}</td><td><a href={`/dashboard/finance/transactions/${row.id}/voucher`}>{row.reference || row.documentNo}</a></td><td>{money(Number(row.amount))}</td></tr>)}</tbody></table></article>}
         {shift.varianceResolution && (
           <section className="invoicePolicy">
             <b>حالة اعتماد فروقات الوردية</b>

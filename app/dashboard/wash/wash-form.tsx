@@ -2,6 +2,8 @@
 import { FormEvent, ReactNode, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 const messages: Record<string, string> = {
+  CASH_DRAWER_RESTRICTED: "درج الكاشير للتحصيل فقط. اختر صندوق الإدارة أو البنك لصرف مستحق المغسلة.",
+  TREASURY_REQUIRED: "اختر صندوق الإدارة المعتمد أو حسابًا بنكيًا لسداد المطالبة.",
   FORBIDDEN: "لا تملك صلاحية هذا الإجراء أو أنه يخص فرعًا آخر.",
   INVALID_INPUT: "راجع الحقول المطلوبة وصيغة المبالغ.", INVALID_AMOUNT: "أدخل مبلغًا موجبًا بحد أقصى منزلتين عشريتين.",
   WASH_AGREEMENT_REQUIRED: "يجب إعداد اتفاق تسوية بين المركز وفرع المغسلة قبل استخدام الكوبون.",

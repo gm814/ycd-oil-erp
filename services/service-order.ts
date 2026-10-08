@@ -1,3 +1,4 @@
+import { receiptAccount } from "@/services/cash-drawer";
 import { nextDocumentNumber } from "@/lib/document-number";
 import { captureMedad } from "@/services/medad/outbox";
 import { Prisma, StockMovementType } from "@prisma/client";
@@ -47,6 +48,8 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
     if (order.status === "CANCELLED") throw new Error("SERVICE_ORDER_CANCELLED");
     if (order.items.length === 0) throw new Error("SERVICE_ORDER_EMPTY");
     if (!order.shiftId) throw new Error("SHIFT_REQUIRED");
+    const activeShift = await tx.shift.findFirst({ where: { id: order.shiftId, branchId: input.branchId, closedAt: null } });
+    if (!activeShift) throw new Error("OPEN_SHIFT_REQUIRED");
 
     // Sum repeated product lines before checking stock; each individual line can fit
     // while their combined quantity exceeds the available stock.
@@ -109,18 +112,7 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
 
     const financialAccount = input.paymentMethod === "CREDIT" || total.isZero()
       ? null
-      : await tx.financialAccount.findFirst({
-          where: {
-            branchId: input.branchId,
-            active: true,
-            type: input.paymentMethod === "CASH"
-              ? "CASH"
-              : input.paymentMethod === "CARD"
-                ? "POS_CLEARING"
-                : "BANK",
-          },
-          orderBy: { createdAt: "asc" },
-        });
+      : await receiptAccount(tx, input.branchId, input.paymentMethod === "CASH" ? "CASH" : input.paymentMethod === "CARD" ? "POS_CLEARING" : "BANK");
     if (input.paymentMethod !== "CREDIT" && total.gt(0) && !financialAccount) {
       throw new Error("FINANCIAL_ACCOUNT_REQUIRED");
     }

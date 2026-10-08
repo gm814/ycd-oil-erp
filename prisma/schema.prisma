@@ -417,6 +417,8 @@ model Product {
 }
 
 model Shift {
+  drawerAccountId String?
+  drawerAccount FinancialAccount? @relation(fields: [drawerAccountId], references: [id], onDelete: Restrict)
   id            String         @id @default(cuid())
   branchId      String
   branch        Branch         @relation(fields: [branchId], references: [id])
@@ -759,6 +761,8 @@ model SupplierInvoice {
 }
 
 model FinancialAccount {
+  cashRole String?
+  drawerShifts Shift[]
   id           String                 @id @default(cuid())
   branchId     String
   branch       Branch                 @relation(fields: [branchId], references: [id])
@@ -777,6 +781,7 @@ model FinancialAccount {
   createdAt    DateTime               @default(now())
   updatedAt    DateTime               @updatedAt
   @@unique([branchId, code])
+  @@unique([branchId, cashRole])
   @@index([branchId, type, active])
 }
 

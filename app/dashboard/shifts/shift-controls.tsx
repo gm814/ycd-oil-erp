@@ -43,7 +43,11 @@ export default function ShiftControls({
     setBusy(false);
     if (!response.ok) {
       setMessage(
-        result.error === "PREOPENING_OPERATION_BLOCKED"
+        result.error === "OPENING_CASH_MISMATCH"
+          ? "رصيد البداية لا يطابق رصيد الدرج المسجل. راجع تسليم النقد أو تمويل العهدة مع المحاسب قبل الفتح."
+          : result.error === "CASH_DRAWER_INACTIVE"
+          ? "حساب درج الكاشير غير نشط. راجع المحاسب."
+          : result.error === "PREOPENING_OPERATION_BLOCKED"
           ? "التشغيل التجاري مقفل حاليًا لأن المركز ما زال في مرحلة ما قبل التشغيل. يفتح فقط في بيئة اختبار UAT المصرح بها."
           : result.error === "SHIFT_ALREADY_OPEN"
           ? "توجد وردية مفتوحة بالفعل."

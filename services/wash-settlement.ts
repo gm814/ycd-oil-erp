@@ -133,6 +133,9 @@ export async function washActionInTransaction(tx: Prisma.TransactionClient, sess
   const from = await tx.financialAccount.findFirst({ where: { id: input.accountId, branchId, active: true, type: { in: ["CASH", "BANK"] } } });
   const to = await tx.financialAccount.findFirst({ where: { id: input.receiptAccountId, branchId: batch.agreement.washBranchId, active: true, type: { in: ["CASH", "BANK"] } } });
   if (!from || !to || from.id === to.id) throw new Error("INVALID_ACCOUNTS");
+  const drawer = await tx.financialAccount.findFirst({ where: { branchId, cashRole: "DRAWER" } });
+  if (from.cashRole === "DRAWER" || to.cashRole === "DRAWER") throw new Error("CASH_DRAWER_RESTRICTED");
+  if (drawer && from.type === "CASH" && from.cashRole !== "TREASURY") throw new Error("TREASURY_REQUIRED");
   const balance = await tx.financialTransaction.aggregate({ where: { accountId: from.id }, _sum: { amount: true } });
   if ((balance._sum.amount ?? zero()).lt(amount)) throw new Error("INSUFFICIENT_FUNDS");
   const settlementNo = await nextDocumentNumber(tx);

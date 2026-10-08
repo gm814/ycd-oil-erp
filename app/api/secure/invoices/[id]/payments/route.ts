@@ -1,3 +1,4 @@
+import { receiptAccount } from "@/services/cash-drawer";
 import { captureMedad } from "@/services/medad/outbox";
 import { earnLoyalty } from "@/services/loyalty";
 import { Prisma } from "@prisma/client";
@@ -84,10 +85,7 @@ export async function POST(
         : parsed.data.method === "CARD"
           ? "POS_CLEARING"
           : "BANK";
-      const account = await tx.financialAccount.findFirst({
-        where: { branchId: session.branchId!, type: accountType, active: true },
-        orderBy: { createdAt: "asc" },
-      });
+      const account = await receiptAccount(tx, session.branchId!, accountType);
       if (!account) throw new Error("FINANCIAL_ACCOUNT_REQUIRED");
 
       const payment = await tx.payment.create({
