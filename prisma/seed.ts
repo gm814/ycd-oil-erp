@@ -99,7 +99,7 @@ const roleDefinitions: Record<string, { nameAr: string; permissions: readonly st
   },
   CASHIER: {
     nameAr: "الكاشير",
-    permissions: ["dashboard.view", "payment.receive", "shift.open", "shift.close", "coupon.redeem", "service_order.create"],
+    permissions: ["dashboard.view", "payment.receive", "shift.open", "shift.close", "coupon.redeem", "service_order.create", "inventory.issue", "invoice.issue"],
   },
   WASH_SUPERVISOR: {
     nameAr: "مشرف المغسلة",
