@@ -9,7 +9,8 @@ import { riyadhDateRange, riyadhDateKey } from "@/lib/time";
 
 export type WashAction =
   | { action: "configure"; washBranchId: string; nameAr: string; unitAmount?: string; cadence: string; issueMode?: "ELIGIBLE" | "ALL" }
-  | { action: "redeem"; serial: string }
+  | { action: "inspect"; serial: string }
+  | { action: "redeem"; serial: string; expectedAmount?: string }
   | { action: "complete"; serviceId: string }
   | { action: "value"; serviceId: string; amount: string }
   | { action: "submit"; agreementId: string; businessDate: string; key: string }
@@ -46,9 +47,9 @@ export async function washActionInTransaction(tx: Prisma.TransactionClient, sess
     await audit("WASH_AGREEMENT_UPDATED", agreement.id, { before: old ? { nameAr: old.nameAr, unitAmount: old.unitAmount?.toString() ?? null, cadence: old.cadence, issueMode: old.issueMode } : null, nameAr: data.nameAr, unitAmount: data.unitAmount?.toString() ?? null, cadence: data.cadence, issueMode: data.issueMode, washBranchId: receiver.id });
     return { agreementId: agreement.id };
   }
-  if (input.action === "redeem") {
+  if (input.action === "redeem" || input.action === "inspect") {
     allow(P.COUPON_REDEEM);
-    const coupon = await tx.coupon.findUnique({ where: { serial: couponSerialFromScan(input.serial) }, include: { invoice: { include: { serviceOrder: true, returns: true } } } });
+    const coupon = await tx.coupon.findUnique({ where: { serial: couponSerialFromScan(input.serial) }, include: { invoice: { include: { serviceOrder: { include: { vehicle: true } }, customer: true, returns: true } } } });
     if (!coupon) throw new Error("COUPON_NOT_FOUND");
     const agreement = await tx.washAgreement.findFirst({ where: { sourceBranchId: coupon.invoice.serviceOrder.branchId, washBranchId: branchId, active: true } });
     if (!agreement) throw new Error("WASH_AGREEMENT_REQUIRED");
@@ -57,12 +58,32 @@ export async function washActionInTransaction(tx: Prisma.TransactionClient, sess
     if (coupon.invoice.status === "VOID" || coupon.invoice.returns.some((r) => r.status === "COMPLETED")) throw new Error("INVOICE_REVIEW_REQUIRED");
     const branch = await tx.branch.findUniqueOrThrow({ where: { id: branchId } });
     if (branch.operationalStatus !== "LIVE" && process.env.ALLOW_PREOPENING_OPERATIONS !== "true") throw new Error("BRANCH_NOT_LIVE");
+    if (!agreement.unitAmount || agreement.unitAmount.lte(0)) throw new Error("WASH_PRICE_REQUIRED");
+    if (input.action === "inspect") return {
+      serial: coupon.serial, customer: coupon.invoice.customer.name,
+      plate: coupon.invoice.serviceOrder.vehicle.plate,
+      vehicle: [coupon.invoice.serviceOrder.vehicle.make, coupon.invoice.serviceOrder.vehicle.model, coupon.invoice.serviceOrder.vehicle.year].filter(Boolean).join(" · "),
+      amount: agreement.unitAmount.toFixed(2), agreement: agreement.nameAr,
+      expiresAt: coupon.expiresAt?.toISOString() ?? null,
+    };
+    if (input.expectedAmount && !agreement.unitAmount.eq(settlementAmount(input.expectedAmount))) throw new Error("WASH_PRICE_CHANGED");
+    const now = new Date();
     const updated = await tx.coupon.updateMany({ where: { id: coupon.id, status: "ACTIVE" }, data: { status: "USED", usedAt: new Date(), redeemedBranchId: branchId, redeemedBy: session.userId } });
     if (updated.count !== 1) throw new Error("COUPON_NOT_ACTIVE");
-    const service = await tx.washService.create({ data: { serviceNo: await nextDocumentNumber(tx), couponId: coupon.id, agreementId: agreement.id, amount: agreement.unitAmount, receivedBy: session.userId } });
-    await audit("WASH_SERVICE_OPENED", service.id, { source: "YCD OIL", serial: coupon.serial, invoiceNo: coupon.invoice.invoiceNo, serviceNo: service.serviceNo, amount: service.amount?.toString() ?? null });
-    return { serviceId: service.id, serviceNo: service.serviceNo };
+    // The supervisor's explicit confirmation atomically completes the wash and accrues
+    // the pre-agreed amount. This does not issue a cash payment or change finance roles.
+    const service = await tx.washService.create({ data: { serviceNo: await nextDocumentNumber(tx), couponId: coupon.id, agreementId: agreement.id, amount: agreement.unitAmount, receivedBy: session.userId, status: "COMPLETED", completedAt: now, completedBy: session.userId } });
+    const batch = await tx.washBatch.create({data:{
+      batchNo: await nextDocumentNumber(tx), agreementId: agreement.id,
+      businessDate: riyadhDateKey(now), status: "POSTED", total: agreement.unitAmount,
+      submittedBy: session.userId, postedBy: session.userId, postedAt: now,
+      idempotencyKey: `coupon-accrual:${coupon.id}`, services:{connect:{id:service.id}},
+    }});
+    await captureMedad(tx, agreement.sourceBranchId, "WASH_CLAIM", batch.id, batch.batchNo);
+    await audit("WASH_COUPON_REDEEMED_AND_ACCRUED", service.id, { serial: coupon.serial, serviceNo: service.serviceNo, batchId: batch.id, batchNo: batch.batchNo, agreementId: agreement.id, amount: agreement.unitAmount.toString(), policy: "SUPERVISOR_CONFIRMATION_AT_AGREED_RATE" });
+    return { serviceId: service.id, serviceNo: service.serviceNo, batchId: batch.id, amount: agreement.unitAmount.toFixed(2), status: "USED" };
   }
+
   if (input.action === "complete" || input.action === "value") {
     const service = await tx.washService.findUnique({ where: { id: input.serviceId }, include: { agreement: true } });
     if (!service) throw new Error("SERVICE_NOT_FOUND");

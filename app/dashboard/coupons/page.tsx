@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import CouponRedeem from "./redeem-form";
 
 export default async function CouponsPage() {
@@ -28,7 +29,7 @@ export default async function CouponsPage() {
       </div>
 
       <section className="workGrid">
-        <article className="panel"><h2>استخدام كوبون</h2><p>يفتح خدمة غسيل مرتبطة بالكوبون والعميل والسيارة.</p><CouponRedeem /><a className="primaryLink" href="/dashboard/wash">خدمات الغسيل والمطالبات والتسويات</a></article>
+        <article className="panel"><h2>استخدام كوبون</h2><p>افحص الكوبون ثم اعتمد الغسلة لتسجيل الاستخدام والمستحق مرة واحدة.</p>{hasPermission(session.permissions, PERMISSIONS.COUPON_REDEEM) && <CouponRedeem />}<a className="primaryLink" href="/dashboard/wash">خدمات الغسيل والمطالبات والتسويات</a></article>
         <article className="panel">
           <h2>آخر الكوبونات</h2>
           <div className="tableWrap">

@@ -138,7 +138,7 @@ export default async function DashboardPage() {
   if ([PERMISSIONS.COUPON_REDEEM, PERMISSIONS.FINANCE_VIEW, PERMISSIONS.FINANCE_EXPENSE_APPROVE, PERMISSIONS.FINANCE_EXPENSE_PAY].some(p=>hasPermission(session.permissions,p))) navigation.push({label:"كوبونات غسيل السيارات — YCD OIL",href:"/dashboard/wash",icon:"ticket"});
   const actionList = [
     {label:"استقبال سيارة",detail:"زيوت وخدمات",href:"/dashboard/service-orders",icon:"car",permission:PERMISSIONS.SERVICE_ORDER_CREATE},
-    {label:"كوبونات المغسلة",detail:"غسيل السيارات",href:"/dashboard/coupons",icon:"car",permission:PERMISSIONS.COUPON_REDEEM},
+    {label:"مسح كوبون الغسيل",detail:"الكاميرا واعتماد الغسلة",href:"/dashboard/coupons#coupon-scanner",icon:"ticket",permission:PERMISSIONS.COUPON_REDEEM},
     {label:"طلب شراء",detail:"المشتريات",href:"/dashboard/procurement",icon:"cart",permission:PERMISSIONS.PROCUREMENT_REQUEST},
     {label:"استلام مخزون",detail:"من المورد",href:"/dashboard/inventory",icon:"box",permission:PERMISSIONS.INVENTORY_MANAGE},
     {label:"المبيعات والعملاء",detail:"فواتير وحسابات",href:"/dashboard/customers",icon:"document",permission:PERMISSIONS.CUSTOMER_VIEW},
