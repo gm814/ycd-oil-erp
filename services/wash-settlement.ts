@@ -1,3 +1,4 @@
+import { couponSerialFromScan } from "@/lib/coupon-link";
 import { nextDocumentNumber } from "@/lib/document-number";
 import { captureMedad } from "@/services/medad/outbox";
 import { Prisma } from "@prisma/client";
@@ -47,7 +48,7 @@ export async function washActionInTransaction(tx: Prisma.TransactionClient, sess
   }
   if (input.action === "redeem") {
     allow(P.COUPON_REDEEM);
-    const coupon = await tx.coupon.findUnique({ where: { serial: input.serial.toUpperCase() }, include: { invoice: { include: { serviceOrder: true, returns: true } } } });
+    const coupon = await tx.coupon.findUnique({ where: { serial: couponSerialFromScan(input.serial) }, include: { invoice: { include: { serviceOrder: true, returns: true } } } });
     if (!coupon) throw new Error("COUPON_NOT_FOUND");
     const agreement = await tx.washAgreement.findFirst({ where: { sourceBranchId: coupon.invoice.serviceOrder.branchId, washBranchId: branchId, active: true } });
     if (!agreement) throw new Error("WASH_AGREEMENT_REQUIRED");

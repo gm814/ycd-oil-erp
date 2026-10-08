@@ -6,7 +6,7 @@ const id = z.string().min(1).max(100);
 const amount = z.string().regex(/^\d{1,9}(\.\d{1,2})?$/);
 const schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("configure"), washBranchId: id, nameAr: z.string().trim().min(2).max(120), unitAmount: amount.optional(), cadence: z.enum(["DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "SEMIANNUAL", "ANNUAL"]), issueMode: z.enum(["ELIGIBLE", "ALL"]).optional() }),
-  z.object({ action: z.literal("redeem"), serial: z.string().trim().min(6).max(80) }),
+  z.object({ action: z.literal("redeem"), serial: z.string().trim().min(6).max(2048) }),
   z.object({ action: z.literal("complete"), serviceId: id }),
   z.object({ action: z.literal("value"), serviceId: id, amount }),
   z.object({ action: z.literal("submit"), agreementId: id, businessDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), key: z.string().uuid() }),
