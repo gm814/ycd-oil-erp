@@ -26,7 +26,8 @@
     "verify:user-admin": "node tests/user-admin.cjs",
     "verify:loyalty": "tsx scripts/verify-loyalty.ts",
     "verify:medad": "tsx scripts/verify-medad.ts",
-    "verify:wash": "tsx scripts/verify-wash.ts"
+    "verify:wash": "tsx scripts/verify-wash.ts",
+    "verify:password-recovery": "node --import tsx tests/password-recovery.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",

@@ -17,7 +17,7 @@ async function main() {
   const {POST}=require(path.join(temp,'route.cjs'));
   function reset() {
     const s={session:{userId:'manager',branchId:'branch-1',permissions:['manage']},writes:[],audits:[],current:{id:'employee',branchId:'branch-1',username:'oldname',email:'old@example.com',status:'ACTIVE',mustChangePassword:false,sessionVersion:1,roles:[{role:{code:'CASHIER'}}]},duplicate:null};
-    s.tx={user:{findFirst:async({where})=>{assert.equal(where.branchId,'branch-1');return s.current;},findUnique:async()=>s.duplicate,count:async()=>1,update:async({data})=>{s.writes.push(data);return {...s.current,...data};}},role:{findMany:async()=>[]},userRole:{deleteMany:async()=>{},createMany:async()=>{}},auditLog:{create:async({data})=>s.audits.push(data)}};
+    s.tx={passwordRecoveryChallenge:{updateMany:async()=>({count:1})},user:{findFirst:async({where})=>{assert.equal(where.branchId,'branch-1');return s.current;},findUnique:async()=>s.duplicate,count:async()=>1,update:async({data})=>{s.writes.push(data);return {...s.current,...data};}},role:{findMany:async()=>[]},userRole:{deleteMany:async()=>{},createMany:async()=>{}},auditLog:{create:async({data})=>s.audits.push(data)}};
     globalThis.__userAdminTest=s;return s;
   }
   const call=async(body,id='employee')=>POST(new Request('http://localhost/api/secure/admin/users/'+id,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}),{params:Promise.resolve({id})});
@@ -32,6 +32,9 @@ async function main() {
   s=reset();response=await call({email:'NAME@EXAMPLE.COM'});assert.equal(response.status,200);assert.equal(s.writes[0].email,'name@example.com');assert.equal(s.writes[0].username,undefined);
   s=reset();s.current.id='manager';response=await call({username:'newmanager'},'manager');assert.equal(response.status,200);
   s=reset();response=await call({password:'Aa123456'});assert.equal(response.status,200);assert.equal(s.writes[0].mustChangePassword,true);assert.equal(s.writes[0].sessionVersion.increment,1);assert.notEqual(s.writes[0].passwordHash,'Aa123456');assert.ok(!JSON.stringify(s.audits).includes('Aa123456'));
+  s=reset();response=await call({recoveryWhatsApp:'0501234567'});assert.equal(response.status,200);assert.equal(s.writes[0].recoveryWhatsApp,'+966501234567');assert.equal(s.audits[0].afterJson.recoveryContactChanged,true);
+  s=reset();response=await call({recoveryWhatsApp:'invalid'});assert.equal(response.status,400);assert.equal(s.writes.length,0);
+  s=reset();s.duplicate={id:'other'};response=await call({recoveryWhatsApp:'+966501234567'});assert.equal(response.status,409);assert.equal((await response.json()).error,'RECOVERY_PHONE_ALREADY_USED');assert.equal(s.writes.length,0);
   console.log('Passed: authentication, permissions, branch scope, validation, duplicate identities, normalization, email clearing, self protection, audit records, password reset.');
 }
 main().catch(e=>{console.error(e);process.exitCode=1}).finally(()=>{fs.rmSync(temp,{recursive:true,force:true});delete globalThis.__userAdminTest;});

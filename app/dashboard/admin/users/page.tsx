@@ -117,6 +117,7 @@ export default async function UserManagementPage({ searchParams }: { searchParam
             id: employee.user.id,
             username: employee.user.username,
             email: employee.user.email,
+            recoveryWhatsApp: employee.user.recoveryWhatsApp,
             mustChangePassword: employee.user.mustChangePassword,
             status: employee.user.status,
             roleCodes: employee.user.roles.map((entry) => entry.role.code),

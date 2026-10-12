@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { lockOfflineProfile } from "@/lib/offline/lock";
 import { PasswordInput } from "@/components/password-input";
 
@@ -59,21 +60,13 @@ export default function LoginPage() {
             كلمة المرور
             <PasswordInput name="password" autoComplete="current-password" required />
           </label>
-          <details className="passwordRecovery">
-            <summary>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-                <circle cx="8" cy="8" r="5" />
-                <path d="m12 12 9 9m-4-4 3-3m-6 0 3-3" />
-              </svg>
-              نسيت كلمة المرور؟
-            </summary>
-            <div className="passwordRecoveryHelp">
-              <p>لاستعادة الدخول، تواصل مع مسؤول النظام وأبلغه باسم المستخدم الخاص بك.</p>
-              <p>يعيد المسؤول تعيين كلمة المرور من «إدارة المستخدمين» بعد التحقق من هويتك. ثم سجّل الدخول بكلمة المرور المؤقتة وغيّرها عند الطلب.</p>
-              <p>إذا كنت مسؤول النظام ولا يوجد حساب إداري آخر متاح، تواصل مع المسؤول التقني لاستعادة الوصول.</p>
-              <small>الاستعادة عبر البريد الإلكتروني أو الجوال غير متاحة حاليًا.</small>
-            </div>
-          </details>
+          <Link href="/forgot-password" className="passwordRecoveryLink">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+              <circle cx="8" cy="8" r="5" />
+              <path d="m12 12 9 9m-4-4 3-3m-6 0 3-3" />
+            </svg>
+            نسيت كلمة المرور؟
+          </Link>
           {error && <p className="formError">{error}</p>}
           <button type="submit" disabled={loading}>
             {loading ? "جارٍ التحقق..." : "دخول النظام"}
