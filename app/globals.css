@@ -13,6 +13,15 @@ button:disabled{opacity:.65;cursor:wait}
 .loginBrand{font-size:38px;font-weight:900;letter-spacing:1px}.loginBrand span{color:var(--orange)}
 .loginSubtitle{color:#777;margin:6px 0 26px}.loginCard h1{margin:0 0 22px}
 .loginCard form{display:grid;gap:16px}.loginCard label{display:grid;gap:8px;font-weight:700}
+.passwordRecovery{margin-top:-4px;font-size:14px}
+.passwordRecovery summary{display:flex;align-items:center;gap:8px;min-height:44px;width:fit-content;padding:4px 2px;color:#815000;font-weight:700;cursor:pointer;list-style:none}
+.passwordRecovery summary::-webkit-details-marker{display:none}
+.passwordRecovery summary:hover{text-decoration:underline}
+.passwordRecovery summary:focus-visible{outline:2px solid var(--orange);outline-offset:3px;border-radius:4px}
+.passwordRecovery summary svg{flex-shrink:0}
+.passwordRecoveryHelp{padding:12px 14px;background:#fff8eb;border:1px solid #ecd8b3;border-radius:12px;line-height:1.8;color:#403829;overflow-wrap:anywhere}
+.passwordRecoveryHelp p{margin:0 0 10px}
+.loginCard .passwordRecoveryHelp small{margin-top:0;color:#665c49}
 .loginCard input,.intakeForm input,.intakeForm select,.paymentSelect select{width:100%;border:1px solid #d8d8d8;border-radius:12px;padding:13px;background:#fff;outline:none}
 .loginCard input:focus,.intakeForm input:focus,.intakeForm select:focus,.paymentSelect select:focus{border-color:var(--orange);box-shadow:0 0 0 3px #f18f211c}
 .loginCard small{display:block;color:#777;margin-top:22px}.formError{margin:0;color:#a21b1b;background:#fff1f1;padding:10px;border-radius:10px}
