@@ -287,6 +287,7 @@ model Department {
 model User {
   id                 String     @id @default(cuid())
   username           String     @unique
+  recoveryWhatsApp   String?    @unique
   email              String?    @unique
   name               String
   passwordHash       String?
@@ -302,8 +303,34 @@ model User {
   employee           Employee?  @relation(fields: [employeeId], references: [id])
   roles              UserRole[]
   auditLogs          AuditLog[] @relation("ActorAudit")
+  recoveryChallenges PasswordRecoveryChallenge[]
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
+}
+
+// No OTP or plaintext recovery token is stored. Delivery is managed by Verify.
+model PasswordRecoveryChallenge {
+  tokenHash       String @id
+  userId          String
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel         String
+  destinationHash String
+  sessionVersion  Int
+  verificationSid String?
+  attempts        Int @default(0)
+  consumedAt      DateTime?
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+}
+
+// Fixed-window counters shared by all application instances.
+model PasswordRecoveryLimit {
+  key       String @id
+  count     Int @default(1)
+  expiresAt DateTime
+  @@index([expiresAt])
 }
 
 model Role {

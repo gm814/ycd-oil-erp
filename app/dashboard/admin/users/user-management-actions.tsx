@@ -16,6 +16,7 @@ type Employee = {
     id: string;
     username: string;
     email: string | null;
+    recoveryWhatsApp: string | null;
     mustChangePassword: boolean;
     status: string;
     roleCodes: string[];
@@ -59,6 +60,7 @@ export default function UserManagementActions({
           EMPLOYEE_NOT_FOUND: "الموظف غير موجود أو غير نشط.",
           EMPLOYEE_ALREADY_HAS_USER: "الموظف لديه حساب دخول بالفعل.",
           USERNAME_ALREADY_USED: "اسم المستخدم مستخدم في حساب آخر.",
+          RECOVERY_PHONE_ALREADY_USED: "رقم استعادة واتساب مسجل لحساب آخر.",
           EMAIL_ALREADY_USED: "البريد الإلكتروني مستخدم في حساب آخر.",
           INVALID_ROLE: "أحد الأدوار المحددة غير صالح.",
           USER_NOT_FOUND: "حساب المستخدم غير موجود.",
@@ -132,6 +134,7 @@ export default function UserManagementActions({
     void post(`/api/secure/admin/users/${userId}`, {
       username: data.get("username"),
       email: data.get("email"),
+      recoveryWhatsApp: data.get("recoveryWhatsApp"),
       ...(!isSelf ? { status: data.get("status"), roleCodes } : {}),
       ...(password ? { password } : {}),
     }, isSelf && password ? "تم تحديث حسابك. سجل الدخول بكلمة المرور الجديدة." : "تم حفظ بيانات المستخدم وإعدادات حسابه.")
@@ -224,6 +227,10 @@ export default function UserManagementActions({
                 </label>
                 <label>البريد الإلكتروني — اختياري
                   <input name="email" type="email" autoComplete="off" maxLength={200} defaultValue={employee.user.email ?? ""} dir="ltr" />
+                </label>
+                <label>رقم واتساب لاستعادة كلمة المرور — اختياري
+                  <input name="recoveryWhatsApp" type="tel" autoComplete="off" maxLength={30} defaultValue={employee.user.recoveryWhatsApp ?? ""} dir="ltr" placeholder="+9665XXXXXXXX" />
+                  <small className="muted">تحقق من ملكية الرقم قبل حفظه. هذا الرقم مخصص لاستعادة الحساب؛ اتركه فارغًا لتعطيل الاستعادة عبر واتساب.</small>
                 </label>
                 {employee.user.mustChangePassword && (
                   <p className="alertBadge">كلمة مرور مؤقتة — يجب تغييرها عند أول دخول</p>
