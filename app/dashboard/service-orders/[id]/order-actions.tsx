@@ -8,6 +8,8 @@ type ProductOption = {
   sku: string;
   nameAr: string;
   salePrice: number;
+  minPrice: number | null;
+  maxPrice: number | null;
   category: string;
 };
 
@@ -25,6 +27,7 @@ export default function OrderActions({
   products: ProductOption[];
 }) {
   const router = useRouter();
+  const [selectedProduct, setSelectedProduct] = useState<ProductOption | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
@@ -46,10 +49,12 @@ export default function OrderActions({
 
     setBusy(false);
     if (!response.ok) {
-      setMessage("تعذر إضافة البند.");
+      const result = await response.json().catch(() => ({}));
+      setMessage(result.error === "PRICE_OUT_OF_RANGE" ? "السعر أو صافي البيع بعد الخصم خارج الحدود المسموحة للصنف." : result.error === "PRODUCT_INACTIVE" ? "الصنف غير نشط." : "تعذر إضافة البند.");
       return;
     }
     formElement.reset();
+    setSelectedProduct(null);
     setMessage("تمت إضافة البند.");
     router.refresh();
   }
@@ -76,6 +81,8 @@ export default function OrderActions({
 
     if (!response.ok) {
       const errors: Record<string, string> = {
+        PRICE_OUT_OF_RANGE: "سعر أحد البنود أو صافي البيع بعد الخصم خارج الحدود المعتمدة.",
+        PRODUCT_INACTIVE: "أحد الأصناف غير نشط.",
         NEXT_SERVICE_KM_INVALID: "كيلومترات الخدمة القادمة يجب أن تكون أكبر من قراءة العداد الحالية.",
         NEXT_SERVICE_DATE_INVALID: "تاريخ الخدمة القادمة غير صالح.",
         INSUFFICIENT_STOCK: "المخزون غير كافٍ لإقفال الأمر.",
@@ -110,6 +117,7 @@ export default function OrderActions({
             defaultValue=""
             onChange={(event) => {
               const product = products.find((item) => item.id === event.target.value);
+              setSelectedProduct(product ?? null);
               const form = event.currentTarget.form;
               if (!product || !form) return;
               const description = form.elements.namedItem("descriptionAr") as HTMLInputElement | null;
@@ -127,8 +135,9 @@ export default function OrderActions({
         <label>وصف الخدمة / المادة<input name="descriptionAr" required /></label>
         <div className="formRow">
           <label>الكمية<input name="quantity" type="number" min="0.001" step="0.001" defaultValue="1" required /></label>
-          <label>سعر الوحدة<input name="unitPrice" type="number" min="0" step="0.01" required /></label>
+          <label>سعر الوحدة<input name="unitPrice" type="number" min={selectedProduct?.minPrice ?? 0} max={selectedProduct?.maxPrice ?? undefined} step="0.01" required /></label>
         </div>
+        {selectedProduct?.minPrice != null && <p>نطاق سعر الوحدة قبل الضريبة: {selectedProduct.minPrice.toFixed(2)}–{selectedProduct.maxPrice?.toFixed(2)} ر.س. يشمل الحد الأدنى صافي البيع بعد الخصم.</p>}
         <label>الخصم<input name="discount" type="number" min="0" step="0.01" defaultValue="0" /></label>
         <button type="submit" disabled={busy}>إضافة البند</button>
       </form>

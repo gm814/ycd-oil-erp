@@ -1,3 +1,4 @@
+import { validateProductPrice } from "@/lib/product-pricing";
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -40,6 +41,11 @@ export async function POST(
   }
 
   if (parsed.data.discount > parsed.data.quantity * parsed.data.unitPrice) throw new Error("INVALID_DISCOUNT");
+  if (parsed.data.productId) {
+    const product = await tx.product.findUnique({ where: { id: parsed.data.productId } });
+    if (!product) throw new Error("PRODUCT_NOT_FOUND");
+    validateProductPrice(product, parsed.data.quantity, parsed.data.unitPrice, parsed.data.discount);
+  }
   const item = await tx.serviceOrderItem.create({
     data: {
       serviceOrderId: order.id,
@@ -66,6 +72,6 @@ export async function POST(
   return NextResponse.json({ item }, { status: 201 });
   } catch (error) {
     const code = error instanceof Error ? error.message : "CONCURRENT_CHANGE";
-    return NextResponse.json({ error: ["NOT_FOUND","ORDER_LOCKED","INVALID_DISCOUNT"].includes(code) ? code : "CONCURRENT_CHANGE" }, { status: 409 });
+    return NextResponse.json({ error: ["NOT_FOUND","ORDER_LOCKED","INVALID_DISCOUNT","PRODUCT_NOT_FOUND","PRODUCT_INACTIVE","PRICE_OUT_OF_RANGE"].includes(code) ? code : "CONCURRENT_CHANGE" }, { status: 409 });
   }
 }

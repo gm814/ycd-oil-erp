@@ -1,3 +1,4 @@
+import { productPriceRange } from "@/lib/product-pricing";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
@@ -48,6 +49,11 @@ export default async function InventoryPage() {
         <div className="logoPlaceholder">YCD <span>OIL</span></div>
       </div>
 
+      {canManage && products.some(p => p.costBasedPricing) && <article className="panel">
+        <h2>تسعير الأصناف حسب التكلفة</h2>
+        <p>عدد الأصناف المسعرة: {products.filter(p => p.costBasedPricing).length}. سعر البيع الافتراضي عند الحد الأدنى: التكلفة × 1.25. الحد الأعلى: التكلفة × 6. الحدود قبل الضريبة وتشمل صافي البيع بعد الخصم.</p>
+        <p>الزيوت: {products.filter(p => p.costBasedPricing && p.category === "OIL" && p.serviceIntervalKm === 5000).length} صنفًا بفترة 5,000 كم، و{products.filter(p => p.costBasedPricing && p.category === "OIL" && p.serviceIntervalKm === 10000).length} بفترة 10,000 كم، و{products.filter(p => p.costBasedPricing && p.category === "OIL" && !p.serviceIntervalKm).length} بانتظار تحديد الفترة.</p>
+      </article>}
       {canManage && <CatalogImport />}
       {canManage && <InventoryForms products={products.map((p) => ({ id: p.id, sku: p.sku, nameAr: p.nameAr, category: p.category, serviceIntervalKm: p.serviceIntervalKm }))} />}
 
@@ -55,7 +61,7 @@ export default async function InventoryPage() {
         <h2>الرصيد الحالي</h2>
         <div className="tableWrap">
           <table>
-            <thead><tr><th>SKU</th><th>الصنف</th><th>التصنيف</th><th>الوحدة</th><th>الرصيد</th><th>الحد الأدنى</th><th>الحالة</th></tr></thead>
+            <thead><tr><th>SKU</th><th>الصنف</th><th>التصنيف</th><th>الوحدة</th>{canManage && <th>التكلفة</th>}<th>سعر البيع</th><th>نطاق البيع قبل الضريبة</th><th>فترة الزيت</th><th>الرصيد</th><th>الحد الأدنى</th><th>الحالة</th></tr></thead>
             <tbody>
               {rows.map(({ product, stock }) => {
                 const low = stock <= Number(product.minStock);
@@ -65,13 +71,17 @@ export default async function InventoryPage() {
                     <td>{product.nameAr}</td>
                     <td>{categoryLabels[product.category]}</td>
                     <td>{product.unit}</td>
+                    {canManage && <td>{Number(product.costPrice).toFixed(2)}</td>}
+                    <td>{Number(product.salePrice).toFixed(2)}</td>
+                    <td>{product.costBasedPricing ? `${productPriceRange(product)!.min.toFixed(2)}–${productPriceRange(product)!.max.toFixed(2)}` : "—"}</td>
+                    <td>{product.serviceIntervalKm ? `${product.serviceIntervalKm} كم` : "غير محددة"}</td>
                     <td>{stock.toLocaleString("ar-SA-u-nu-latn")}</td>
                     <td>{Number(product.minStock).toLocaleString("ar-SA-u-nu-latn")}</td>
                     <td><span className={low ? "alertBadge" : "okBadge"}>{!product.active ? "غير نشط — بانتظار المراجعة والتسعير" : low ? "يحتاج متابعة" : "متوفر"}</span></td>
                   </tr>
                 );
               })}
-              {rows.length === 0 && <tr><td colSpan={7} className="empty">لا توجد أصناف معرفة بعد.</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={canManage ? 11 : 10} className="empty">لا توجد أصناف معرفة بعد.</td></tr>}
             </tbody>
           </table>
         </div>

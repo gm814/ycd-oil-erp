@@ -1,3 +1,4 @@
+import { productPriceRange } from "@/lib/product-pricing";
 import { oilServiceReminder } from "@/lib/oil-service-interval";
 import ActionForm from "@/app/dashboard/loyalty/action-form";
 import { notFound, redirect } from "next/navigation";
@@ -26,7 +27,7 @@ export default async function ServiceOrderPage({
     }),
     db.product.findMany({
       where: { active: true },
-      select: { id: true, sku: true, nameAr: true, salePrice: true, category: true },
+      select: { id: true, sku: true, nameAr: true, salePrice: true, costPrice: true, costBasedPricing: true, category: true },
       orderBy: { nameAr: "asc" },
     }),
   ]);
@@ -61,8 +62,10 @@ export default async function ServiceOrderPage({
             reminder={oilServiceReminder(order.odometer, order.items)}
             locked={Boolean(order.invoice) || order.status === "CANCELLED"}
             products={products.map((product) => ({
-              ...product,
+              id: product.id, sku: product.sku, nameAr: product.nameAr, category: product.category,
               salePrice: Number(product.salePrice),
+              minPrice: productPriceRange(product)?.min.toNumber() ?? null,
+              maxPrice: productPriceRange(product)?.max.toNumber() ?? null,
             }))}
           />
         </article>

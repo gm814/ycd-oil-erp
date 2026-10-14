@@ -1,3 +1,4 @@
+import { validateProductPrice } from "@/lib/product-pricing";
 import { oilServiceReminder } from "@/lib/oil-service-interval";
 import { receiptAccount } from "@/services/cash-drawer";
 import { nextDocumentNumber } from "@/lib/document-number";
@@ -56,6 +57,9 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
 
     // Sum repeated product lines before checking stock; each individual line can fit
     // while their combined quantity exceeds the available stock.
+    for (const item of order.items) {
+      if (item.product) validateProductPrice(item.product, item.quantity, item.unitPrice, item.discount);
+    }
     const requiredStock = new Map<string, Prisma.Decimal>();
     for (const item of order.items) {
       if (!item.productId || item.product?.category === "SERVICE") continue;

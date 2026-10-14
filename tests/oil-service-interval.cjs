@@ -38,6 +38,7 @@ const tx = {
 };
 const complete = load('services/service-order.ts', {
   '@/lib/oil-service-interval':helper,
+  '@/lib/product-pricing':load('lib/product-pricing.ts'),
   '@/services/cash-drawer':{receiptAccount:async()=>null},
   '@/lib/document-number':{nextDocumentNumber:async()=>'TEST-1'},
   '@/services/medad/outbox':{captureMedad:async()=>{}},
@@ -61,6 +62,9 @@ async function main(){
     assert.equal(history.nextServiceKm,km?50000+km:undefined); // Server derives from product, not browser input.
     assert.equal(history.nextServiceAt,undefined);
   }
+  order.items[0].product = { category: 'OIL', serviceIntervalKm: 5000, active: true, costBasedPricing: true, costPrice: new Prisma.Decimal(20) };
+  order.items[0].unitPrice = new Prisma.Decimal(24.99);
+  await assert.rejects(complete(tx,{serviceOrderId:'order',branchId:'branch',actorId:'user',paymentMethod:'CASH',idempotencyReference:'pricing'}), /PRICE_OUT_OF_RANGE/);
   const call=body=>api.PATCH(new Request('http://localhost',{method:'PATCH',body:JSON.stringify(body)}));
   writes=[];session=null;assert.equal((await call({productId:'oil',serviceIntervalKm:10000})).status,401);
   session={userId:'cashier',permissions:['invoice.issue']};assert.equal((await call({productId:'oil',serviceIntervalKm:10000})).status,403);assert.equal(writes.length,0);
