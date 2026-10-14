@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
+import CatalogImport from "./catalog-import";
 import InventoryForms from "./inventory-forms";
 
 const categoryLabels: Record<string, string> = {
@@ -21,7 +22,7 @@ export default async function InventoryPage() {
 
   const canManage = hasPermission(session.permissions, PERMISSIONS.INVENTORY_MANAGE);
   const products = await db.product.findMany({
-    where: { active: true },
+    where: canManage ? {} : { active: true },
     include: {
       stockMovements: {
         where: { branchId: session.branchId },
@@ -47,6 +48,7 @@ export default async function InventoryPage() {
         <div className="logoPlaceholder">YCD <span>OIL</span></div>
       </div>
 
+      {canManage && <CatalogImport />}
       {canManage && <InventoryForms products={products.map((p) => ({ id: p.id, sku: p.sku, nameAr: p.nameAr, category: p.category, serviceIntervalKm: p.serviceIntervalKm }))} />}
 
       <article className="panel inventoryPanel">
@@ -65,7 +67,7 @@ export default async function InventoryPage() {
                     <td>{product.unit}</td>
                     <td>{stock.toLocaleString("ar-SA-u-nu-latn")}</td>
                     <td>{Number(product.minStock).toLocaleString("ar-SA-u-nu-latn")}</td>
-                    <td><span className={low ? "alertBadge" : "okBadge"}>{low ? "يحتاج متابعة" : "متوفر"}</span></td>
+                    <td><span className={low ? "alertBadge" : "okBadge"}>{!product.active ? "غير نشط — بانتظار المراجعة والتسعير" : low ? "يحتاج متابعة" : "متوفر"}</span></td>
                   </tr>
                 );
               })}
