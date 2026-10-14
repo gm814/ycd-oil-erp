@@ -1,6 +1,6 @@
 // Cache only the public offline shell. Never cache sessions, private HTML, APIs or RSC.
-const SHELL = 'ycd-offline-shell-v1';
-const ASSETS = ['/offline.html', '/offline.css', '/offline.js', '/offline-store.js', '/brand/ycd-logo-source.svg', '/brand/app-icon-192.png'];
+const SHELL = 'ycd-offline-shell-v2';
+const ASSETS = ['/offline.html', '/offline.css', '/offline.js', '/offline-store.js', '/brand/ycd-logo-source.svg', '/brand/app-icon-192.png', '/brand/ycd-icon-v2-192.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(SHELL).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
 });

@@ -5,7 +5,14 @@ import { InstallApp } from "@/components/install-app";
 export const metadata: Metadata = {
   title: "YCD OIL ERP",
   appleWebApp: { capable: true, title: "YCD OIL", statusBarStyle: "default" },
-  icons: { apple: "/brand/app-icon-192.png" },
+  icons: {
+    icon: [
+      { url: "/brand/ycd-icon-v2-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/brand/ycd-icon-v2-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: { url: "/brand/ycd-icon-v2-180.png", sizes: "180x180", type: "image/png" },
+    shortcut: "/brand/ycd-icon-v2-32.png",
+  },
   description: "نظام إدارة وتشغيل شركة وجهتك الإبداعية لزيوت وخدمات السيارات",
 };
 
