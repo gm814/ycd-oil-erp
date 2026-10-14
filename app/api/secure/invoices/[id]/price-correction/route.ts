@@ -21,6 +21,10 @@ export async function POST(request: Request, {params}: {params:Promise<{id:strin
   } catch(error) {
     const code=error instanceof Error?error.message:"";
     const allowed=["INVOICE_NOT_FOUND","CORRECTION_EXISTS","CORRECTION_NOT_ALLOWED","RECEIPT_MISMATCH","INVALID_PRICES","PRICE_DECREASE_NOT_SUPPORTED","INVALID_CORRECTION_TOTAL","OPEN_SHIFT_REQUIRED","FINANCIAL_ACCOUNT_REQUIRED"];
-    return NextResponse.json({error:allowed.includes(code)?code:"CONCURRENT_CHANGE"},{status:409});
+    if (allowed.includes(code)) return NextResponse.json({error:code},{status:409});
+    const dbCode = typeof error === "object" && error !== null && "code" in error ? String(error.code) : "UNKNOWN";
+    if (dbCode === "P2034" || dbCode === "P2002") return NextResponse.json({error:"CONCURRENT_CHANGE"},{status:409});
+    console.error("INVOICE_PRICE_CORRECTION_FAILED", {code:dbCode});
+    return NextResponse.json({error:"CORRECTION_FAILED"},{status:500});
   }
 }

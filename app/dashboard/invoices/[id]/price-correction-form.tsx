@@ -22,7 +22,7 @@ export default function PriceCorrectionForm({invoiceId,total,reference,items}:{i
    })});
    const result=await response.json();
    if(!response.ok){
-    const errors:Record<string,string>={RECEIPT_MISMATCH:"الأسعار أو مرجع الإيصال لا يطابقان السداد المسجل.",CORRECTION_EXISTS:"صدر إشعار سابق لهذه الفاتورة؛ حدّث الصفحة.",PRICE_DECREASE_NOT_SUPPORTED:"هذه المعالجة لزيادة السعر فقط؛ يوجد صنف انخفض سعره.",CORRECTION_NOT_ALLOWED:"تتطلب هذه المعالجة فاتورة مسددة بدفعة واحدة ودون مرتجعات.",OPEN_SHIFT_REQUIRED:"افتح وردية للفرع قبل تسجيل التصحيح.",FINANCIAL_ACCOUNT_REQUIRED:"الحساب المالي لطريقة السداد غير مهيأ.",FORBIDDEN:"يلزم حساب مخوّل بإدارة المالية وإصدار الفواتير والتحصيل.",CONCURRENT_CHANGE:"تغيرت البيانات؛ حدّث الصفحة قبل إعادة المحاولة."};
+    const errors:Record<string,string>={CORRECTION_FAILED:"تعذر تسجيل التصحيح بسبب خطأ في النظام. تواصل مع مسؤول النظام قبل إعادة المحاولة.",RECEIPT_MISMATCH:"الأسعار أو مرجع الإيصال لا يطابقان السداد المسجل.",CORRECTION_EXISTS:"صدر إشعار سابق لهذه الفاتورة؛ حدّث الصفحة.",PRICE_DECREASE_NOT_SUPPORTED:"هذه المعالجة لزيادة السعر فقط؛ يوجد صنف انخفض سعره.",CORRECTION_NOT_ALLOWED:"تتطلب هذه المعالجة فاتورة مسددة بدفعة واحدة ودون مرتجعات.",OPEN_SHIFT_REQUIRED:"افتح وردية للفرع قبل تسجيل التصحيح.",FINANCIAL_ACCOUNT_REQUIRED:"الحساب المالي لطريقة السداد غير مهيأ.",FORBIDDEN:"يلزم حساب مخوّل بإدارة المالية وإصدار الفواتير والتحصيل.",CONCURRENT_CHANGE:"تغيرت البيانات؛ حدّث الصفحة قبل إعادة المحاولة."};
     setMessage(errors[result.error]??"تعذر إصدار الإشعار؛ راجع البيانات.");return;
    }
    router.push(`/dashboard/invoices/${result.id}`);router.refresh();
