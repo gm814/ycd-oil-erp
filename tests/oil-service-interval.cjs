@@ -77,6 +77,11 @@ async function main(){
   order.items[0].product = { category: 'OIL', serviceIntervalKm: 5000, active: true, costBasedPricing: true, costPrice: new Prisma.Decimal(20) };
   order.items[0].unitPrice = new Prisma.Decimal(24.99);
   await assert.rejects(complete(tx,{serviceOrderId:'order',branchId:'branch',actorId:'user',paymentMethod:'CASH',idempotencyReference:'pricing'}), /PRICE_OUT_OF_RANGE/);
+  order.items[0].product = {category:'OIL',serviceIntervalKm:10000,active:true,costBasedPricing:false};
+  order.items[0].unitPrice = new Prisma.Decimal(140.25);
+  await assert.rejects(complete(tx,{serviceOrderId:'order',branchId:'branch',actorId:'user',paymentMethod:'CARD',amountPaid:165,idempotencyReference:'mismatch'}), /PAYMENT_AMOUNT_MISMATCH/);
+  // A matching amount passes the comparison and reaches account validation.
+  await assert.rejects(complete(tx,{serviceOrderId:'order',branchId:'branch',actorId:'user',paymentMethod:'CARD',amountPaid:161.29,idempotencyReference:'match'}), /FINANCIAL_ACCOUNT_REQUIRED/);
   const call=body=>api.PATCH(new Request('http://localhost',{method:'PATCH',body:JSON.stringify(body)}));
   writes=[];session=null;assert.equal((await call({productId:'oil',serviceIntervalKm:10000})).status,401);
   session={userId:'cashier',permissions:['invoice.issue']};assert.equal((await call({productId:'oil',serviceIntervalKm:10000})).status,403);assert.equal(writes.length,0);

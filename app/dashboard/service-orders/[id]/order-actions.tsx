@@ -24,6 +24,8 @@ type PaymentMethod = "CASH" | "CARD" | "TRANSFER" | "CREDIT";
 
 export default function OrderActions({
   orderId,
+  subtotal,
+  vatRate,
   odometer,
   locked,
   products,
@@ -31,11 +33,18 @@ export default function OrderActions({
 }: {
   reminder: { nextKm: number | null; reason: string };
   orderId: string;
+  subtotal: number;
+  vatRate: number;
   odometer: number | null;
   locked: boolean;
   products: ProductOption[];
 }) {
   const router = useRouter();
+  const [priceIncludesVat, setPriceIncludesVat] = useState(false);
+  const [amountPaid, setAmountPaid] = useState("");
+  const vatAmount = Math.round((subtotal * vatRate + Number.EPSILON) * 100) / 100;
+  const invoiceTotal = Math.round((subtotal + vatAmount + Number.EPSILON) * 100) / 100;
+
   const [productSearch, setProductSearch] = useState("");
   const normalizeSearch = (value: string) => value.normalize("NFKC").toLowerCase()
     .replace(/[أإآ]/g, "ا").replace(/ى/g, "ي").replace(/[\u064B-\u065F\u0640]/g, "")
@@ -61,7 +70,7 @@ export default function OrderActions({
     const description = form?.elements.namedItem("descriptionAr") as HTMLInputElement | null;
     const price = form?.elements.namedItem("unitPrice") as HTMLInputElement | null;
     if (description) description.value = product?.nameAr ?? "";
-    if (price) price.value = product ? String(product.salePrice) : "";
+    if (price) price.value = product ? (product.salePrice * (priceIncludesVat ? 1 + vatRate : 1)).toFixed(2) : "";
   }
 
   async function addItem(event: FormEvent<HTMLFormElement>) {
@@ -77,6 +86,7 @@ export default function OrderActions({
       }
       payload[field] = value;
     }
+    payload.priceIncludesVat = priceIncludesVat ? "true" : "false";
     setBusy(true);
     setMessage("");
 
@@ -132,13 +142,19 @@ export default function OrderActions({
       setMessage(odometer === null ? "يجب تسجيل قراءة العداد الحالية قبل الحساب اليدوي." : "أدخل عدد كيلومترات صحيحًا أكبر من صفر، بحيث لا يتجاوز العداد القادم 3,000,000 كم.");
       return;
     }
-    if (!confirm("تأكيد إقفال أمر الخدمة وإصدار الفاتورة وتسجيل الدفع؟")) return;
+    const paid = normalizeDecimal(amountPaid).trim();
+    if (paymentMethod !== "CREDIT" && (!/^[0-9]+(?:\.[0-9]{1,2})?$/.test(paid) || Math.round(Number(paid) * 100) !== Math.round(invoiceTotal * 100))) {
+      setMessage(`المبلغ المدفوع يجب أن يطابق إجمالي الفاتورة ${invoiceTotal.toFixed(2)} ريال. راجع أسعار البنود قبل الإقفال.`);
+      return;
+    }
+    if (!confirm(`إجمالي الفاتورة شامل الضريبة: ${invoiceTotal.toFixed(2)} ريال. تأكيد الإقفال وإصدار الفاتورة؟`)) return;
     setBusy(true);
     setMessage("");
     const idempotencyReference = crypto.randomUUID();
     const payload = {
       paymentMethod,
       paymentReference: paymentReference.trim() || undefined,
+      amountPaid: paymentMethod === "CREDIT" ? undefined : Number(paid),
       nextServiceKm: intervalMode === "AUTO" && reminder.reason === "NO_OIL" && nextServiceKm ? Number(nextServiceKm) : undefined,
       manualServiceIntervalKm: intervalMode === "MANUAL" ? distance : undefined,
       idempotencyReference,
@@ -154,6 +170,8 @@ export default function OrderActions({
 
     if (!response.ok) {
       const errors: Record<string, string> = {
+        PAYMENT_AMOUNT_MISMATCH: "المبلغ المدفوع لا يطابق إجمالي الفاتورة الحالي؛ راجع البنود والمبلغ.",
+        PAYMENT_AMOUNT_REQUIRED: "أدخل مبلغ السداد الفعلي قبل الإقفال.",
         PRICE_OUT_OF_RANGE: "سعر أحد البنود أو صافي البيع بعد الخصم خارج الحدود المعتمدة.",
         PRODUCT_INACTIVE: "أحد الأصناف غير نشط.",
         INVALID_SERVICE_INTERVAL: "أدخل مسافة تغيير الزيت عددًا صحيحًا أكبر من صفر.",
@@ -223,9 +241,27 @@ export default function OrderActions({
           </select>
         </label>}
         <label>وصف الخدمة / المادة<input name="descriptionAr" required /></label>
+        <label>طريقة إدخال السعر والخصم
+          <select value={priceIncludesVat ? "INCLUSIVE" : "EXCLUSIVE"} onChange={event => {
+            const inclusive = event.target.value === "INCLUSIVE";
+            const form = event.currentTarget.form;
+            for (const name of ["unitPrice", "discount"]) {
+              const input = form?.elements.namedItem(name) as HTMLInputElement | null;
+              if (input && input.value.trim() && Number.isFinite(Number(normalizeDecimal(input.value)))) {
+                const value = Number(normalizeDecimal(input.value));
+                input.value = (inclusive ? value * (1 + vatRate) : value / (1 + vatRate)).toFixed(2);
+              }
+            }
+            setPriceIncludesVat(inclusive);
+          }}>
+            <option value="EXCLUSIVE">قبل الضريبة</option>
+            <option value="INCLUSIVE">شامل الضريبة</option>
+          </select>
+        </label>
+        {priceIncludesVat && <p>يحوّل النظام سعر الوحدة والخصم إلى ما قبل الضريبة ويقرّبهما لأقرب هللة. راجع الإجمالي النهائي بعد إضافة البند.</p>}
         <div className="formRow">
           <label>الكمية<input name="quantity" type="number" min="0.001" step="0.001" defaultValue="1" required /></label>
-          <label>سعر الوحدة قبل الضريبة<input name="unitPrice" type="text" inputMode="decimal" dir="ltr" autoComplete="off" placeholder="29.75" onChange={event => { event.currentTarget.value = normalizeDecimal(event.currentTarget.value); }} required /></label>
+          <label>{priceIncludesVat ? "سعر الوحدة شامل الضريبة" : "سعر الوحدة قبل الضريبة"}<input name="unitPrice" type="text" inputMode="decimal" dir="ltr" autoComplete="off" placeholder="29.75" onChange={event => { event.currentTarget.value = normalizeDecimal(event.currentTarget.value); }} required /></label>
         </div>
         {selectedProduct?.minPrice != null && <p>نطاق سعر الوحدة قبل الضريبة: {selectedProduct.minPrice.toFixed(2)}–{selectedProduct.maxPrice?.toFixed(2)} ر.س. يشمل الحد الأدنى صافي البيع بعد الخصم.</p>}
         <label>الخصم<input name="discount" type="text" inputMode="decimal" dir="ltr" autoComplete="off" onChange={event => { event.currentTarget.value = normalizeDecimal(event.currentTarget.value); }} defaultValue="0" required /></label>
@@ -246,6 +282,17 @@ export default function OrderActions({
 
       <div className="intakeForm closingFields">
         <h3>الإقفال والدفع والخدمة القادمة</h3>
+        <div role="status">
+          <p>الإجمالي قبل الضريبة: <b>{subtotal.toFixed(2)} ر.س</b></p>
+          <p>الضريبة ({(vatRate * 100).toFixed(0)}%): <b>{vatAmount.toFixed(2)} ر.س</b></p>
+          <p>الإجمالي شامل الضريبة: <b>{invoiceTotal.toFixed(2)} ر.س</b></p>
+        </div>
+        {paymentMethod !== "CREDIT" && <label>المبلغ المدفوع فعليًا — شامل الضريبة
+          <input type="text" inputMode="decimal" dir="ltr" value={amountPaid} placeholder="أدخل المبلغ من إيصال الدفع"
+            onChange={event => setAmountPaid(normalizeDecimal(event.target.value))} />
+        </label>}
+        {paymentMethod !== "CREDIT" && amountPaid && Number.isFinite(Number(amountPaid)) && Math.round(Number(amountPaid) * 100) !== Math.round(invoiceTotal * 100) &&
+          <p role="alert">فرق السداد: {(Number(amountPaid) - invoiceTotal).toFixed(2)} ر.س. يجب تصحيح الأسعار أو مبلغ السداد قبل الإقفال.</p>}
         <label className="paymentSelect">طريقة الدفع
           <select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}>
             <option value="CASH">نقدًا</option>

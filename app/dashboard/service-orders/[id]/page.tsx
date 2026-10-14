@@ -1,3 +1,4 @@
+import { companyConfig } from "@/lib/config";
 import { productPriceRange } from "@/lib/product-pricing";
 import { oilServiceReminder } from "@/lib/oil-service-interval";
 import ActionForm from "@/app/dashboard/loyalty/action-form";
@@ -59,6 +60,8 @@ export default async function ServiceOrderPage({
           <h2>إضافة خدمة / مادة</h2>
           <OrderActions
             orderId={order.id}
+            subtotal={subtotal}
+            vatRate={companyConfig.vatRate}
             odometer={order.odometer}
             reminder={oilServiceReminder(order.odometer, order.items)}
             locked={Boolean(order.invoice) || order.status === "CANCELLED"}

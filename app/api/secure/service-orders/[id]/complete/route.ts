@@ -7,6 +7,7 @@ import { completeServiceOrder } from "@/services/service-order";
 
 const schema = z.object({
   paymentMethod: z.enum(["CASH", "CARD", "TRANSFER", "CREDIT"]),
+  amountPaid: z.number().min(0).max(100_000_000).optional(),
   paymentReference: z.string().trim().max(120).optional(),
   manualServiceIntervalKm: z.number().int().positive().max(3_000_000).optional(),
   nextServiceKm: z.number().int().min(0).max(3_000_000).optional(),
@@ -24,6 +25,10 @@ export async function POST(
 
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "INVALID_INPUT" }, { status: 400 });
+
+  if (parsed.data.paymentMethod !== "CREDIT" && parsed.data.amountPaid === undefined) {
+    return NextResponse.json({ error: "PAYMENT_AMOUNT_REQUIRED" }, { status: 400 });
+  }
 
   const required = [
     PERMISSIONS.INVENTORY_ISSUE,
@@ -43,6 +48,7 @@ export async function POST(
       branchId: session.branchId,
       paymentMethod: parsed.data.paymentMethod,
       paymentReference: parsed.data.paymentReference,
+      amountPaid: parsed.data.amountPaid,
       nextServiceKm: parsed.data.nextServiceKm,
       manualServiceIntervalKm: parsed.data.manualServiceIntervalKm,
       nextServiceAt: parsed.data.nextServiceAt

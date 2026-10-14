@@ -14,6 +14,7 @@ type CompleteServiceInput = {
   branchId: string;
   paymentMethod: "CASH" | "CARD" | "TRANSFER" | "CREDIT";
   paymentReference?: string;
+  amountPaid?: number;
   nextServiceKm?: number;
   manualServiceIntervalKm?: number;
   nextServiceAt?: Date;
@@ -82,6 +83,11 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
     const vatRate = new Prisma.Decimal(companyConfig.vatRate);
     const vatAmount = subtotal.mul(vatRate).toDecimalPlaces(2);
     const total = subtotal.plus(vatAmount);
+
+    if (input.amountPaid !== undefined && input.paymentMethod !== "CREDIT" &&
+        (!Number.isFinite(input.amountPaid) || !new Prisma.Decimal(input.amountPaid).eq(total.toDecimalPlaces(2)))) {
+      throw new Error("PAYMENT_AMOUNT_MISMATCH");
+    }
 
     let dueAt: Date | null = null;
     if (input.paymentMethod === "CREDIT" && total.gt(0)) {

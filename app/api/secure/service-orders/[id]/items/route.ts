@@ -1,3 +1,4 @@
+import { companyConfig } from "@/lib/config";
 import { validateProductPrice } from "@/lib/product-pricing";
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
@@ -7,6 +8,7 @@ import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 
 const schema = z.object({
+  priceIncludesVat: z.enum(["true", "false"]).optional(),
   descriptionAr: z.string().trim().min(2).max(200),
   productId: z.string().trim().optional().or(z.literal("")),
   quantity: z.coerce.number().positive().max(10000),
@@ -29,6 +31,11 @@ export async function POST(
     return NextResponse.json({ error: "INVALID_INPUT" }, { status: 400 });
   }
 
+  if (parsed.data.priceIncludesVat === "true") {
+    const divisor = new Prisma.Decimal(1).plus(companyConfig.vatRate);
+    parsed.data.unitPrice = new Prisma.Decimal(parsed.data.unitPrice).div(divisor).toDecimalPlaces(2).toNumber();
+    parsed.data.discount = new Prisma.Decimal(parsed.data.discount).div(divisor).toDecimalPlaces(2).toNumber();
+  }
   const { id } = await params;
   try {
   const item = await db.$transaction(async tx => {
