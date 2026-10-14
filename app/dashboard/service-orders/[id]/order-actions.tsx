@@ -29,6 +29,12 @@ export default function OrderActions({
   products: ProductOption[];
 }) {
   const router = useRouter();
+  const [productSearch, setProductSearch] = useState("");
+  const normalizeSearch = (value: string) => value.normalize("NFKC").toLowerCase()
+    .replace(/[أإآ]/g, "ا").replace(/ى/g, "ي").replace(/[\u064B-\u065F\u0640]/g, "")
+    .replace(/[٠-٩]/g, digit => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)));
+  const searchWords = normalizeSearch(productSearch).trim().split(/\s+/).filter(Boolean);
+  const filteredProducts = products.filter(product => searchWords.every(word => normalizeSearch(`${product.sku} ${product.nameAr}`).includes(word)));
   const [selectedProduct, setSelectedProduct] = useState<ProductOption | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -43,6 +49,7 @@ export default function OrderActions({
 
   async function addItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (productSearch.trim() && !selectedProduct) { setMessage("اختر الصنف من نتائج البحث أولًا."); return; }
     setBusy(true);
     setMessage("");
     const formElement = event.currentTarget;
@@ -62,6 +69,7 @@ export default function OrderActions({
     }
     formElement.reset();
     setSelectedProduct(null);
+    setProductSearch("");
     setMessage("تمت إضافة البند.");
     router.refresh();
   }
@@ -125,23 +133,44 @@ export default function OrderActions({
   return (
     <>
       <form className="intakeForm" onSubmit={addItem}>
+        <label>بحث عن صنف بالاسم أو الكود
+          <input type="search" value={productSearch} placeholder="مثال: فلتر رينو أو 8200033408 أو فوكس" autoComplete="off"
+            onKeyDown={event => { if (event.key === "Enter") event.preventDefault(); }}
+            onChange={event => {
+              setProductSearch(event.target.value);
+              setSelectedProduct(null);
+              const form = event.currentTarget.form;
+              for (const name of ["descriptionAr", "unitPrice"]) {
+                const input = form?.elements.namedItem(name) as HTMLInputElement | null;
+                if (input) input.value = "";
+              }
+            }} />
+        </label>
+        {productSearch.trim() && <p role="status">{filteredProducts.length ? `نتائج البحث: ${filteredProducts.length} — اختر الصنف من القائمة أدناه.` : "لا توجد أصناف مطابقة؛ جرّب جزءًا من الاسم أو الكود."}</p>}
         <label>الصنف / الخدمة
           <select
             name="productId"
-            defaultValue=""
+            value={selectedProduct?.id ?? ""}
             onChange={(event) => {
               const product = products.find((item) => item.id === event.target.value);
               setSelectedProduct(product ?? null);
               const form = event.currentTarget.form;
-              if (!product || !form) return;
+              if (!form) return;
+              if (!product) {
+                for (const name of ["descriptionAr", "unitPrice"]) {
+                  const input = form.elements.namedItem(name) as HTMLInputElement | null;
+                  if (input) input.value = "";
+                }
+                return;
+              }
               const description = form.elements.namedItem("descriptionAr") as HTMLInputElement | null;
               const price = form.elements.namedItem("unitPrice") as HTMLInputElement | null;
               if (description) description.value = product.nameAr;
               if (price) price.value = String(product.salePrice);
             }}
           >
-            <option value="">بند يدوي بدون مخزون</option>
-            {products.map((product) => (
+            <option value="">{productSearch.trim() ? "اختر الصنف من نتائج البحث" : "بند يدوي بدون مخزون"}</option>
+            {filteredProducts.map((product) => (
               <option key={product.id} value={product.id}>{product.sku} — {product.nameAr}</option>
             ))}
           </select>
@@ -153,7 +182,7 @@ export default function OrderActions({
         </div>
         {selectedProduct?.minPrice != null && <p>نطاق سعر الوحدة قبل الضريبة: {selectedProduct.minPrice.toFixed(2)}–{selectedProduct.maxPrice?.toFixed(2)} ر.س. يشمل الحد الأدنى صافي البيع بعد الخصم.</p>}
         <label>الخصم<input name="discount" type="number" min="0" step="0.01" defaultValue="0" /></label>
-        <button type="submit" disabled={busy}>إضافة البند</button>
+        <button type="submit" disabled={busy || Boolean(productSearch.trim() && !selectedProduct)}>إضافة البند</button>
       </form>
 
       <hr className="divider" />
