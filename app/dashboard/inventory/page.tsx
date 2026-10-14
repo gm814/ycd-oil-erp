@@ -47,7 +47,7 @@ export default async function InventoryPage() {
         <div className="logoPlaceholder">YCD <span>OIL</span></div>
       </div>
 
-      {canManage && <InventoryForms products={products.map((p) => ({ id: p.id, sku: p.sku, nameAr: p.nameAr }))} />}
+      {canManage && <InventoryForms products={products.map((p) => ({ id: p.id, sku: p.sku, nameAr: p.nameAr, category: p.category, serviceIntervalKm: p.serviceIntervalKm }))} />}
 
       <article className="panel inventoryPanel">
         <h2>الرصيد الحالي</h2>

@@ -17,7 +17,9 @@ export default function OrderActions({
   orderId,
   locked,
   products,
+  reminder,
 }: {
+  reminder: { nextKm: number | null; reason: string };
   orderId: string;
   locked: boolean;
   products: ProductOption[];
@@ -28,7 +30,6 @@ export default function OrderActions({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
   const [paymentReference, setPaymentReference] = useState("");
   const [nextServiceKm, setNextServiceKm] = useState("");
-  const [nextServiceAt, setNextServiceAt] = useState("");
 
   async function addItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -61,8 +62,7 @@ export default function OrderActions({
     const payload = {
       paymentMethod,
       paymentReference: paymentReference.trim() || undefined,
-      nextServiceKm: nextServiceKm ? Number(nextServiceKm) : undefined,
-      nextServiceAt: nextServiceAt || undefined,
+      nextServiceKm: reminder.reason === "NO_OIL" && nextServiceKm ? Number(nextServiceKm) : undefined,
       idempotencyReference,
     };
 
@@ -163,16 +163,19 @@ export default function OrderActions({
               type="number"
               min="0"
               max="3000000"
-              value={nextServiceKm}
+              value={reminder.reason === "NO_OIL" ? nextServiceKm : reminder.nextKm ?? ""}
+              readOnly={reminder.reason !== "NO_OIL"}
               onChange={(event) => setNextServiceKm(event.target.value)}
-              placeholder="مثال: 85000"
+              placeholder={reminder.reason === "NO_OIL" ? "اختياري" : "حدد فترة صنف الزيت وقراءة العداد"}
             />
           </label>
           <label>تاريخ الخدمة القادمة
-            <input type="date" value={nextServiceAt} onChange={(event) => setNextServiceAt(event.target.value)} />
+            <input value="" readOnly aria-label="تاريخ الخدمة القادمة — فارغ" />
           </label>
         </div>
 
+        <p>للزيوت: يُحسب العداد القادم من قراءة العداد الحالية + فترة خدمة الصنف في المخزون. التاريخ القادم يُترك فارغًا.</p>
+        {reminder.reason === "CONFLICT" && <p role="alert">أصناف الزيت المختارة لها فترات مختلفة؛ راجع الأصناف قبل الإقفال.</p>}
         <button className="completeButton" type="button" disabled={busy} onClick={complete}>
           إقفال الخدمة وإصدار الفاتورة
         </button>

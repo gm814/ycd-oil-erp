@@ -1,3 +1,4 @@
+import { oilServiceReminder } from "@/lib/oil-service-interval";
 import { receiptAccount } from "@/services/cash-drawer";
 import { nextDocumentNumber } from "@/lib/document-number";
 import { captureMedad } from "@/services/medad/outbox";
@@ -43,7 +44,9 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
     });
     if (!order || order.branchId !== input.branchId) throw new Error("SERVICE_ORDER_NOT_FOUND");
     if (order.invoice) return order.invoice;
-    if (input.nextServiceKm !== undefined && input.nextServiceKm <= (order.odometer ?? order.vehicle.currentOdometer ?? -1)) throw new Error("NEXT_SERVICE_KM_INVALID");
+    const reminder = oilServiceReminder(order.odometer, order.items);
+    const nextServiceKm = reminder.reason === "NO_OIL" ? input.nextServiceKm : reminder.nextKm ?? undefined;
+    if (nextServiceKm !== undefined && nextServiceKm <= (order.odometer ?? order.vehicle.currentOdometer ?? -1)) throw new Error("NEXT_SERVICE_KM_INVALID");
     if (input.nextServiceAt && Number.isNaN(input.nextServiceAt.getTime())) throw new Error("NEXT_SERVICE_DATE_INVALID");
     if (order.status === "CANCELLED") throw new Error("SERVICE_ORDER_CANCELLED");
     if (order.items.length === 0) throw new Error("SERVICE_ORDER_EMPTY");
@@ -196,7 +199,7 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
         serviceOrderId: order.id,
         odometer: order.odometer,
         summaryAr: "تم إكمال أمر الخدمة وإصدار الفاتورة.",
-        nextServiceKm: input.nextServiceKm,
+        nextServiceKm: nextServiceKm,
         nextServiceAt: input.nextServiceAt,
       },
     });
@@ -222,7 +225,7 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
           total: total.toString(),
           paymentMethod: input.paymentMethod,
           couponSerial,
-          nextServiceKm: input.nextServiceKm ?? null,
+          nextServiceKm: nextServiceKm ?? null,
           nextServiceAt: input.nextServiceAt?.toISOString() ?? null,
         },
       },

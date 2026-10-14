@@ -1,3 +1,4 @@
+import { oilServiceReminder } from "@/lib/oil-service-interval";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
@@ -33,6 +34,8 @@ export default async function ServiceReminderPage({ params }: { params: Promise<
     revalidatePath(`/dashboard/service-orders/${id}/reminder`);
   }
   const history = order.histories[0];
+  const reminder = oilServiceReminder(order.odometer, order.items);
+  const nextKm = history?.nextServiceKm ?? reminder.nextKm;
   const oilItem = order.items.find(item => item.product?.category === "OIL");
   const date = (value: Date) => value.toLocaleDateString("en-GB", { timeZone: "Asia/Riyadh" });
   return (
@@ -44,6 +47,7 @@ export default async function ServiceReminderPage({ params }: { params: Promise<
         <p>الشركة المصنّعة غير مسجلة. أكملها لتظهر مع الموديل في البطاقة.</p>
         <form action={saveMake}><label>الشركة المصنّعة<input name="make" required maxLength={60} placeholder="مثال: Toyota" /></label><button type="submit">حفظ بيانات السيارة</button></form>
       </aside>}
+      {nextKm === null && oilItem && <p className="noPrint" role="status">يلزم تحديد فترة خدمة صنف الزيت في المخزون (5,000 أو 10,000 كم)، ووجود قراءة عداد. عند وجود زيوت بفترات مختلفة لا يُحسب موعد تلقائي.</p>}
       <ThermalReminder data={{
         customerName: order.customer.name,
         customerPhone: order.customer.phone || "",
@@ -52,8 +56,8 @@ export default async function ServiceReminderPage({ params }: { params: Promise<
         plate: order.vehicle.plate,
         odometer: order.odometer?.toLocaleString("en-US") ?? "غير مسجل",
         service: oilItem?.descriptionAr || order.items.map(item => item.descriptionAr).join("، ") || "خدمة عامة",
-        nextKm: history?.nextServiceKm?.toLocaleString("en-US") ?? "لم يُحدد",
-        nextDate: history?.nextServiceAt ? date(history.nextServiceAt) : "لم يُحدد",
+        nextKm: nextKm?.toLocaleString("en-US") ?? "لم يُحدد",
+        nextDate: "",
         phone: companyConfig.phone,
         website: companyConfig.website,
       }} />

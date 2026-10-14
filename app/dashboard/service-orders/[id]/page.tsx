@@ -1,3 +1,4 @@
+import { oilServiceReminder } from "@/lib/oil-service-interval";
 import ActionForm from "@/app/dashboard/loyalty/action-form";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
@@ -57,6 +58,7 @@ export default async function ServiceOrderPage({
           <h2>إضافة خدمة / مادة</h2>
           <OrderActions
             orderId={order.id}
+            reminder={oilServiceReminder(order.odometer, order.items)}
             locked={Boolean(order.invoice) || order.status === "CANCELLED"}
             products={products.map((product) => ({
               ...product,

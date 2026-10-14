@@ -51,7 +51,7 @@ function text(s:string,y:number,bold=true,color=ink){font(bold,s);c.fillStyle=co
 text('تذكير الخدمة القادمة',267,true,gold);
 let y=335;
 const rows=[['العداد القادم · كم',data.nextKm],['التاريخ القادم',data.nextDate],['السيارة / الموديل',data.vehicle.replace(/ · /g,' ')],['رقم اللوحة',data.plate],['العداد الحالي · كم',data.odometer],['تاريخ الخدمة',data.serviceDate],['الخدمة / الزيت',data.service]];
-for(let i=0;i<rows.length;i++){const [label,value]=rows[i];const labels=wrap(label,false),values=wrap(value,true);const h=(labels.length+values.length)*110+40;box(50,y,1100,h,i<2||i===6?'#fffaf0':'white');let baseline=y+75;for(const l of labels){text(l,baseline,false,'#656565');baseline+=110;}for(const l of values){text(l,baseline,true);baseline+=110;}y+=h+8;}
+for(let i=0;i<rows.length;i++){const [label,value]=rows[i];const labels=wrap(label,false),values=wrap(value,true);const h=(labels.length+Math.max(1,values.length))*110+40;box(50,y,1100,h,i<2||i===6?'#fffaf0':'white');let baseline=y+75;for(const l of labels){text(l,baseline,false,'#656565');baseline+=110;}for(const l of values){text(l,baseline,true);baseline+=110;}y+=h+8;}
 
 if(y>2240)throw Error('البيانات طويلة على البطاقة بحجم خط 12. يرجى اختصار وصف الخدمة أو السيارة قبل المشاركة.');
 c.strokeStyle=gold;c.beginPath();c.moveTo(150,2250);c.lineTo(1050,2250);c.stroke();text(data.phone,2315,true);
@@ -69,7 +69,7 @@ export default function ServiceReminder({ data }: { data: ThermalReminderData })
     return()=>{cancelled=true;if(url)URL.revokeObjectURL(url);};
   },[data]);
   const number=whatsappNumber(data.customerPhone);
-  const message=[`مرحبًا ${data.customerName}، بطاقة تذكير الخدمة من YCD OIL.`,`السيارة: ${data.vehicle}`,`اللوحة: ${data.plate}`,`تاريخ الخدمة: ${data.serviceDate}`,`العداد الحالي: ${data.odometer} كم`,`الخدمة: ${data.service}`,`العداد القادم: ${data.nextKm}`,`التاريخ القادم: ${data.nextDate}`,`للتواصل: ${data.phone}`].join("\n");
+  const message=[`مرحبًا ${data.customerName}، بطاقة تذكير الخدمة من YCD OIL.`,`السيارة: ${data.vehicle}`,`اللوحة: ${data.plate}`,`تاريخ الخدمة: ${data.serviceDate}`,`العداد الحالي: ${data.odometer} كم`,`الخدمة: ${data.service}`,`العداد القادم: ${data.nextKm}`,...(data.nextDate ? [`التاريخ القادم: ${data.nextDate}`] : []),`للتواصل: ${data.phone}`].join("\n");
   const whatsapp=number?`https://wa.me/${number}?text=${encodeURIComponent(message)}`:null;
   function download(){const a=document.createElement("a");a.href=image;a.download="YCD-OIL-service-reminder.png";a.click();}
   async function share(){
