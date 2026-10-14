@@ -24,6 +24,11 @@ const api=load('app/api/secure/service-orders/[id]/items/route.ts',{
  assert.equal((await call(30,10.01)).status,409);assert.equal(writes,0);
  assert.equal((await call(30,10)).status,201);assert.equal(writes,1);
  let converted=await call(34.50,0,"true");assert.equal(converted.status,201);assert.equal((await converted.json()).item.unitPrice,30);
+ converted=await call(35,0,"true");assert.equal(converted.status,201);
+ const net=(await converted.json()).item.unitPrice;
+ const {Prisma}=require('@prisma/client');
+ const sum=new Prisma.Decimal(net).mul(4).plus(new Prisma.Decimal(25).div(1.15).toDecimalPlaces(6)).toDecimalPlaces(2);
+ assert.equal(sum.plus(sum.mul(.15).toDecimalPlaces(2)).toFixed(2),'165.00');
  assert.equal((await call(28,0,"true")).status,409);
  session=null;assert.equal((await call(30)).status,401);
  console.log('Passed: price bounds, upward minimum rounding, discounts, inactive products, server-side enforcement and authentication.');

@@ -33,7 +33,7 @@ export async function POST(
 
   if (parsed.data.priceIncludesVat === "true") {
     const divisor = new Prisma.Decimal(1).plus(companyConfig.vatRate);
-    parsed.data.unitPrice = new Prisma.Decimal(parsed.data.unitPrice).div(divisor).toDecimalPlaces(2).toNumber();
+    parsed.data.unitPrice = new Prisma.Decimal(parsed.data.unitPrice).div(divisor).toDecimalPlaces(6).toNumber();
     parsed.data.discount = new Prisma.Decimal(parsed.data.discount).div(divisor).toDecimalPlaces(2).toNumber();
   }
   const { id } = await params;

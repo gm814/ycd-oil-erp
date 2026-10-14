@@ -258,7 +258,7 @@ export default function OrderActions({
             <option value="INCLUSIVE">شامل الضريبة</option>
           </select>
         </label>
-        {priceIncludesVat && <p>يحوّل النظام سعر الوحدة والخصم إلى ما قبل الضريبة ويقرّبهما لأقرب هللة. راجع الإجمالي النهائي بعد إضافة البند.</p>}
+        {priceIncludesVat && <p>يحوّل النظام السعر إلى ما قبل الضريبة بدقة، ويقرّب إجمالي الفاتورة والضريبة إلى أقرب هللة.</p>}
         <div className="formRow">
           <label>الكمية<input name="quantity" type="number" min="0.001" step="0.001" defaultValue="1" required /></label>
           <label>{priceIncludesVat ? "سعر الوحدة شامل الضريبة" : "سعر الوحدة قبل الضريبة"}<input name="unitPrice" type="text" inputMode="decimal" dir="ltr" autoComplete="off" placeholder="29.75" onChange={event => { event.currentTarget.value = normalizeDecimal(event.currentTarget.value); }} required /></label>

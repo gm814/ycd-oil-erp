@@ -3,6 +3,8 @@ import { companyConfig as company } from "./config";
 import { buildZatcaPhase1QrPayload, buildZatcaPhase1QrSvg } from "./zatca";
 
 export const invoicePdfInclude = {
+  correctionOf: true,
+  correction: true,
   customer: true,
   serviceOrder: { include: { vehicle: true, items: { include: { product: true } } } },
   payments: { orderBy: { paidAt: "asc" as const } },
@@ -69,8 +71,10 @@ export function invoicePdfHtml(invoice: Invoice, format: "a4" | "epson80", logo:
 ${receipt ? "" : `  <footer class="contacts"><div class="addresses"><div><p>عنوان الشركة: ${pdfText(company.companyAddress)}</p><p>عنوان الفرع: ${pdfText(company.branchAddress)}</p></div><div lang="en" dir="ltr"><p>Company: Riyadh - Tuwaiq District</p><p>Branch: Riyadh - Tuwaiq District - Ahmad Ibn Al Khattab Street</p></div></div><p dir="ltr">${company.phone} | ${company.email} | ${company.website}</p></footer>`}
   <div class="brand-header"><div class="brand-ar"><b>${pdfText(company.legalNameAr)}</b><p>السجل التجاري: ${company.crNumber}</p><p>الرقم الموحد: ${company.unifiedNumber}</p></div><div class="brand-logo"><img src="data:image/svg+xml;base64,${logo}" alt="YCD OIL"></div><div class="brand-en"><b>${pdfText(company.legalNameEn)}</b><p>CR: ${company.crNumber}</p><p>Unified No.: ${company.unifiedNumber}</p></div></div>
   <header>
-  <h2>فاتورة ضريبية مبسطة</h2><h1 class="number">${pdfText(invoice.invoiceNo)}</h1>
+  <h2>${invoice.documentType === "DEBIT_NOTE" ? "إشعار مدين — تصحيح فرق سعر" : "فاتورة ضريبية مبسطة"}</h2><h1 class="number">${pdfText(invoice.invoiceNo)}</h1>
   <p>${date(invoice.createdAt)} | ${pdfText(statuses[invoice.status] || invoice.status)}</p>
+  ${invoice.correctionOf ? `<p>الفاتورة الأصلية: ${pdfText(invoice.correctionOf.invoiceNo)} | ${date(invoice.correctionOf.createdAt)}</p><p>السبب: ${pdfText(invoice.correctionReason)}</p><p>الأصل + الإشعار: ${money(Number(invoice.correctionOf.total)+Number(invoice.total))} ر.س</p><p>استكمال تسجيل السداد السابق — دون حركة مخزون أو دفع جديد.</p>` : ""}
+  ${invoice.correction ? `<p>إشعار مرتبط: ${pdfText(invoice.correction.invoiceNo)} | ${money(invoice.correction.total)} ر.س | الإجمالي مع الإشعار ${money(Number(invoice.total)+Number(invoice.correction.total))} ر.س</p>` : ""}
   ${invoice.dueAt ? `<p>الاستحقاق: ${date(invoice.dueAt)}</p>` : ""}</header>
   <p>الرقم الضريبي: <b class="number">${company.vatNumber}</b></p>
   <p>نسبة الضريبة: <span class="number">${money(Number(invoice.vatRate) * 100)}%</span></p>

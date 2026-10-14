@@ -26,12 +26,14 @@ export async function processSalesReturn(input: ReturnInput) {
     const invoice = await tx.invoice.findUnique({
       where: { id: input.invoiceId },
       include: {
+        correction: true,
         payments: { select: { amount: true } },
         returns: { where: { status: "COMPLETED" }, include: { items: true } },
         serviceOrder: { include: { items: { include: { product: true } } } },
       },
     });
     if (!invoice || invoice.serviceOrder.branchId !== input.branchId) throw new Error("INVOICE_NOT_FOUND");
+    if (invoice.documentType === "DEBIT_NOTE" || invoice.correction) throw new Error("CORRECTION_REVIEW_REQUIRED");
     if (invoice.status === "VOID") throw new Error("INVOICE_VOID");
 
     const requested = new Map(input.items.map((item) => [item.serviceOrderItemId, new Prisma.Decimal(item.quantity)]));

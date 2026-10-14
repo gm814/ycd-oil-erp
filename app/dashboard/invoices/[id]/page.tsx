@@ -4,6 +4,7 @@ import { companyConfig } from "@/lib/config";
 import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission, canViewInvoice } from "@/lib/rbac";
 import { buildZatcaPhase1QrPayload, buildZatcaPhase1QrSvg } from "@/lib/zatca";
+import PriceCorrectionForm from "./price-correction-form";
 import BuyerForm from "./buyer-form";
 import PrintButton from "./print-button";
 import CollectionForm from "./collection-form";
@@ -34,6 +35,8 @@ export default async function InvoicePage({
   const invoice = await db.invoice.findFirst({
     where: { id, serviceOrder: { branchId: session.branchId } },
     include: {
+      correctionOf: true,
+      correction: true,
       customer: true,
       serviceOrder: {
         include: {
@@ -93,8 +96,16 @@ export default async function InvoicePage({
         </header>
         <section className="invoiceHeading">
           <div className="invoiceTitle">
-            <span>فاتورة ضريبية مبسطة</span>
+            <span>{invoice.documentType === "DEBIT_NOTE" ? "إشعار مدين — تصحيح فرق سعر" : "فاتورة ضريبية مبسطة"}</span>
             <h1>{invoice.invoiceNo}</h1>
+            {invoice.correctionOf && <div>
+              <p>الفاتورة الأصلية: <a href={`/dashboard/invoices/${invoice.correctionOf.id}`}>{invoice.correctionOf.invoiceNo}</a></p>
+              <p>تاريخ الفاتورة الأصلية: {invoice.correctionOf.createdAt.toLocaleDateString("en-GB", {timeZone:"Asia/Riyadh"})}</p>
+              <p>سبب التصحيح: {invoice.correctionReason}</p>
+              <p>الأصل + الإشعار: {money(Number(invoice.correctionOf.total) + Number(invoice.total))}</p>
+              <p>استكمال تسجيل السداد السابق؛ لا توجد عملية دفع جديدة أو صرف مخزون.</p>
+            </div>}
+            {invoice.correction && <p>إشعار تصحيح مرتبط: <a href={`/dashboard/invoices/${invoice.correction.id}`}>{invoice.correction.invoiceNo}</a> — {money(Number(invoice.correction.total))}؛ الإجمالي مع الإشعار {money(Number(invoice.total)+Number(invoice.correction.total))}</p>}
             <p>{invoice.createdAt.toLocaleString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</p>
             <p><b>الحالة:</b> {invoice.status === "PAID" ? "مسددة" : invoice.status === "PARTIALLY_PAID" ? "مسددة جزئيًا" : invoice.status === "ISSUED" ? "مستحقة" : invoice.status}</p>
             {invoice.dueAt && <p><b>تاريخ الاستحقاق:</b> {invoice.dueAt.toLocaleDateString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</p>}
@@ -209,7 +220,7 @@ export default async function InvoicePage({
           </section>
         )}
 
-        {canReturn && invoice.status !== "VOID" && invoice.serviceOrder.items.some((item) => (returnedByItem.get(item.id) ?? 0) < Number(item.quantity)) && (
+        {canReturn && invoice.documentType === "INVOICE" && !invoice.correction && invoice.status !== "VOID" && invoice.serviceOrder.items.some((item) => (returnedByItem.get(item.id) ?? 0) < Number(item.quantity)) && (
           <section className="noPrint invoiceCollection">
             <SalesReturnForm
               invoiceId={invoice.id}
@@ -243,6 +254,11 @@ export default async function InvoicePage({
           <p dir="ltr">{companyConfig.phone} · {companyConfig.email} · {companyConfig.website}</p>
         </footer>
       </article>
+      {invoice.documentType === "INVOICE" && !invoice.correction && invoice.status === "PAID" && invoice.returns.length === 0 && invoice.payments.length === 1 &&
+        [PERMISSIONS.FINANCE_MANAGE, PERMISSIONS.INVOICE_ISSUE, PERMISSIONS.PAYMENT_RECEIVE].every(p=>hasPermission(session.permissions,p)) &&
+        <PriceCorrectionForm invoiceId={invoice.id} total={Number(invoice.total)} reference={invoice.payments[0].reference??""}
+          items={invoice.serviceOrder.items.map(i=>({id:i.id,name:i.descriptionAr,quantity:Number(i.quantity)}))}/>}
+
     </main>
   );
 }

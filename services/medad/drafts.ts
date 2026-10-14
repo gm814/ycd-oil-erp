@@ -59,6 +59,7 @@ export async function buildMedadDraft(tx:Prisma.TransactionClient,branchId:strin
   const method=invoice.dueAt?"CREDIT":methods[0];
   const paymentType=method?map("PAYMENT_METHOD",method):undefined;if(paymentType===undefined)issues.push("PAYMENT_MAPPING_REQUIRED");
   const vatKey=invoice.vatRate.mul(100).toString();const vatType=map("VAT",vatKey);if(vatType===undefined)issues.push("VAT_MAPPING_REQUIRED");
+  if(invoice.documentType === "DEBIT_NOTE")issues.push("DEBIT_NOTE_REVIEW_REQUIRED");
   if(invoice.returns.length)issues.push("RETURNED_INVOICE_REVIEW");
   if(invoice.total.isZero())issues.push("ZERO_INVOICE_REVIEW");
   const lines=invoice.serviceOrder.items.map((item,index)=>{

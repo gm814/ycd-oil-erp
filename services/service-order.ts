@@ -79,7 +79,7 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
     const subtotal = order.items.reduce(
       (sum, item) => sum.plus(item.unitPrice.mul(item.quantity).minus(item.discount)),
       new Prisma.Decimal(0),
-    );
+    ).toDecimalPlaces(2);
     const vatRate = new Prisma.Decimal(companyConfig.vatRate);
     const vatAmount = subtotal.mul(vatRate).toDecimalPlaces(2);
     const total = subtotal.plus(vatAmount);

@@ -48,7 +48,7 @@ export default async function DashboardPage() {
       include: { payments: true, serviceOrder: { include: { items: { include: { product: true } } } } },
     }),
     db.serviceOrder.count({
-      where: { branchId: session.branchId, createdAt: { gte: start, lt: end } },
+      where: { branchId: session.branchId, channel: { not: "PRICE_CORRECTION" }, createdAt: { gte: start, lt: end } },
     }),
     db.shift.findFirst({
       where: { branchId: session.branchId, closedAt: null },
@@ -114,8 +114,8 @@ export default async function DashboardPage() {
   const [transactions, payments, previousCars, recentOrders, requests] = await Promise.all([
     db.financialTransaction.findMany({ where: { branchId: session.branchId, type: "EXPENSE", createdAt: { gte: weekStart, lt: end } }, select: { amount: true, createdAt: true } }),
     db.payment.findMany({ where: { paidAt: { gte: start, lt: end }, invoice: { status: { not: "VOID" }, serviceOrder: { branchId: session.branchId } } }, select: { method: true, amount: true } }),
-    db.serviceOrder.count({ where: { branchId: session.branchId, createdAt: { gte: previousStart, lt: start } } }),
-    db.serviceOrder.findMany({ where: { branchId: session.branchId, createdAt: { gte: start, lt: end } }, include: { vehicle: true, items: true }, orderBy: { createdAt: "desc" }, take: 5 }),
+    db.serviceOrder.count({ where: { branchId: session.branchId, channel: { not: "PRICE_CORRECTION" }, createdAt: { gte: previousStart, lt: start } } }),
+    db.serviceOrder.findMany({ where: { branchId: session.branchId, channel: { not: "PRICE_CORRECTION" }, createdAt: { gte: start, lt: end } }, include: { vehicle: true, items: true }, orderBy: { createdAt: "desc" }, take: 5 }),
     db.purchaseRequest.findMany({ where: { branchId: session.branchId, status: "PENDING_APPROVAL" }, select: { id: true, requestNo: true, createdAt: true }, orderBy: { createdAt: "desc" }, take: 5 }),
   ]);
   const total = (from: Date, to: Date) => invoices.filter(i=>i.createdAt>=from && i.createdAt<to).reduce((n,i)=>n+Number(i.total),0);
