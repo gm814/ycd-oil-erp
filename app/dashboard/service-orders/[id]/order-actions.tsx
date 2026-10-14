@@ -43,6 +43,8 @@ export default function OrderActions({
   const searchWords = normalizeSearch(productSearch).trim().split(/\s+/).filter(Boolean);
   const filteredProducts = products.filter(product => searchWords.every(word => normalizeSearch(`${product.sku} ${product.nameAr}`).includes(word)));
   const [selectedProduct, setSelectedProduct] = useState<ProductOption | null>(null);
+  const [odometerInput, setOdometerInput] = useState(String(odometer ?? ""));
+  const odometerChanged = odometerInput !== String(odometer ?? "");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
@@ -97,7 +99,35 @@ export default function OrderActions({
     router.refresh();
   }
 
+  async function saveOdometer(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const value = normalizeDecimal(odometerInput).trim();
+    if (!/^[0-9]+$/.test(value) || Number(value) > 2_000_000) {
+      setMessage("أدخل قراءة عداد صحيحة من 0 إلى 2,000,000 كم.");
+      return;
+    }
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch(`/api/secure/service-orders/${orderId}/odometer`, {
+        method: "PATCH", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ odometer: Number(value) }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        setMessage(result.error === "ODOMETER_DECREASE" ? "القراءة أقل من قراءة زيارة مكتملة سابقة؛ راجع العداد." : result.error === "ORDER_LOCKED" ? "أمر الخدمة مقفل ولا يمكن تعديل العداد." : "تعذر حفظ القراءة؛ راجع الصلاحيات وأعد المحاولة.");
+        return;
+      }
+      setOdometerInput(String(result.odometer));
+      setMessage("تم حفظ قراءة العداد. يُحدّث العداد القادم حسب أصناف الزيت المضافة.");
+      router.refresh();
+    } catch {
+      setMessage("تعذر الاتصال لحفظ العداد؛ أعد المحاولة.");
+    } finally { setBusy(false); }
+  }
+
   async function complete() {
+    if (odometerChanged) { setMessage("احفظ قراءة العداد الحالية قبل إقفال الخدمة."); return; }
     if (intervalMode === "MANUAL" && !manualValid) {
       setMessage(odometer === null ? "يجب تسجيل قراءة العداد الحالية قبل الحساب اليدوي." : "أدخل عدد كيلومترات صحيحًا أكبر من صفر، بحيث لا يتجاوز العداد القادم 3,000,000 كم.");
       return;
@@ -203,6 +233,16 @@ export default function OrderActions({
       </form>
 
       <hr className="divider" />
+
+      <form className="intakeForm" onSubmit={saveOdometer}>
+        <label>قراءة العداد الحالية (كم)
+          <input type="text" inputMode="numeric" dir="ltr" value={odometerInput}
+            onChange={event => setOdometerInput(normalizeDecimal(event.target.value))}
+            required placeholder="مثال: 160000" />
+        </label>
+        <button type="submit" disabled={busy || !odometerChanged}>حفظ قراءة العداد</button>
+        {odometerChanged && <p>القراءة لم تُحفظ بعد. احفظها لتحديث العداد القادم.</p>}
+      </form>
 
       <div className="intakeForm closingFields">
         <h3>الإقفال والدفع والخدمة القادمة</h3>
