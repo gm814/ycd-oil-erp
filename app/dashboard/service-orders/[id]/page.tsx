@@ -59,6 +59,7 @@ export default async function ServiceOrderPage({
           <h2>إضافة خدمة / مادة</h2>
           <OrderActions
             orderId={order.id}
+            odometer={order.odometer}
             reminder={oilServiceReminder(order.odometer, order.items)}
             locked={Boolean(order.invoice) || order.status === "CANCELLED"}
             products={products.map((product) => ({

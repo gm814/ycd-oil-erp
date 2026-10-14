@@ -10,3 +10,12 @@ export function oilServiceReminder(odometer: number | null, items: readonly {
   if (odometer === null || !Number.isSafeInteger(odometer) || odometer < 0) return { nextKm: null, reason: "NO_ODOMETER" } as const;
   return { nextKm: odometer + intervals[0]!, reason: "READY" } as const;
 }
+
+// Manual distance applies to this service order only, not the product default.
+export function manualOilServiceKm(odometer: number | null, intervalKm: number) {
+  if (!Number.isSafeInteger(intervalKm) || intervalKm <= 0 || intervalKm > 3_000_000) throw new Error("INVALID_SERVICE_INTERVAL");
+  if (odometer === null || !Number.isSafeInteger(odometer) || odometer < 0) throw new Error("SERVICE_ODOMETER_REQUIRED");
+  const nextKm = odometer + intervalKm;
+  if (!Number.isSafeInteger(nextKm) || nextKm > 3_000_000) throw new Error("NEXT_SERVICE_KM_INVALID");
+  return nextKm;
+}

@@ -17,12 +17,14 @@ type PaymentMethod = "CASH" | "CARD" | "TRANSFER" | "CREDIT";
 
 export default function OrderActions({
   orderId,
+  odometer,
   locked,
   products,
   reminder,
 }: {
   reminder: { nextKm: number | null; reason: string };
   orderId: string;
+  odometer: number | null;
   locked: boolean;
   products: ProductOption[];
 }) {
@@ -33,6 +35,11 @@ export default function OrderActions({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
   const [paymentReference, setPaymentReference] = useState("");
   const [nextServiceKm, setNextServiceKm] = useState("");
+  const [intervalMode, setIntervalMode] = useState("AUTO");
+  const [manualInterval, setManualInterval] = useState("");
+  const distance = Number(manualInterval);
+  const manualValid = manualInterval.trim() !== "" && Number.isSafeInteger(distance) && distance > 0 && odometer !== null && Number.isSafeInteger(odometer) && odometer >= 0 && odometer + distance <= 3_000_000;
+  const manualNextKm = manualValid ? odometer! + distance : "";
 
   async function addItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -60,6 +67,10 @@ export default function OrderActions({
   }
 
   async function complete() {
+    if (intervalMode === "MANUAL" && !manualValid) {
+      setMessage(odometer === null ? "يجب تسجيل قراءة العداد الحالية قبل الحساب اليدوي." : "أدخل عدد كيلومترات صحيحًا أكبر من صفر، بحيث لا يتجاوز العداد القادم 3,000,000 كم.");
+      return;
+    }
     if (!confirm("تأكيد إقفال أمر الخدمة وإصدار الفاتورة وتسجيل الدفع؟")) return;
     setBusy(true);
     setMessage("");
@@ -67,7 +78,8 @@ export default function OrderActions({
     const payload = {
       paymentMethod,
       paymentReference: paymentReference.trim() || undefined,
-      nextServiceKm: reminder.reason === "NO_OIL" && nextServiceKm ? Number(nextServiceKm) : undefined,
+      nextServiceKm: intervalMode === "AUTO" && reminder.reason === "NO_OIL" && nextServiceKm ? Number(nextServiceKm) : undefined,
+      manualServiceIntervalKm: intervalMode === "MANUAL" ? distance : undefined,
       idempotencyReference,
     };
 
@@ -83,6 +95,8 @@ export default function OrderActions({
       const errors: Record<string, string> = {
         PRICE_OUT_OF_RANGE: "سعر أحد البنود أو صافي البيع بعد الخصم خارج الحدود المعتمدة.",
         PRODUCT_INACTIVE: "أحد الأصناف غير نشط.",
+        INVALID_SERVICE_INTERVAL: "أدخل مسافة تغيير الزيت عددًا صحيحًا أكبر من صفر.",
+        SERVICE_ODOMETER_REQUIRED: "يجب تسجيل قراءة العداد الحالية قبل الحساب اليدوي.",
         NEXT_SERVICE_KM_INVALID: "كيلومترات الخدمة القادمة يجب أن تكون أكبر من قراءة العداد الحالية.",
         NEXT_SERVICE_DATE_INVALID: "تاريخ الخدمة القادمة غير صالح.",
         INSUFFICIENT_STOCK: "المخزون غير كافٍ لإقفال الأمر.",
@@ -166,14 +180,27 @@ export default function OrderActions({
           </label>
         )}
 
+        <label>حساب عداد تغيير الزيت القادم
+          <select value={intervalMode} onChange={event => setIntervalMode(event.target.value)}>
+            <option value="AUTO">تلقائي حسب صنف الزيت</option>
+            <option value="MANUAL">يدوي — إدخال عدد الكيلومترات</option>
+          </select>
+        </label>
+        {intervalMode === "MANUAL" && <>
+          <p>قراءة العداد الحالية: {odometer === null ? "غير مسجلة" : `${odometer.toLocaleString("en-US")} كم`}</p>
+          <label>تغيير الزيت بعد (كم)
+            <input type="number" min="1" max="3000000" step="1" value={manualInterval} onChange={event => setManualInterval(event.target.value)} placeholder="مثال: 7000" />
+          </label>
+          <p>تُضاف هذه المسافة إلى قراءة العداد الحالية لهذا الأمر فقط.</p>
+        </>}
         <div className="formRow">
           <label>الخدمة القادمة عند عداد
             <input
               type="number"
               min="0"
               max="3000000"
-              value={reminder.reason === "NO_OIL" ? nextServiceKm : reminder.nextKm ?? ""}
-              readOnly={reminder.reason !== "NO_OIL"}
+              value={intervalMode === "MANUAL" ? manualNextKm : reminder.reason === "NO_OIL" ? nextServiceKm : reminder.nextKm ?? ""}
+              readOnly={intervalMode === "MANUAL" || reminder.reason !== "NO_OIL"}
               onChange={(event) => setNextServiceKm(event.target.value)}
               placeholder={reminder.reason === "NO_OIL" ? "اختياري" : "حدد فترة صنف الزيت وقراءة العداد"}
             />
@@ -183,8 +210,8 @@ export default function OrderActions({
           </label>
         </div>
 
-        <p>للزيوت: يُحسب العداد القادم من قراءة العداد الحالية + فترة خدمة الصنف في المخزون. التاريخ القادم يُترك فارغًا.</p>
-        {reminder.reason === "CONFLICT" && <p role="alert">أصناف الزيت المختارة لها فترات مختلفة؛ راجع الأصناف قبل الإقفال.</p>}
+        <p>يُحسب العداد القادم من القراءة الحالية + فترة الصنف تلقائيًا، أو المسافة المدخلة يدويًا. التاريخ القادم يُترك فارغًا.</p>
+        {intervalMode === "AUTO" && reminder.reason === "CONFLICT" && <p role="alert">أصناف الزيت المختارة لها فترات مختلفة؛ راجع الأصناف قبل الإقفال.</p>}
         <button className="completeButton" type="button" disabled={busy} onClick={complete}>
           إقفال الخدمة وإصدار الفاتورة
         </button>

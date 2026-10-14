@@ -1,5 +1,5 @@
 import { validateProductPrice } from "@/lib/product-pricing";
-import { oilServiceReminder } from "@/lib/oil-service-interval";
+import { oilServiceReminder, manualOilServiceKm } from "@/lib/oil-service-interval";
 import { receiptAccount } from "@/services/cash-drawer";
 import { nextDocumentNumber } from "@/lib/document-number";
 import { captureMedad } from "@/services/medad/outbox";
@@ -15,6 +15,7 @@ type CompleteServiceInput = {
   paymentMethod: "CASH" | "CARD" | "TRANSFER" | "CREDIT";
   paymentReference?: string;
   nextServiceKm?: number;
+  manualServiceIntervalKm?: number;
   nextServiceAt?: Date;
   idempotencyReference: string;
 };
@@ -46,7 +47,9 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
     if (!order || order.branchId !== input.branchId) throw new Error("SERVICE_ORDER_NOT_FOUND");
     if (order.invoice) return order.invoice;
     const reminder = oilServiceReminder(order.odometer, order.items);
-    const nextServiceKm = reminder.reason === "NO_OIL" ? input.nextServiceKm : reminder.nextKm ?? undefined;
+    const nextServiceKm = input.manualServiceIntervalKm !== undefined
+      ? manualOilServiceKm(order.odometer, input.manualServiceIntervalKm)
+      : reminder.reason === "NO_OIL" ? input.nextServiceKm : reminder.nextKm ?? undefined;
     if (nextServiceKm !== undefined && nextServiceKm <= (order.odometer ?? order.vehicle.currentOdometer ?? -1)) throw new Error("NEXT_SERVICE_KM_INVALID");
     if (input.nextServiceAt && Number.isNaN(input.nextServiceAt.getTime())) throw new Error("NEXT_SERVICE_DATE_INVALID");
     if (order.status === "CANCELLED") throw new Error("SERVICE_ORDER_CANCELLED");
@@ -230,6 +233,8 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
           paymentMethod: input.paymentMethod,
           couponSerial,
           nextServiceKm: nextServiceKm ?? null,
+          manualServiceIntervalKm: input.manualServiceIntervalKm ?? null,
+          serviceIntervalSource: input.manualServiceIntervalKm !== undefined ? "MANUAL" : reminder.reason === "NO_OIL" ? "DIRECT" : "PRODUCT",
           nextServiceAt: input.nextServiceAt?.toISOString() ?? null,
         },
       },

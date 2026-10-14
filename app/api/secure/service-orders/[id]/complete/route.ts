@@ -8,6 +8,7 @@ import { completeServiceOrder } from "@/services/service-order";
 const schema = z.object({
   paymentMethod: z.enum(["CASH", "CARD", "TRANSFER", "CREDIT"]),
   paymentReference: z.string().trim().max(120).optional(),
+  manualServiceIntervalKm: z.number().int().positive().max(3_000_000).optional(),
   nextServiceKm: z.number().int().min(0).max(3_000_000).optional(),
   nextServiceAt: z.string().refine(value => Boolean(riyadhDateRange(value, value)), "INVALID_DATE").optional(),
   idempotencyReference: z.string().trim().min(12).max(120),
@@ -43,6 +44,7 @@ export async function POST(
       paymentMethod: parsed.data.paymentMethod,
       paymentReference: parsed.data.paymentReference,
       nextServiceKm: parsed.data.nextServiceKm,
+      manualServiceIntervalKm: parsed.data.manualServiceIntervalKm,
       nextServiceAt: parsed.data.nextServiceAt
         ? new Date(`${parsed.data.nextServiceAt}T00:00:00+03:00`)
         : undefined,

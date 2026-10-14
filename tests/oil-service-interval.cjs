@@ -23,7 +23,13 @@ assert.equal(helper.oilServiceReminder(null, [oil(5000)]).reason, 'NO_ODOMETER')
 assert.equal(helper.oilServiceReminder(50000, [{product:{category:'SERVICE'}}]).reason, 'NO_OIL');
 for (const value of [5000, '5000', 10000, '10000', null, '', undefined]) assert.ok(inputs.serviceIntervalInput.safeParse(value).success);
 for (const value of [0, -5000, 7000, '5w30', true]) assert.equal(inputs.serviceIntervalInput.safeParse(value).success, false);
+assert.equal(helper.manualOilServiceKm(50000,7000),57000);
+assert.equal(helper.manualOilServiceKm(0,1000),1000);
+for (const km of [0,-1,1.5,NaN,Infinity,3000001]) assert.throws(()=>helper.manualOilServiceKm(50000,km),/INVALID_SERVICE_INTERVAL/);
+assert.throws(()=>helper.manualOilServiceKm(null,7000),/SERVICE_ODOMETER_REQUIRED/);
+assert.throws(()=>helper.manualOilServiceKm(2999999,2),/NEXT_SERVICE_KM_INVALID/);
 let history;
+let audit;
 let invoice;
 let order;
 const tx = {
@@ -34,7 +40,7 @@ const tx = {
   invoice: {create: async({data})=>invoice={...data,id:'invoice'},findUniqueOrThrow:async()=>invoice},
   washAgreement: {findUnique:async()=>null},
   vehicleHistory: {create:async({data})=>{history=data;}},
-  vehicle: {update:async()=>({})}, auditLog:{create:async()=>({})},
+  vehicle: {update:async()=>({})}, auditLog:{create:async({data})=>{audit=data;return {};}},
 };
 const complete = load('services/service-order.ts', {
   '@/lib/oil-service-interval':helper,
@@ -62,6 +68,12 @@ async function main(){
     assert.equal(history.nextServiceKm,km?50000+km:undefined); // Server derives from product, not browser input.
     assert.equal(history.nextServiceAt,undefined);
   }
+  await complete(tx,{serviceOrderId:'order',branchId:'branch',actorId:'user',paymentMethod:'CASH',manualServiceIntervalKm:7000,nextServiceKm:99999,idempotencyReference:'manual'});
+  assert.equal(history.nextServiceKm,57000);
+  assert.equal(history.nextServiceAt,undefined);
+  assert.equal(audit.afterJson.manualServiceIntervalKm,7000);
+  assert.equal(audit.afterJson.serviceIntervalSource,'MANUAL');
+  await assert.rejects(complete(tx,{serviceOrderId:'order',branchId:'branch',actorId:'user',paymentMethod:'CASH',manualServiceIntervalKm:0,idempotencyReference:'bad'}),/INVALID_SERVICE_INTERVAL/);
   order.items[0].product = { category: 'OIL', serviceIntervalKm: 5000, active: true, costBasedPricing: true, costPrice: new Prisma.Decimal(20) };
   order.items[0].unitPrice = new Prisma.Decimal(24.99);
   await assert.rejects(complete(tx,{serviceOrderId:'order',branchId:'branch',actorId:'user',paymentMethod:'CASH',idempotencyReference:'pricing'}), /PRICE_OUT_OF_RANGE/);
