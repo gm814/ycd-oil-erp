@@ -1,3 +1,4 @@
+import OpeningStockImport from "./opening-stock-import";
 import { productPriceRange } from "@/lib/product-pricing";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
@@ -54,6 +55,7 @@ export default async function InventoryPage() {
         <p>عدد الأصناف المسعرة: {products.filter(p => p.costBasedPricing).length}. سعر البيع الافتراضي عند الحد الأدنى: التكلفة × 1.25. الحد الأعلى: التكلفة × 6. الحدود قبل الضريبة وتشمل صافي البيع بعد الخصم.</p>
         <p>الزيوت: {products.filter(p => p.costBasedPricing && p.category === "OIL" && p.serviceIntervalKm === 5000).length} صنفًا بفترة 5,000 كم، و{products.filter(p => p.costBasedPricing && p.category === "OIL" && p.serviceIntervalKm === 10000).length} بفترة 10,000 كم، و{products.filter(p => p.costBasedPricing && p.category === "OIL" && !p.serviceIntervalKm).length} بانتظار تحديد الفترة.</p>
       </article>}
+      {canManage && <OpeningStockImport />}
       {canManage && <CatalogImport />}
       {canManage && <InventoryForms products={products.map((p) => ({ id: p.id, sku: p.sku, nameAr: p.nameAr, category: p.category, serviceIntervalKm: p.serviceIntervalKm }))} />}
 
