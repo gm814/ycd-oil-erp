@@ -29,7 +29,7 @@ export default function PriceCorrectionForm({invoiceId,total,reference,items}:{i
   }catch{setMessage("تعذر الاتصال. حدّث الصفحة للتحقق من وجود الإشعار قبل إعادة المحاولة.");}
   finally{setBusy(false);}
  }
- return <details className="noPrint"><summary>تصحيح زيادة السعر — إشعار مدين</summary>
+ return <details className="noPrint" open><summary>تصحيح زيادة السعر — إشعار مدين</summary>
   <form className="intakeForm" onSubmit={submit}>
    <p>يسجل فرق سعر سبق تحصيله بإيصال واحد. تبقى الفاتورة الأصلية والمخزون والكوبونات دون تغيير.</p>
    {items.map(i=><label key={i.id}>{i.name} — الكمية {i.quantity} — سعر الوحدة الصحيح شامل الضريبة

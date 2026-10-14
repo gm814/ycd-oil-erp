@@ -220,6 +220,26 @@ export default async function InvoicePage({
           </section>
         )}
 
+        {invoice.documentType === "INVOICE" && (
+          <section className="noPrint invoiceCollection" aria-label="تصحيح سعر الفاتورة">
+            <h3>تصحيح سعر الفاتورة</h3>
+            {invoice.correction ? (
+              <p>تم إصدار إشعار تصحيح مرتبط: <a href={`/dashboard/invoices/${invoice.correction.id}`}>{invoice.correction.invoiceNo}</a></p>
+            ) : ![PERMISSIONS.FINANCE_MANAGE, PERMISSIONS.INVOICE_ISSUE, PERMISSIONS.PAYMENT_RECEIVE].every(p => hasPermission(session.permissions, p)) ? (
+              <p>تصحيح زيادة السعر غير متاح لهذا الحساب. يلزم حساب مخوّل بإدارة المالية وإصدار الفواتير وتسجيل التحصيل. افتح الفاتورة بحساب يحمل هذه الصلاحيات.</p>
+            ) : invoice.status !== "PAID" ? (
+              <p>تصحيح زيادة السعر غير متاح: يشترط أن تكون الفاتورة مسددة بالكامل.</p>
+            ) : invoice.returns.length > 0 ? (
+              <p>تصحيح زيادة السعر غير متاح: توجد مرتجعات لهذه الفاتورة، وتحتاج مراجعة مالية.</p>
+            ) : invoice.payments.length !== 1 ? (
+              <p>تصحيح زيادة السعر غير متاح: تتطلب هذه المعالجة دفعة واحدة مسجلة على الفاتورة. عدد الدفعات الحالي: {invoice.payments.length}.</p>
+            ) : (
+              <PriceCorrectionForm invoiceId={invoice.id} total={Number(invoice.total)} reference={invoice.payments[0].reference ?? ""}
+                items={invoice.serviceOrder.items.map(i => ({id: i.id, name: i.descriptionAr, quantity: Number(i.quantity)}))}/>
+            )}
+          </section>
+        )}
+
         {canReturn && invoice.documentType === "INVOICE" && !invoice.correction && invoice.status !== "VOID" && invoice.serviceOrder.items.some((item) => (returnedByItem.get(item.id) ?? 0) < Number(item.quantity)) && (
           <section className="noPrint invoiceCollection">
             <SalesReturnForm
@@ -254,10 +274,7 @@ export default async function InvoicePage({
           <p dir="ltr">{companyConfig.phone} · {companyConfig.email} · {companyConfig.website}</p>
         </footer>
       </article>
-      {invoice.documentType === "INVOICE" && !invoice.correction && invoice.status === "PAID" && invoice.returns.length === 0 && invoice.payments.length === 1 &&
-        [PERMISSIONS.FINANCE_MANAGE, PERMISSIONS.INVOICE_ISSUE, PERMISSIONS.PAYMENT_RECEIVE].every(p=>hasPermission(session.permissions,p)) &&
-        <PriceCorrectionForm invoiceId={invoice.id} total={Number(invoice.total)} reference={invoice.payments[0].reference??""}
-          items={invoice.serviceOrder.items.map(i=>({id:i.id,name:i.descriptionAr,quantity:Number(i.quantity)}))}/>}
+
 
     </main>
   );
