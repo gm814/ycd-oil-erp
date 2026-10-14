@@ -54,6 +54,14 @@ export default function OrderActions({
   const manualValid = manualInterval.trim() !== "" && Number.isSafeInteger(distance) && distance > 0 && odometer !== null && Number.isSafeInteger(odometer) && odometer >= 0 && odometer + distance <= 3_000_000;
   const manualNextKm = manualValid ? odometer! + distance : "";
 
+  function selectProduct(product: ProductOption | null, form: HTMLFormElement | null) {
+    setSelectedProduct(product);
+    const description = form?.elements.namedItem("descriptionAr") as HTMLInputElement | null;
+    const price = form?.elements.namedItem("unitPrice") as HTMLInputElement | null;
+    if (description) description.value = product?.nameAr ?? "";
+    if (price) price.value = product ? String(product.salePrice) : "";
+  }
+
   async function addItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (productSearch.trim() && !selectedProduct) { setMessage("اختر الصنف من نتائج البحث أولًا."); return; }
@@ -152,44 +160,38 @@ export default function OrderActions({
           <input type="search" value={productSearch} placeholder="مثال: فلتر رينو أو 8200033408 أو فوكس" autoComplete="off"
             onKeyDown={event => { if (event.key === "Enter") event.preventDefault(); }}
             onChange={event => {
-              setProductSearch(event.target.value);
-              setSelectedProduct(null);
-              const form = event.currentTarget.form;
-              for (const name of ["descriptionAr", "unitPrice"]) {
-                const input = form?.elements.namedItem(name) as HTMLInputElement | null;
-                if (input) input.value = "";
-              }
+              const query = event.target.value;
+              setProductSearch(query);
+              const words = normalizeSearch(query).trim().split(/\s+/).filter(Boolean);
+              const matches = words.length ? products.filter(product => words.every(word => normalizeSearch(`${product.sku} ${product.nameAr}`).includes(word))) : [];
+              const exact = matches.find(product => normalizeSearch(product.sku) === normalizeSearch(query).trim());
+              selectProduct(exact ?? (matches.length === 1 ? matches[0] : null), event.currentTarget.form);
             }} />
         </label>
-        {productSearch.trim() && <p role="status">{filteredProducts.length ? `نتائج البحث: ${filteredProducts.length} — اختر الصنف من القائمة أدناه.` : "لا توجد أصناف مطابقة؛ جرّب جزءًا من الاسم أو الكود."}</p>}
-        <label>الصنف / الخدمة
+        {productSearch.trim() ? <>
+          <input type="hidden" name="productId" value={selectedProduct?.id ?? ""} />
+          <p role="status">{selectedProduct ? `تم اختيار: ${selectedProduct.nameAr}` : filteredProducts.length ? `نتائج البحث: ${filteredProducts.length} — اضغط على الصنف المطلوب.` : "لا توجد أصناف مطابقة؛ جرّب جزءًا من الاسم أو الكود."}</p>
+          {filteredProducts.length > 0 && <div aria-label="نتائج بحث الأصناف" style={{ maxHeight: 280, overflowY: "auto", display: "grid", gap: 8 }}>
+            {filteredProducts.map(product => <button
+              key={product.id}
+              type="button"
+              aria-pressed={selectedProduct?.id === product.id}
+              onClick={event => selectProduct(product, event.currentTarget.form)}
+              style={{ textAlign: "right", background: selectedProduct?.id === product.id ? "#fff2cc" : "#fff", color: "#252525", border: selectedProduct?.id === product.id ? "2px solid #d99816" : "1px solid #ddd", padding: "12px 16px" }}
+            >
+              <strong dir="ltr">{product.sku}</strong> — {product.nameAr}
+            </button>)}
+          </div>}
+        </> : <label>الصنف / الخدمة
           <select
             name="productId"
             value={selectedProduct?.id ?? ""}
-            onChange={(event) => {
-              const product = products.find((item) => item.id === event.target.value);
-              setSelectedProduct(product ?? null);
-              const form = event.currentTarget.form;
-              if (!form) return;
-              if (!product) {
-                for (const name of ["descriptionAr", "unitPrice"]) {
-                  const input = form.elements.namedItem(name) as HTMLInputElement | null;
-                  if (input) input.value = "";
-                }
-                return;
-              }
-              const description = form.elements.namedItem("descriptionAr") as HTMLInputElement | null;
-              const price = form.elements.namedItem("unitPrice") as HTMLInputElement | null;
-              if (description) description.value = product.nameAr;
-              if (price) price.value = String(product.salePrice);
-            }}
+            onChange={event => selectProduct(products.find(product => product.id === event.target.value) ?? null, event.currentTarget.form)}
           >
-            <option value="">{productSearch.trim() ? "اختر الصنف من نتائج البحث" : "بند يدوي بدون مخزون"}</option>
-            {filteredProducts.map((product) => (
-              <option key={product.id} value={product.id}>{product.sku} — {product.nameAr}</option>
-            ))}
+            <option value="">بند يدوي بدون مخزون</option>
+            {products.map(product => <option key={product.id} value={product.id}>{product.sku} — {product.nameAr}</option>)}
           </select>
-        </label>
+        </label>}
         <label>وصف الخدمة / المادة<input name="descriptionAr" required /></label>
         <div className="formRow">
           <label>الكمية<input name="quantity" type="number" min="0.001" step="0.001" defaultValue="1" required /></label>
