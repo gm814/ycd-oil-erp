@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { hasPermission, PERMISSIONS } from "@/lib/rbac";
+import { canViewInvoice } from "@/lib/rbac";
 import { invoicePdfHtml, invoicePdfInclude } from "@/lib/invoice-pdf";
 
 export const runtime = "nodejs";
@@ -15,7 +15,7 @@ const headers = { "Cache-Control": "private, no-store", "X-Content-Type-Options"
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session || session.mustChangePassword) return new Response("يرجى تسجيل الدخول أولًا", { status: 401, headers });
-  if (!session.branchId || !hasPermission(session.permissions, PERMISSIONS.CUSTOMER_VIEW)) return new Response("غير مصرح", { status: 403, headers });
+  if (!session.branchId || !canViewInvoice(session.permissions)) return new Response("غير مصرح", { status: 403, headers });
   const { id } = await params;
   const format = new URL(request.url).searchParams.get("format") || "a4";
   if (format !== "a4" && format !== "epson80") return new Response("تنسيق غير صالح", { status: 400, headers });

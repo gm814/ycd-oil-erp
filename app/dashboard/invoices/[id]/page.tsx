@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { companyConfig } from "@/lib/config";
 import { getSession } from "@/lib/auth";
-import { PERMISSIONS, hasPermission } from "@/lib/rbac";
+import { PERMISSIONS, hasPermission, canViewInvoice } from "@/lib/rbac";
 import { buildZatcaPhase1QrPayload, buildZatcaPhase1QrSvg } from "@/lib/zatca";
 import BuyerForm from "./buyer-form";
 import PrintButton from "./print-button";
@@ -28,7 +28,7 @@ export default async function InvoicePage({
   const session = await getSession();
   if (!session) redirect("/");
   if (!session.branchId) redirect("/dashboard");
-  if (!hasPermission(session.permissions, PERMISSIONS.CUSTOMER_VIEW)) redirect("/dashboard");
+  if (!canViewInvoice(session.permissions)) redirect("/dashboard");
 
   const { id } = await params;
   const invoice = await db.invoice.findFirst({
@@ -79,7 +79,9 @@ export default async function InvoicePage({
   return (
     <main className="workspace invoiceWorkspace">
       <div className="invoiceActions noPrint">
-        <a href={`/dashboard/customers/${invoice.customerId}`} className="backLink">← ملف العميل</a>
+        {hasPermission(session.permissions, PERMISSIONS.CUSTOMER_VIEW)
+          ? <a href={`/dashboard/customers/${invoice.customerId}`} className="backLink">← ملف العميل</a>
+          : <a href={`/dashboard/service-orders/${invoice.serviceOrderId}`} className="backLink">← أمر الخدمة</a>}
         <PrintButton invoiceId={invoice.id} />
       </div>
 
