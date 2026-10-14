@@ -13,6 +13,13 @@ type ProductOption = {
   category: string;
 };
 
+// Text inputs preserve a trailing decimal separator while typing in Arabic browsers.
+function normalizeDecimal(value: string) {
+  return value.replace(/[٠-٩]/g, digit => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+    .replace(/[۰-۹]/g, digit => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+    .replace(/[٫،,]/g, ".");
+}
+
 type PaymentMethod = "CASH" | "CARD" | "TRANSFER" | "CREDIT";
 
 export default function OrderActions({
@@ -50,10 +57,18 @@ export default function OrderActions({
   async function addItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (productSearch.trim() && !selectedProduct) { setMessage("اختر الصنف من نتائج البحث أولًا."); return; }
-    setBusy(true);
-    setMessage("");
     const formElement = event.currentTarget;
     const payload = Object.fromEntries(new FormData(formElement).entries());
+    for (const field of ["unitPrice", "discount"]) {
+      const value = normalizeDecimal(String(payload[field] ?? "")).trim();
+      if (!/^(?:[0-9]+(?:\.[0-9]{0,2})?|\.[0-9]{1,2})$/.test(value) || !Number.isFinite(Number(value))) {
+        setMessage("أدخل السعر والخصم كأرقام صحيحة أو عشرية، مثل 29.75.");
+        return;
+      }
+      payload[field] = value;
+    }
+    setBusy(true);
+    setMessage("");
 
     const response = await fetch(`/api/secure/service-orders/${orderId}/items`, {
       method: "POST",
@@ -178,10 +193,10 @@ export default function OrderActions({
         <label>وصف الخدمة / المادة<input name="descriptionAr" required /></label>
         <div className="formRow">
           <label>الكمية<input name="quantity" type="number" min="0.001" step="0.001" defaultValue="1" required /></label>
-          <label>سعر الوحدة<input name="unitPrice" type="number" min={selectedProduct?.minPrice ?? 0} max={selectedProduct?.maxPrice ?? undefined} step="0.01" required /></label>
+          <label>سعر الوحدة قبل الضريبة<input name="unitPrice" type="text" inputMode="decimal" dir="ltr" autoComplete="off" placeholder="29.75" onChange={event => { event.currentTarget.value = normalizeDecimal(event.currentTarget.value); }} required /></label>
         </div>
         {selectedProduct?.minPrice != null && <p>نطاق سعر الوحدة قبل الضريبة: {selectedProduct.minPrice.toFixed(2)}–{selectedProduct.maxPrice?.toFixed(2)} ر.س. يشمل الحد الأدنى صافي البيع بعد الخصم.</p>}
-        <label>الخصم<input name="discount" type="number" min="0" step="0.01" defaultValue="0" /></label>
+        <label>الخصم<input name="discount" type="text" inputMode="decimal" dir="ltr" autoComplete="off" onChange={event => { event.currentTarget.value = normalizeDecimal(event.currentTarget.value); }} defaultValue="0" required /></label>
         <button type="submit" disabled={busy || Boolean(productSearch.trim() && !selectedProduct)}>إضافة البند</button>
       </form>
 
