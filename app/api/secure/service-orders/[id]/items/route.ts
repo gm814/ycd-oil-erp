@@ -1,3 +1,5 @@
+import { companyConfig } from "@/lib/config";
+import { validateProductPrice } from "@/lib/product-pricing";
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -6,6 +8,7 @@ import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 
 const schema = z.object({
+  priceIncludesVat: z.enum(["true", "false"]).optional(),
   descriptionAr: z.string().trim().min(2).max(200),
   productId: z.string().trim().optional().or(z.literal("")),
   quantity: z.coerce.number().positive().max(10000),
@@ -28,6 +31,11 @@ export async function POST(
     return NextResponse.json({ error: "INVALID_INPUT" }, { status: 400 });
   }
 
+  if (parsed.data.priceIncludesVat === "true") {
+    const divisor = new Prisma.Decimal(1).plus(companyConfig.vatRate);
+    parsed.data.unitPrice = new Prisma.Decimal(parsed.data.unitPrice).div(divisor).toDecimalPlaces(6).toNumber();
+    parsed.data.discount = new Prisma.Decimal(parsed.data.discount).div(divisor).toDecimalPlaces(2).toNumber();
+  }
   const { id } = await params;
   try {
   const item = await db.$transaction(async tx => {
@@ -40,6 +48,11 @@ export async function POST(
   }
 
   if (parsed.data.discount > parsed.data.quantity * parsed.data.unitPrice) throw new Error("INVALID_DISCOUNT");
+  if (parsed.data.productId) {
+    const product = await tx.product.findUnique({ where: { id: parsed.data.productId } });
+    if (!product) throw new Error("PRODUCT_NOT_FOUND");
+    validateProductPrice(product, parsed.data.quantity, parsed.data.unitPrice, parsed.data.discount);
+  }
   const item = await tx.serviceOrderItem.create({
     data: {
       serviceOrderId: order.id,
@@ -66,6 +79,6 @@ export async function POST(
   return NextResponse.json({ item }, { status: 201 });
   } catch (error) {
     const code = error instanceof Error ? error.message : "CONCURRENT_CHANGE";
-    return NextResponse.json({ error: ["NOT_FOUND","ORDER_LOCKED","INVALID_DISCOUNT"].includes(code) ? code : "CONCURRENT_CHANGE" }, { status: 409 });
+    return NextResponse.json({ error: ["NOT_FOUND","ORDER_LOCKED","INVALID_DISCOUNT","PRODUCT_NOT_FOUND","PRODUCT_INACTIVE","PRICE_OUT_OF_RANGE"].includes(code) ? code : "CONCURRENT_CHANGE" }, { status: 409 });
   }
 }

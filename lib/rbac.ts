@@ -1,6 +1,8 @@
 export const PERMISSIONS = {
   DASHBOARD_VIEW: "dashboard.view",
   MARKETING_MANAGE: "marketing.manage",
+  INTEGRATION_MANAGE: "integration.manage",
+  INTEGRATION_VIEW: "integration.view",
   USER_MANAGE: "user.manage",
   OPERATIONS_GO_LIVE: "operations.go_live",
   OPERATIONS_UAT: "operations.uat",
@@ -58,6 +60,13 @@ export const PERMISSIONS = {
 
 export function hasPermission(userPermissions: readonly string[], required: string) {
   return userPermissions.includes(required);
+}
+
+// Issuers must be able to view/print invoices without gaining customer-directory access.
+// Callers must also constrain the invoice query to the session's branch.
+export function canViewInvoice(userPermissions: readonly string[]) {
+  return hasPermission(userPermissions, PERMISSIONS.CUSTOMER_VIEW)
+    || hasPermission(userPermissions, PERMISSIONS.INVOICE_ISSUE);
 }
 
 export function assertPermission(userPermissions: readonly string[], required: string) {

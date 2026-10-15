@@ -133,7 +133,7 @@ export default function CloseActions({
                 <tr key={row.id}>
                   <td><a className="orderLink" href={`/dashboard/finance/closes/${row.id}`}>{row.closeNo}</a></td>
                   <td>{row.type === "DAILY" ? "يومي" : "شهري"}</td>
-                  <td>{new Date(row.periodStart).toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" })} — {new Date(row.periodEnd).toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" })}</td>
+                  <td>{new Date(row.periodStart).toLocaleDateString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })} — {new Date(row.periodEnd).toLocaleDateString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</td>
                   <td>{row.salesTotal.toFixed(2)} ر.س</td>
                   <td className={row.netFinancialMovement < 0 ? "moneyOut" : "moneyIn"}>{row.netFinancialMovement.toFixed(2)} ر.س</td>
                   <td>{row.openShifts}</td>

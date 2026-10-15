@@ -73,7 +73,7 @@ export default async function ProcurementPage() {
                   <td>{request.items.length}</td>
                   <td>{request.quotes.length}</td>
                   <td><span className="statusBadge">{requestStatus[request.status] ?? request.status}</span></td>
-                  <td>{request.createdAt.toLocaleDateString("ar-SA")}</td>
+                  <td>{request.createdAt.toLocaleDateString("ar-SA-u-nu-latn")}</td>
                 </tr>
               ))}
               {requests.length === 0 && <tr><td colSpan={5} className="empty">لا توجد طلبات شراء بعد.</td></tr>}

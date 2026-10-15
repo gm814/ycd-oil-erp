@@ -1,7 +1,14 @@
+import { washEligibility } from "@/lib/wash-eligibility";
+import { validateProductPrice } from "@/lib/product-pricing";
+import { oilServiceReminder, manualOilServiceKm } from "@/lib/oil-service-interval";
+import { receiptAccount } from "@/services/cash-drawer";
+import { nextDocumentNumber } from "@/lib/document-number";
+import { captureMedad } from "@/services/medad/outbox";
 import { Prisma, StockMovementType } from "@prisma/client";
 import { earnLoyalty } from "@/services/loyalty";
 import { db } from "@/lib/db";
 import { companyConfig } from "@/lib/config";
+import { serviceOrderTotals } from "@/lib/service-order-totals";
 
 type CompleteServiceInput = {
   serviceOrderId: string;
@@ -9,7 +16,9 @@ type CompleteServiceInput = {
   branchId: string;
   paymentMethod: "CASH" | "CARD" | "TRANSFER" | "CREDIT";
   paymentReference?: string;
+  amountPaid?: number;
   nextServiceKm?: number;
+  manualServiceIntervalKm?: number;
   nextServiceAt?: Date;
   idempotencyReference: string;
 };
@@ -40,14 +49,23 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
     });
     if (!order || order.branchId !== input.branchId) throw new Error("SERVICE_ORDER_NOT_FOUND");
     if (order.invoice) return order.invoice;
-    if (input.nextServiceKm !== undefined && input.nextServiceKm <= (order.odometer ?? order.vehicle.currentOdometer ?? -1)) throw new Error("NEXT_SERVICE_KM_INVALID");
+    const reminder = oilServiceReminder(order.odometer, order.items);
+    const nextServiceKm = input.manualServiceIntervalKm !== undefined
+      ? manualOilServiceKm(order.odometer, input.manualServiceIntervalKm)
+      : reminder.reason === "NO_OIL" ? input.nextServiceKm : reminder.nextKm ?? undefined;
+    if (nextServiceKm !== undefined && nextServiceKm <= (order.odometer ?? order.vehicle.currentOdometer ?? -1)) throw new Error("NEXT_SERVICE_KM_INVALID");
     if (input.nextServiceAt && Number.isNaN(input.nextServiceAt.getTime())) throw new Error("NEXT_SERVICE_DATE_INVALID");
     if (order.status === "CANCELLED") throw new Error("SERVICE_ORDER_CANCELLED");
     if (order.items.length === 0) throw new Error("SERVICE_ORDER_EMPTY");
     if (!order.shiftId) throw new Error("SHIFT_REQUIRED");
+    const activeShift = await tx.shift.findFirst({ where: { id: order.shiftId, branchId: input.branchId, closedAt: null } });
+    if (!activeShift) throw new Error("OPEN_SHIFT_REQUIRED");
 
     // Sum repeated product lines before checking stock; each individual line can fit
     // while their combined quantity exceeds the available stock.
+    for (const item of order.items) {
+      if (item.product) validateProductPrice(item.product, item.quantity, item.unitPrice, item.discount);
+    }
     const requiredStock = new Map<string, Prisma.Decimal>();
     for (const item of order.items) {
       if (!item.productId || item.product?.category === "SERVICE") continue;
@@ -60,13 +78,13 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
       if ((aggregate._sum.quantity ?? new Prisma.Decimal(0)).lessThan(quantity)) throw new Error("INSUFFICIENT_STOCK");
     }
 
-    const subtotal = order.items.reduce(
-      (sum, item) => sum.plus(item.unitPrice.mul(item.quantity).minus(item.discount)),
-      new Prisma.Decimal(0),
-    );
     const vatRate = new Prisma.Decimal(companyConfig.vatRate);
-    const vatAmount = subtotal.mul(vatRate).toDecimalPlaces(2);
-    const total = subtotal.plus(vatAmount);
+    const { subtotal, vatAmount, total } = serviceOrderTotals(order.items, vatRate);
+
+    if (input.amountPaid !== undefined && input.paymentMethod !== "CREDIT" &&
+        (!Number.isFinite(input.amountPaid) || !new Prisma.Decimal(input.amountPaid).eq(total.toDecimalPlaces(2)))) {
+      throw new Error("PAYMENT_AMOUNT_MISMATCH");
+    }
 
     let dueAt: Date | null = null;
     if (input.paymentMethod === "CREDIT" && total.gt(0)) {
@@ -107,18 +125,7 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
 
     const financialAccount = input.paymentMethod === "CREDIT" || total.isZero()
       ? null
-      : await tx.financialAccount.findFirst({
-          where: {
-            branchId: input.branchId,
-            active: true,
-            type: input.paymentMethod === "CASH"
-              ? "CASH"
-              : input.paymentMethod === "CARD"
-                ? "POS_CLEARING"
-                : "BANK",
-          },
-          orderBy: { createdAt: "asc" },
-        });
+      : await receiptAccount(tx, input.branchId, input.paymentMethod === "CASH" ? "CASH" : input.paymentMethod === "CARD" ? "POS_CLEARING" : "BANK");
     if (input.paymentMethod !== "CREDIT" && total.gt(0) && !financialAccount) {
       throw new Error("FINANCIAL_ACCOUNT_REQUIRED");
     }
@@ -137,10 +144,9 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
       });
     }
 
-    const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
     const invoice = await tx.invoice.create({
       data: {
-        invoiceNo: `INV-${date}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+        invoiceNo: await nextDocumentNumber(tx),
         serviceOrderId: order.id,
         customerId: order.customerId,
         subtotal,
@@ -181,11 +187,10 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
       });
     }
 
-    const washPolicy = await tx.washAgreement.findUnique({ where: { sourceBranchId: input.branchId } });
-    const grantsWashCoupon = order.channel === "OIL" && (washPolicy?.issueMode === "ALL" || order.items.some((item) => item.product?.grantsWashCoupon));
+    const grantsWashCoupon = washEligibility(order).eligible;
     let couponSerial: string | null = null;
     if (grantsWashCoupon) {
-      couponSerial = `WASH-${date}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+      couponSerial = await nextDocumentNumber(tx);
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + companyConfig.washCouponValidityDays);
       await tx.coupon.create({
@@ -203,7 +208,7 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
         serviceOrderId: order.id,
         odometer: order.odometer,
         summaryAr: "تم إكمال أمر الخدمة وإصدار الفاتورة.",
-        nextServiceKm: input.nextServiceKm,
+        nextServiceKm: nextServiceKm,
         nextServiceAt: input.nextServiceAt,
       },
     });
@@ -229,13 +234,18 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
           total: total.toString(),
           paymentMethod: input.paymentMethod,
           couponSerial,
-          nextServiceKm: input.nextServiceKm ?? null,
+          nextServiceKm: nextServiceKm ?? null,
+          manualServiceIntervalKm: input.manualServiceIntervalKm ?? null,
+          serviceIntervalSource: input.manualServiceIntervalKm !== undefined ? "MANUAL" : reminder.reason === "NO_OIL" ? "DIRECT" : "PRODUCT",
           nextServiceAt: input.nextServiceAt?.toISOString() ?? null,
         },
       },
     });
 
     await earnLoyalty(tx, invoice.id);
+    await captureMedad(tx, order.branchId, "INVOICE", invoice.id, invoice.invoiceNo);
+    const receipts = await tx.payment.findMany({ where: { invoiceId: invoice.id } });
+    for (const receipt of receipts) await captureMedad(tx, order.branchId, "PAYMENT", receipt.id, `${invoice.invoiceNo} / ${receipt.id}`);
     return tx.invoice.findUniqueOrThrow({
       where: { id: invoice.id },
       include: { coupons: true, payments: true },

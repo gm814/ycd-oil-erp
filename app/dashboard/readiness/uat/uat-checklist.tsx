@@ -77,7 +77,7 @@ export default function UatChecklist({ rows, canExecute }: { rows: Row[]; canExe
               </ol>
               <p><b>الدليل المطلوب:</b> {row.evidenceAr}</p>
             </div>
-            {row.executedAt && <p className="muted">آخر تنفيذ: {new Date(row.executedAt).toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</p>}
+            {row.executedAt && <p className="muted">آخر تنفيذ: {new Date(row.executedAt).toLocaleString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</p>}
             {row.evidenceRef && <p><b>الدليل:</b> {row.evidenceRef}</p>}
             {row.notes && <p><b>ملاحظات:</b> {row.notes}</p>}
 

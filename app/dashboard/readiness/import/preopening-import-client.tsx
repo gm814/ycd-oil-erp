@@ -184,7 +184,7 @@ export default function PreopeningImportClient({ canCatalog, canSuppliers, canHr
                 <div className="creditSummary">
                   <div><span>الخدمات</span><b>{catalogSummary.services}</b></div>
                   <div><span>أصناف برصيد افتتاحي</span><b>{catalogSummary.stockLines}</b></div>
-                  <div><span>إجمالي الوحدات</span><b>{catalogSummary.openingUnits.toLocaleString("ar-SA")}</b></div>
+                  <div><span>إجمالي الوحدات</span><b>{catalogSummary.openingUnits.toLocaleString("ar-SA-u-nu-latn")}</b></div>
                   <div><span>قيمة المخزون بالتكلفة</span><b>{catalogSummary.openingCost.toFixed(2)} ر.س</b></div>
                 </div>
               </>

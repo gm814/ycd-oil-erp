@@ -1,5 +1,8 @@
 export const companyConfig = {
   legalNameAr: "شركة وجهتك الإبداعية لزيوت وخدمات السيارات",
+  legalNameEn: "Your Creative Destination for Oil & Auto Services Company",
+  companyAddress: "الرياض — حي طويق",
+  branchAddress: "الرياض — حي طويق — شارع أحمد ابن الخطاب",
   brand: "YCD OIL",
   branch: "الرياض - حي طويق",
   operationalPhase: "PREOPENING",

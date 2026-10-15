@@ -17,6 +17,7 @@ const groups = [
   {
     title: "إعدادات التشغيل والبيانات",
     items: [
+      { title: "الربط المحاسبي — مداد", description: "إعداد المطابقات وتجهيز العمليات للمراجعة دون إرسال محاسبي.", href: "/dashboard/integrations/medad", any: [PERMISSIONS.INTEGRATION_MANAGE, PERMISSIONS.INTEGRATION_VIEW] },
       { title: "برنامج الولاء", description: "إعداد الغسلات المدفوعة والمجانية وبطاقات العملاء.", href: "/dashboard/loyalty", any: [PERMISSIONS.USER_MANAGE] },
       { title: "عروض المراكز والرسائل", description: "إدارة الحملات وموافقات العملاء وفتح رسائل SMS وواتساب.", href: "/dashboard/marketing", any: [PERMISSIONS.MARKETING_MANAGE] },
       { title: "كوبونات وتسويات الغسيل", description: "اتفاق المغسلة والمستحقات والمطالبات اليومية والسداد وكشف الحساب.", href: "/dashboard/wash", any: [PERMISSIONS.COUPON_REDEEM, PERMISSIONS.FINANCE_VIEW] },

@@ -8,7 +8,7 @@ import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 const schema = z.object({
   sourceAccountId: z.string().min(1),
   destinationAccountId: z.string().min(1),
-  amount: z.coerce.number().positive().max(50_000_000),
+  amount: z.coerce.number().positive().max(50_000_000).multipleOf(0.01),
   reference: z.string().trim().max(120).optional(),
   notes: z.string().trim().max(300).optional(),
   idempotencyReference: z.string().trim().min(12).max(120),
@@ -41,6 +41,8 @@ export async function POST(request: Request) {
       if (existingOut || existingIn) {
         if (
           !existingOut || !existingIn ||
+          existingOut.branchId !== session.branchId || existingIn.branchId !== session.branchId ||
+          existingOut.reference !== (parsed.data.reference || parsed.data.idempotencyReference) ||
           existingOut.accountId !== parsed.data.sourceAccountId ||
           existingIn.accountId !== parsed.data.destinationAccountId ||
           !existingOut.amount.abs().equals(amount) ||
@@ -70,6 +72,19 @@ export async function POST(request: Request) {
       if (!source || !destination) throw new Error("FINANCIAL_ACCOUNT_NOT_FOUND");
       if (source.id === destination.id) throw new Error("SAME_ACCOUNT");
 
+      const involvesDrawer = source.cashRole === "DRAWER" || destination.cashRole === "DRAWER";
+      let cashShiftId: string | null = null;
+      const movementType = source.cashRole === "DRAWER" ? "CashHandover" : destination.cashRole === "DRAWER" ? "CashFloat" : "FinancialTransfer";
+      if (involvesDrawer) {
+        if (source.cashRole === "DRAWER" && destination.cashRole !== "TREASURY") throw new Error("TREASURY_REQUIRED");
+        if (destination.cashRole === "DRAWER" && source.cashRole !== "TREASURY") throw new Error("TREASURY_REQUIRED");
+        const open = await tx.shift.findFirst({ where: { branchId: session.branchId!, closedAt: null } });
+        const drawerId = source.cashRole === "DRAWER" ? source.id : destination.id;
+        if (open && open.drawerAccountId !== drawerId) throw new Error("CASH_POLICY_REVIEW_REQUIRED");
+        if (source.cashRole === "DRAWER" && !open) throw new Error("OPEN_SHIFT_REQUIRED");
+        cashShiftId = open?.id ?? null;
+        if (!parsed.data.reference) throw new Error("HANDOVER_REFERENCE_REQUIRED");
+      }
       const balanceResult = await tx.financialTransaction.aggregate({
         where: { accountId: source.id },
         _sum: { amount: true },
@@ -89,8 +104,8 @@ export async function POST(request: Request) {
           amount: amount.negated(),
           reference: parsed.data.reference || parsed.data.idempotencyReference,
           descriptionAr: description,
-          relatedEntityType: "FinancialTransfer",
-          relatedEntityId: parsed.data.idempotencyReference,
+          relatedEntityType: movementType,
+          relatedEntityId: cashShiftId ?? parsed.data.idempotencyReference,
           performedBy: session.userId,
           idempotencyKey: outKey,
         },
@@ -103,8 +118,8 @@ export async function POST(request: Request) {
           amount,
           reference: parsed.data.reference || parsed.data.idempotencyReference,
           descriptionAr: description,
-          relatedEntityType: "FinancialTransfer",
-          relatedEntityId: parsed.data.idempotencyReference,
+          relatedEntityType: movementType,
+          relatedEntityId: cashShiftId ?? parsed.data.idempotencyReference,
           performedBy: session.userId,
           idempotencyKey: inKey,
         },
@@ -117,6 +132,8 @@ export async function POST(request: Request) {
           entityType: "FinancialTransfer",
           entityId: parsed.data.idempotencyReference,
           afterJson: {
+            cashShiftId,
+            movementType,
             sourceAccountId: source.id,
             destinationAccountId: destination.id,
             amount: amount.toString(),

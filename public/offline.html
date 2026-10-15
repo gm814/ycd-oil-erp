@@ -11,7 +11,7 @@
 <section class="panel"><h2>تسجيل عملية خدمة</h2>
 <form id="order"><fieldset id="fields" disabled>
 <label>اسم العميل<input name="customerName" required minlength="2" maxlength="120" autocomplete="off"></label>
-<label>رقم الجوال<input name="phone" type="tel" minlength="7" maxlength="20" autocomplete="off"></label>
+<label>رقم الجوال<input name="phone" type="tel" required pattern="[0-9٠-٩۰-۹]{10}" title="رقم الجوال يجب أن يتكون من 10 أرقام بالضبط." autocomplete="off"><small>10 أرقام بالضبط، دون مسافات أو رمز الدولة.</small></label>
 <label>رقم اللوحة<input name="plate" required minlength="2" maxlength="30" autocomplete="off"></label>
 <div class="row"><label>الشركة المصنعة<input name="make" maxlength="60"></label><label>الموديل<input name="model" maxlength="60"></label></div>
 <div class="row"><label>سنة الصنع<input name="year" type="number" min="1950" max="2100"></label><label>قراءة العداد<input name="odometer" type="number" min="0" max="2000000"></label></div>

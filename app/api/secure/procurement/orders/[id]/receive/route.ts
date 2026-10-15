@@ -1,3 +1,4 @@
+import { nextDocumentNumber } from "@/lib/document-number";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
@@ -53,8 +54,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         if (alreadyReceived.plus(quantity).greaterThan(ordered.quantity)) throw new Error("RECEIPT_EXCEEDS_ORDERED_QUANTITY");
       }
 
-      const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
-      const receiptNo = `GRN-${date}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+      const receiptNo = await nextDocumentNumber(tx);
       const created = await tx.goodsReceipt.create({
         data: {
           receiptNo,

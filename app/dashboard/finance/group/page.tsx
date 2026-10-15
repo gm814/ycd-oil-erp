@@ -118,7 +118,7 @@ export default async function GroupFinancePage() {
               <tbody>
                 {fundings.map((funding) => (
                   <tr key={funding.id}>
-                    <td>{funding.fundedAt.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</td>
+                    <td>{funding.fundedAt.toLocaleString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</td>
                     <td>{funding.sourceCompany.legalNameAr}</td>
                     <td>{funding.sourceBankAccount ? `${funding.sourceBankAccount.bankName} · ${funding.sourceBankAccount.iban ? "IBAN " + funding.sourceBankAccount.iban.slice(-4) : funding.sourceBankAccount.accountNumber || "—"}` : "غير محدد / تمويل افتتاحي"}</td>
                     <td>{funding.account.nameAr}</td>

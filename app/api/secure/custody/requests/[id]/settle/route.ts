@@ -1,3 +1,4 @@
+import { nextDocumentNumber } from "@/lib/document-number";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
@@ -49,8 +50,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       const newTotal = prior.plus(expense).plus(returned);
       if (newTotal.greaterThan(current.approvedAmount)) throw new Error("SETTLEMENT_EXCEEDS_CUSTODY");
 
-      const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
-      const settlementNo = `CST-SET-${date}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+      const settlementNo = await nextDocumentNumber(tx);
       const created = await tx.custodySettlement.create({
         data: {
           settlementNo,

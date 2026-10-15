@@ -4,7 +4,7 @@ import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 
 function money(value: number) {
-  return value.toLocaleString("ar-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
+  return value.toLocaleString("ar-SA-u-nu-latn", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
 }
 
 function ageLabel(date: Date) {
@@ -183,10 +183,10 @@ export default async function ApprovalsPage() {
       </div>
 
       <section className="kpis reportKpis">
-        <article><span>معاملات تنتظر قرارًا</span><b>{pendingApprovalCount.toLocaleString("ar-SA")}</b></article>
-        <article><span>تنبيهات رقابية</span><b>{controlAlertCount.toLocaleString("ar-SA")}</b></article>
-        <article><span>ذمم متأخرة</span><b>{overdueInvoices.length.toLocaleString("ar-SA")}</b></article>
-        <article><span>أصناف منخفضة</span><b>{lowStock.length.toLocaleString("ar-SA")}</b></article>
+        <article><span>معاملات تنتظر قرارًا</span><b>{pendingApprovalCount.toLocaleString("ar-SA-u-nu-latn")}</b></article>
+        <article><span>تنبيهات رقابية</span><b>{controlAlertCount.toLocaleString("ar-SA-u-nu-latn")}</b></article>
+        <article><span>ذمم متأخرة</span><b>{overdueInvoices.length.toLocaleString("ar-SA-u-nu-latn")}</b></article>
+        <article><span>أصناف منخفضة</span><b>{lowStock.length.toLocaleString("ar-SA-u-nu-latn")}</b></article>
       </section>
 
       {(canProcurement || canReports) && (
@@ -282,7 +282,7 @@ export default async function ApprovalsPage() {
             <div className="tableWrap"><table><thead><tr><th>الفاتورة</th><th>العميل</th><th>الاستحقاق</th><th>الإجمالي</th><th>المسدد</th><th>المتبقي</th></tr></thead><tbody>
               {overdueInvoices.map((item) => {
                 const paid = item.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
-                return <tr key={item.id}><td><b>{item.invoiceNo}</b></td><td>{item.customer.name}</td><td>{item.dueAt?.toLocaleDateString("ar-SA")}</td><td>{money(Number(item.total))}</td><td>{money(paid)}</td><td><b>{money(Math.max(0, Number(item.total) - paid))}</b></td></tr>;
+                return <tr key={item.id}><td><b>{item.invoiceNo}</b></td><td>{item.customer.name}</td><td>{item.dueAt?.toLocaleDateString("ar-SA-u-nu-latn")}</td><td>{money(Number(item.total))}</td><td>{money(paid)}</td><td><b>{money(Math.max(0, Number(item.total) - paid))}</b></td></tr>;
               })}
               {overdueInvoices.length === 0 && <tr><td colSpan={6} className="empty">لا توجد ذمم متأخرة.</td></tr>}
             </tbody></table></div>
@@ -298,7 +298,7 @@ export default async function ApprovalsPage() {
 
             <article className="panel">
               <h2>تنبيه الأصول والصيانة</h2>
-              {maintenanceAssets.map((item) => <div className="paymentCard" key={item.id}><div><b>{item.assetNo} — {item.nameAr}</b><span>{item.status === "MAINTENANCE" ? "تحت الصيانة" : "موعد صيانة مستحق"}{item.nextMaintenanceAt ? ` · ${item.nextMaintenanceAt.toLocaleDateString("ar-SA")}` : ""}</span></div></div>)}
+              {maintenanceAssets.map((item) => <div className="paymentCard" key={item.id}><div><b>{item.assetNo} — {item.nameAr}</b><span>{item.status === "MAINTENANCE" ? "تحت الصيانة" : "موعد صيانة مستحق"}{item.nextMaintenanceAt ? ` · ${item.nextMaintenanceAt.toLocaleDateString("ar-SA-u-nu-latn")}` : ""}</span></div></div>)}
               {maintenanceAssets.length === 0 && <p className="empty">لا توجد تنبيهات صيانة حالية.</p>}
               <a className="orderLink" href="/dashboard/assets">فتح الأصول</a>
             </article>

@@ -48,7 +48,7 @@ export default async function DashboardPage() {
       include: { payments: true, serviceOrder: { include: { items: { include: { product: true } } } } },
     }),
     db.serviceOrder.count({
-      where: { branchId: session.branchId, createdAt: { gte: start, lt: end } },
+      where: { branchId: session.branchId, channel: { not: "PRICE_CORRECTION" }, createdAt: { gte: start, lt: end } },
     }),
     db.shift.findFirst({
       where: { branchId: session.branchId, closedAt: null },
@@ -114,8 +114,8 @@ export default async function DashboardPage() {
   const [transactions, payments, previousCars, recentOrders, requests] = await Promise.all([
     db.financialTransaction.findMany({ where: { branchId: session.branchId, type: "EXPENSE", createdAt: { gte: weekStart, lt: end } }, select: { amount: true, createdAt: true } }),
     db.payment.findMany({ where: { paidAt: { gte: start, lt: end }, invoice: { status: { not: "VOID" }, serviceOrder: { branchId: session.branchId } } }, select: { method: true, amount: true } }),
-    db.serviceOrder.count({ where: { branchId: session.branchId, createdAt: { gte: previousStart, lt: start } } }),
-    db.serviceOrder.findMany({ where: { branchId: session.branchId, createdAt: { gte: start, lt: end } }, include: { vehicle: true, items: true }, orderBy: { createdAt: "desc" }, take: 5 }),
+    db.serviceOrder.count({ where: { branchId: session.branchId, channel: { not: "PRICE_CORRECTION" }, createdAt: { gte: previousStart, lt: start } } }),
+    db.serviceOrder.findMany({ where: { branchId: session.branchId, channel: { not: "PRICE_CORRECTION" }, createdAt: { gte: start, lt: end } }, include: { vehicle: true, items: true }, orderBy: { createdAt: "desc" }, take: 5 }),
     db.purchaseRequest.findMany({ where: { branchId: session.branchId, status: "PENDING_APPROVAL" }, select: { id: true, requestNo: true, createdAt: true }, orderBy: { createdAt: "desc" }, take: 5 }),
   ]);
   const total = (from: Date, to: Date) => invoices.filter(i=>i.createdAt>=from && i.createdAt<to).reduce((n,i)=>n+Number(i.total),0);
@@ -132,12 +132,13 @@ export default async function DashboardPage() {
     const index=navigation.findIndex(n=>n.label==="الموظفون والعمال");navigation.splice(index+1,0,{label:"الرواتب",href:"/dashboard/hr",icon:"money"});
   }
   if (hasPermission(session.permissions, PERMISSIONS.USER_MANAGE)) navigation.push({label:"مدير النظام",href:"/dashboard/admin",icon:"admin"});
+  if ([PERMISSIONS.INTEGRATION_VIEW, PERMISSIONS.INTEGRATION_MANAGE].some(p=>hasPermission(session.permissions,p))) navigation.push({label:"الربط المحاسبي — مداد",href:"/dashboard/integrations/medad",icon:"document"});
   if (hasPermission(session.permissions, PERMISSIONS.MARKETING_MANAGE)) navigation.push({label:"عروض المراكز والرسائل",href:"/dashboard/marketing",icon:"ticket"});
   if (hasPermission(session.permissions, PERMISSIONS.SERVICE_ORDER_CREATE)) navigation.push({label:"برنامج الولاء",href:"/dashboard/loyalty",icon:"ticket"});
   if ([PERMISSIONS.COUPON_REDEEM, PERMISSIONS.FINANCE_VIEW, PERMISSIONS.FINANCE_EXPENSE_APPROVE, PERMISSIONS.FINANCE_EXPENSE_PAY].some(p=>hasPermission(session.permissions,p))) navigation.push({label:"كوبونات غسيل السيارات — YCD OIL",href:"/dashboard/wash",icon:"ticket"});
   const actionList = [
     {label:"استقبال سيارة",detail:"زيوت وخدمات",href:"/dashboard/service-orders",icon:"car",permission:PERMISSIONS.SERVICE_ORDER_CREATE},
-    {label:"كوبونات المغسلة",detail:"غسيل السيارات",href:"/dashboard/coupons",icon:"car",permission:PERMISSIONS.COUPON_REDEEM},
+    {label:"مسح كوبون الغسيل",detail:"الكاميرا واعتماد الغسلة",href:"/dashboard/coupons#coupon-scanner",icon:"ticket",permission:PERMISSIONS.COUPON_REDEEM},
     {label:"طلب شراء",detail:"المشتريات",href:"/dashboard/procurement",icon:"cart",permission:PERMISSIONS.PROCUREMENT_REQUEST},
     {label:"استلام مخزون",detail:"من المورد",href:"/dashboard/inventory",icon:"box",permission:PERMISSIONS.INVENTORY_MANAGE},
     {label:"المبيعات والعملاء",detail:"فواتير وحسابات",href:"/dashboard/customers",icon:"document",permission:PERMISSIONS.CUSTOMER_VIEW},

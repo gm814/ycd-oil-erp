@@ -88,7 +88,7 @@ export default function ProcurementForms({ products, suppliers }: { products: Pr
             </div>
             <button disabled={busy}>حفظ المورد</button>
           </form>
-          <p className="empty">الموردون النشطون: {suppliers.length.toLocaleString("ar-SA")}</p>
+          <p className="empty">الموردون النشطون: {suppliers.length.toLocaleString("ar-SA-u-nu-latn")}</p>
         </article>
       </section>
       {message && <p className="formNotice globalNotice">{message}</p>}

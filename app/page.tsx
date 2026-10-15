@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { lockOfflineProfile } from "@/lib/offline/lock";
 import { PasswordInput } from "@/components/password-input";
 
@@ -13,12 +14,13 @@ export default function LoginPage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (loading) return;
+    // React clears currentTarget after the synchronous submit handler returns.
+    const form = new FormData(event.currentTarget);
     setError("");
     setLoading(true);
     try {
     await lockOfflineProfile();
 
-    const form = new FormData(event.currentTarget);
     const response = await fetch("/api/auth/login", {
       method: "POST",
       signal: AbortSignal.timeout(15000),
@@ -58,6 +60,13 @@ export default function LoginPage() {
             كلمة المرور
             <PasswordInput name="password" autoComplete="current-password" required />
           </label>
+          <Link href="/forgot-password" className="passwordRecoveryLink">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+              <circle cx="8" cy="8" r="5" />
+              <path d="m12 12 9 9m-4-4 3-3m-6 0 3-3" />
+            </svg>
+            نسيت كلمة المرور؟
+          </Link>
           {error && <p className="formError">{error}</p>}
           <button type="submit" disabled={loading}>
             {loading ? "جارٍ التحقق..." : "دخول النظام"}

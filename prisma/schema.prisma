@@ -232,6 +232,9 @@ model Organization {
 }
 
 model Branch {
+  medadConnection MedadConnection?
+  medadMappings MedadMapping[]
+  medadOutbox MedadOutbox[]
   loyaltyProgram LoyaltyProgram?
   loyaltyEntries LoyaltyEntry[]
   marketingConsents MarketingConsent[]
@@ -284,6 +287,7 @@ model Department {
 model User {
   id                 String     @id @default(cuid())
   username           String     @unique
+  recoveryWhatsApp   String?    @unique
   email              String?    @unique
   name               String
   passwordHash       String?
@@ -299,8 +303,34 @@ model User {
   employee           Employee?  @relation(fields: [employeeId], references: [id])
   roles              UserRole[]
   auditLogs          AuditLog[] @relation("ActorAudit")
+  recoveryChallenges PasswordRecoveryChallenge[]
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
+}
+
+// No OTP or plaintext recovery token is stored. Delivery is managed by Verify.
+model PasswordRecoveryChallenge {
+  tokenHash       String @id
+  userId          String
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel         String
+  destinationHash String
+  sessionVersion  Int
+  verificationSid String?
+  attempts        Int @default(0)
+  consumedAt      DateTime?
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+}
+
+// Fixed-window counters shared by all application instances.
+model PasswordRecoveryLimit {
+  key       String @id
+  count     Int @default(1)
+  expiresAt DateTime
+  @@index([expiresAt])
 }
 
 model Role {
@@ -398,9 +428,12 @@ model Product {
   category             ProductCategory       @default(OTHER)
   unit                 String
   salePrice            Decimal               @db.Decimal(12,2)
+  costBasedPricing     Boolean               @default(false)
   costPrice            Decimal               @db.Decimal(12,2)
   minStock             Decimal               @default(0) @db.Decimal(12,3)
+  serviceIntervalKm    Int?
   grantsWashCoupon     Boolean               @default(false)
+  isOilFilter          Boolean               @default(false)
   active               Boolean               @default(true)
   serviceItems         ServiceOrderItem[]
   stockMovements       StockMovement[]
@@ -414,6 +447,8 @@ model Product {
 }
 
 model Shift {
+  drawerAccountId String?
+  drawerAccount FinancialAccount? @relation(fields: [drawerAccountId], references: [id], onDelete: Restrict)
   id            String         @id @default(cuid())
   branchId      String
   branch        Branch         @relation(fields: [branchId], references: [id])
@@ -470,7 +505,7 @@ model ServiceOrderItem {
   product        Product?     @relation(fields: [productId], references: [id])
   descriptionAr  String
   quantity       Decimal      @db.Decimal(12,3)
-  unitPrice      Decimal      @db.Decimal(12,2)
+  unitPrice      Decimal      @db.Decimal(18,6)
   discount       Decimal      @default(0) @db.Decimal(12,2)
   returnItems    SalesReturnItem[]
 }
@@ -490,6 +525,14 @@ model StockMovement {
 }
 
 model Invoice {
+  documentType String @default("INVOICE")
+  correctionOfId String? @unique
+  correctionOf Invoice? @relation("InvoiceCorrection", fields: [correctionOfId], references: [id])
+  correction Invoice? @relation("InvoiceCorrection")
+  correctionReason String?
+
+  buyerCompanyName String?
+  buyerVatNumber String?
   loyaltyEarning LoyaltyEntry? @relation("LoyaltyEarning")
   id             String        @id @default(cuid())
   invoiceNo      String        @unique
@@ -754,6 +797,8 @@ model SupplierInvoice {
 }
 
 model FinancialAccount {
+  cashRole String?
+  drawerShifts Shift[]
   id           String                 @id @default(cuid())
   branchId     String
   branch       Branch                 @relation(fields: [branchId], references: [id])
@@ -772,6 +817,7 @@ model FinancialAccount {
   createdAt    DateTime               @default(now())
   updatedAt    DateTime               @updatedAt
   @@unique([branchId, code])
+  @@unique([branchId, cashRole])
   @@index([branchId, type, active])
 }
 
@@ -908,6 +954,7 @@ model GroupFunding {
 }
 
 model ExpenseRequest {
+  idempotencyKey String? @unique
   id             String               @id @default(cuid())
   requestNo      String               @unique
   branchId       String
@@ -962,6 +1009,7 @@ model BankReconciliation {
 }
 
 model FinancialTransaction {
+  documentNo String? @unique @default(dbgenerated("ycd_document_number()"))
   id                String                   @id @default(cuid())
   branchId          String
   branch            Branch                   @relation(fields: [branchId], references: [id])
@@ -1380,4 +1428,49 @@ model MarketingCampaign {
   channel        String
   createdBy      String
   createdAt      DateTime @default(now())
+}
+
+model MedadConnection {
+  id String @id @default(cuid())
+  branchId String @unique
+  branch Branch @relation(fields: [branchId], references: [id])
+  captureEnabled Boolean @default(false)
+  subscriptionId String?
+  medadBranch Int?
+  fiscalYear String @default("")
+  warehouseNo String?
+  costCenterNo String?
+  salesmanId String?
+  invoiceAuthority String @default("UNCONFIRMED")
+  revision Int @default(1)
+  updatedAt DateTime @updatedAt
+}
+model MedadMapping {
+  id String @id @default(cuid())
+  branchId String
+  branch Branch @relation(fields: [branchId], references: [id])
+  kind String
+  localId String
+  remoteId String
+  note String
+  updatedAt DateTime @updatedAt
+  @@unique([branchId, kind, localId])
+}
+model MedadOutbox {
+  id String @id @default(cuid())
+  branchId String
+  branch Branch @relation(fields: [branchId], references: [id])
+  kind String
+  sourceId String
+  sourceNo String
+  status String @default("CAPTURED")
+  revision Int?
+  sourceHash String?
+  payload Json?
+  issues Json?
+  capturedAt DateTime @default(now())
+  preparedAt DateTime?
+  updatedAt DateTime @updatedAt
+  @@unique([branchId, kind, sourceId])
+  @@index([branchId, status, capturedAt])
 }

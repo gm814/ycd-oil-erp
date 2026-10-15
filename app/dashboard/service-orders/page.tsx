@@ -57,7 +57,7 @@ export default async function ServiceOrdersPage({ searchParams }: { searchParams
                     <td><a className="orderLink" href={`/dashboard/service-orders/${order.id}`}>{order.orderNo}</a></td>
                     <td>{order.customer.name}</td>
                     <td>{order.vehicle.plate}</td>
-                    <td>{order.odometer?.toLocaleString("ar-SA") ?? "—"}</td>
+                    <td>{order.odometer?.toLocaleString("ar-SA-u-nu-latn") ?? "—"}</td>
                     <td><span className="statusBadge">{order.status}</span></td>
                   </tr>
                 ))}

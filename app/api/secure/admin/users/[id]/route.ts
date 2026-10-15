@@ -3,6 +3,7 @@ import { hash } from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { PASSWORD_REGEX, PASSWORD_HINT } from "@/lib/password-policy";
+import { recoveryPhone } from "@/lib/password-recovery/core";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
@@ -10,10 +11,11 @@ import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 const schema = z.object({
   username: z.string().trim().min(3).max(40).regex(/^[a-zA-Z0-9._-]+$/).transform((value) => value.toLowerCase()).optional(),
   email: z.union([z.string().trim().email().max(200), z.literal("")]).transform((value) => value.toLowerCase() || null).optional(),
+  recoveryWhatsApp: z.union([z.literal(""), z.string().trim().max(30).refine(v => recoveryPhone(v) !== null)]).transform(v => recoveryPhone(v)).optional(),
   status: z.enum(["ACTIVE", "SUSPENDED"]).optional(),
   roleCodes: z.array(z.string().min(1).max(80)).min(1).max(6).optional(),
   password: z.string().regex(PASSWORD_REGEX, PASSWORD_HINT).optional(),
-}).refine((value) => value.username !== undefined || value.email !== undefined || value.status || value.roleCodes || value.password, {
+}).refine((value) => value.username !== undefined || value.email !== undefined || value.recoveryWhatsApp !== undefined || value.status || value.roleCodes || value.password, {
   message: "NO_CHANGES",
 });
 
@@ -52,6 +54,13 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         if (existing && existing.id !== current.id) throw new Error("EMAIL_ALREADY_USED");
       }
 
+      if (parsed.data.recoveryWhatsApp) {
+        const existing = await tx.user.findUnique({ where: { recoveryWhatsApp: parsed.data.recoveryWhatsApp } });
+        if (existing && existing.id !== current.id) throw new Error("RECOVERY_PHONE_ALREADY_USED");
+      }
+      const recoveryContactChanged = (parsed.data.email !== undefined && parsed.data.email !== current.email)
+        || (parsed.data.recoveryWhatsApp !== undefined && parsed.data.recoveryWhatsApp !== current.recoveryWhatsApp);
+
       const isGeneralManager = current.roles.some((entry) => entry.role.code === "GENERAL_MANAGER");
       const removesGeneralManager = roleCodes ? !roleCodes.includes("GENERAL_MANAGER") : false;
       const suspendsGeneralManager = parsed.data.status === "SUSPENDED";
@@ -84,6 +93,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         data: {
           ...(parsed.data.username !== undefined ? { username: parsed.data.username } : {}),
           ...(parsed.data.email !== undefined ? { email: parsed.data.email } : {}),
+          ...(parsed.data.recoveryWhatsApp !== undefined ? { recoveryWhatsApp: parsed.data.recoveryWhatsApp } : {}),
           ...(parsed.data.status ? { status: parsed.data.status } : {}),
           ...(passwordHash ? {
             passwordHash,
@@ -93,6 +103,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         },
         include: { roles: { include: { role: true } }, employee: true },
       });
+
+      if (recoveryContactChanged) await tx.passwordRecoveryChallenge.updateMany({ where: { userId: current.id, consumedAt: null }, data: { consumedAt: new Date() } });
 
       await tx.auditLog.create({
         data: {
@@ -111,6 +123,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
             email: updated.email,
             status: updated.status,
             roles: updated.roles.map((entry) => entry.role.code),
+            recoveryContactChanged,
             passwordReset: Boolean(parsed.data.password),
             mustChangePassword: parsed.data.password ? current.id !== session.userId : updated.mustChangePassword,
             sessionVersionRotated: Boolean(parsed.data.password),
@@ -126,6 +139,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         id: user.id,
         username: user.username,
         email: user.email,
+        recoveryWhatsApp: user.recoveryWhatsApp,
         name: user.name,
         mustChangePassword: user.mustChangePassword,
         status: user.status,
@@ -135,11 +149,11 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       const target = String(error.meta?.target ?? "");
-      return NextResponse.json({ error: target.includes("email") ? "EMAIL_ALREADY_USED" : "USERNAME_ALREADY_USED" }, { status: 409 });
+      return NextResponse.json({ error: target.includes("recoveryWhatsApp") ? "RECOVERY_PHONE_ALREADY_USED" : target.includes("email") ? "EMAIL_ALREADY_USED" : "USERNAME_ALREADY_USED" }, { status: 409 });
     }
     const code = error instanceof Error ? error.message : "USER_UPDATE_FAILED";
     const status = code === "USER_NOT_FOUND" ? 404
-      : ["USERNAME_ALREADY_USED", "EMAIL_ALREADY_USED", "LAST_GENERAL_MANAGER_PROTECTED", "SELF_ACCESS_CHANGE_NOT_ALLOWED"].includes(code) ? 409 : 400;
+      : ["RECOVERY_PHONE_ALREADY_USED", "USERNAME_ALREADY_USED", "EMAIL_ALREADY_USED", "LAST_GENERAL_MANAGER_PROTECTED", "SELF_ACCESS_CHANGE_NOT_ALLOWED"].includes(code) ? 409 : 400;
     return NextResponse.json({ error: code }, { status });
   }
 }

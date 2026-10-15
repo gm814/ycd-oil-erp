@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CUSTOMER_PHONE_ERROR, isCustomerPhone, normalizeCustomerPhone } from "@/lib/customer-phone";
 
 const optionalNumber = (schema: z.ZodType) => z.preprocess(
   value => value === "" || value === null ? undefined : value, schema.optional(),
@@ -6,7 +7,7 @@ const optionalNumber = (schema: z.ZodType) => z.preprocess(
 
 export const offlineOrderSchema = z.object({
   customerName: z.string().trim().min(2).max(120),
-  phone: z.string().trim().min(7).max(20).or(z.literal("")),
+  phone: z.string().refine(isCustomerPhone, CUSTOMER_PHONE_ERROR).transform(normalizeCustomerPhone),
   plate: z.string().trim().min(2).max(30),
   make: z.string().trim().max(60).default(""),
   model: z.string().trim().max(60).default(""),

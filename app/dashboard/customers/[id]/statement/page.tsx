@@ -6,7 +6,7 @@ import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import PrintButton from "./print-button";
 
 function money(value: number) {
-  return value.toLocaleString("ar-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
+  return value.toLocaleString("ar-SA-u-nu-latn", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
 }
 
 export default async function CustomerStatementPage({
@@ -107,7 +107,7 @@ export default async function CustomerStatementPage({
             <span>كشف حساب عميل</span>
             <h1>{customer.name}</h1>
             <p>{customer.phone || "بدون رقم جوال"}</p>
-            <p>حتى {new Date().toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" })}</p>
+            <p>حتى {new Date().toLocaleDateString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</p>
           </div>
         </header>
 
@@ -126,7 +126,7 @@ export default async function CustomerStatementPage({
             <tbody>
               {statement.map((entry, index) => (
                 <tr key={`${entry.reference}-${index}`}>
-                  <td>{entry.date.toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" })}</td>
+                  <td>{entry.date.toLocaleDateString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</td>
                   <td>{entry.reference}</td>
                   <td>{entry.description}</td>
                   <td>{entry.debit ? money(entry.debit) : "—"}</td>

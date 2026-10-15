@@ -4,7 +4,7 @@ import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 
 function money(value: number) {
-  return value.toLocaleString("ar-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
+  return value.toLocaleString("ar-SA-u-nu-latn", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
 }
 
 export default async function PreopeningLedgerPage() {
@@ -41,7 +41,7 @@ export default async function PreopeningLedgerPage() {
         <article><span>إجمالي الأرصدة حسب المصدر</span><b>{money(reportedTotal)}</b></article>
         <article><span>إجمالي القيود المستوردة</span><b>{money(importedTotal)}</b></article>
         <article><span>فرق المطابقة</span><b className={Math.abs(variance) > 0.01 ? "moneyOut" : "moneyIn"}>{money(variance)}</b></article>
-        <article><span>عدد القيود</span><b>{accounts.reduce((sum, account) => sum + account.entries.length, 0).toLocaleString("ar-SA")}</b></article>
+        <article><span>عدد القيود</span><b>{accounts.reduce((sum, account) => sum + account.entries.length, 0).toLocaleString("ar-SA-u-nu-latn")}</b></article>
       </section>
 
       <article className="panel">
@@ -77,7 +77,7 @@ export default async function PreopeningLedgerPage() {
                 <tbody>
                   {account.entries.map((entry) => (
                     <tr key={entry.id}>
-                      <td>{entry.entryDate.toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" })}</td>
+                      <td>{entry.entryDate.toLocaleDateString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</td>
                       <td>{entry.journalNo || "—"}</td>
                       <td>{entry.documentNo || "—"}</td>
                       <td>{entry.reference || "—"}</td>

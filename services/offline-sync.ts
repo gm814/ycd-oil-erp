@@ -1,3 +1,4 @@
+import { nextDocumentNumber } from "@/lib/document-number";
 import { createHash } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
@@ -46,7 +47,7 @@ export async function syncOfflineCommand(command: OfflineCommand, session: Sessi
           items.push({ productId: product.id, descriptionAr: product.nameAr, quantity: line.quantity, unitPrice: product.salePrice });
         }
         const order = await tx.serviceOrder.create({ data: {
-          orderNo: `SO-OFF-${command.id.toUpperCase()}`, branchId: command.branchId,
+          orderNo: await nextDocumentNumber(tx), branchId: command.branchId,
           shiftId: shift.id, customerId: customer.id, vehicleId: vehicle.id, odometer,
           status: "OPEN", items: { create: items },
         } });

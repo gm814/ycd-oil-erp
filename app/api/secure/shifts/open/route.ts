@@ -40,11 +40,18 @@ export async function POST(request: Request) {
       const open = await tx.shift.findFirst({ where: { branchId: session.branchId!, closedAt: null } });
       if (open) throw new Error("SHIFT_ALREADY_OPEN");
 
+      const drawer = await tx.financialAccount.findFirst({ where: { branchId: session.branchId!, cashRole: "DRAWER" } });
+      if (drawer) {
+        if (!drawer.active) throw new Error("CASH_DRAWER_INACTIVE");
+        const balance = await tx.financialTransaction.aggregate({ where: { accountId: drawer.id }, _sum: { amount: true } });
+        if (!(balance._sum.amount ?? new Prisma.Decimal(0)).eq(parsed.data.openingCash)) throw new Error("OPENING_CASH_MISMATCH");
+      }
       const created = await tx.shift.create({
         data: {
           branchId: session.branchId!,
           openedBy: session.userId,
           openingCash: parsed.data.openingCash,
+          drawerAccountId: drawer?.id,
         },
       });
 

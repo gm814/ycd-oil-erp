@@ -4,7 +4,7 @@ import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 
 function money(value: number) {
-  return value.toLocaleString("ar-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
+  return value.toLocaleString("ar-SA-u-nu-latn", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
 }
 
 function daysPastDue(dueAt: Date | null) {
@@ -70,7 +70,7 @@ export default async function ReceivablesPage() {
         <article><span>إجمالي الذمم</span><b>{money(total)}</b></article>
         <article><span>المتأخر</span><b>{money(overdue)}</b></article>
         <article><span>غير المتأخر</span><b>{money(dueSoon)}</b></article>
-        <article><span>عملاء عليهم رصيد</span><b>{customers.toLocaleString("ar-SA")}</b></article>
+        <article><span>عملاء عليهم رصيد</span><b>{customers.toLocaleString("ar-SA-u-nu-latn")}</b></article>
       </section>
 
       <article className="panel">
@@ -110,8 +110,8 @@ export default async function ReceivablesPage() {
                   <td>{money(Number(invoice.total))}</td>
                   <td>{money(paid)}</td>
                   <td><b>{money(outstanding)}</b></td>
-                  <td>{invoice.dueAt ? invoice.dueAt.toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" }) : "فوري"}</td>
-                  <td>{lateDays > 0 ? <span className="alertBadge">{lateDays.toLocaleString("ar-SA")} يوم</span> : <span className="okBadge">ضمن المهلة</span>}</td>
+                  <td>{invoice.dueAt ? invoice.dueAt.toLocaleDateString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" }) : "فوري"}</td>
+                  <td>{lateDays > 0 ? <span className="alertBadge">{lateDays.toLocaleString("ar-SA-u-nu-latn")} يوم</span> : <span className="okBadge">ضمن المهلة</span>}</td>
                 </tr>
               ))}
               {rows.length === 0 && <tr><td colSpan={8} className="empty">لا توجد ذمم مدينة مفتوحة.</td></tr>}

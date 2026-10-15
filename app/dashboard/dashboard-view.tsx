@@ -69,7 +69,7 @@ export function DashboardView({ data }: { data: DashboardData }) {
  <section className={styles.main}>
  <header className={styles.topbar}>
  <button className={styles.menuButton} onClick={()=>setMenu(!menu)} aria-expanded={menu} aria-label="فتح قائمة الأقسام"><Icon name="menu"/></button>
- <div className={styles.clock}>{now?.toLocaleTimeString("en-GB",{timeZone:"Asia/Riyadh",hour:"2-digit",minute:"2-digit"}) || "—"}</div><div className={styles.date}><Icon name="document"/>{now?.toLocaleDateString("ar-SA",{timeZone:"Asia/Riyadh",calendar:"gregory",day:"numeric",month:"long",year:"numeric"}) || "—"}</div>
+ <div className={styles.clock}>{now?.toLocaleTimeString("en-GB",{timeZone:"Asia/Riyadh",hour:"2-digit",minute:"2-digit"}) || "—"}</div><div className={styles.date}><Icon name="document"/>{now?.toLocaleDateString("ar-SA-u-nu-latn",{timeZone:"Asia/Riyadh",calendar:"gregory",day:"numeric",month:"long",year:"numeric"}) || "—"}</div>
  <div className={styles.branch}><Icon name="pin"/><span>{data.branch}</span></div>
  <div className={styles.search}><Icon name="search"/><input aria-label="البحث في أقسام النظام" placeholder="البحث في النظام..." value={search} onChange={e=>setSearch(e.target.value)}/>
  {search&&<div className={styles.results}>{data.navigation.filter(n=>n.label.includes(search)).map(n=><Link prefetch={false} key={n.label} href={n.href}>{n.label}</Link>)}{!data.navigation.some(n=>n.label.includes(search))&&<span>لا توجد أقسام مطابقة</span>}</div>}</div>

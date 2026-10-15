@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import CouponRedeem from "./redeem-form";
 
 export default async function CouponsPage() {
@@ -28,7 +29,7 @@ export default async function CouponsPage() {
       </div>
 
       <section className="workGrid">
-        <article className="panel"><h2>استخدام كوبون</h2><p>يفتح خدمة غسيل مرتبطة بالكوبون والعميل والسيارة.</p><CouponRedeem /><a className="primaryLink" href="/dashboard/wash">خدمات الغسيل والمطالبات والتسويات</a></article>
+        <article className="panel"><h2>استخدام كوبون</h2><p>افحص الكوبون ثم اعتمد الغسلة لتسجيل الاستخدام والمستحق مرة واحدة.</p>{hasPermission(session.permissions, PERMISSIONS.COUPON_REDEEM) && <CouponRedeem />}<a className="primaryLink" href="/dashboard/wash">خدمات الغسيل والمطالبات والتسويات</a></article>
         <article className="panel">
           <h2>آخر الكوبونات</h2>
           <div className="tableWrap">
@@ -40,8 +41,8 @@ export default async function CouponsPage() {
                     <td>{coupon.serial}</td>
                     <td>{coupon.invoice.customer.name}</td>
                     <td><span className={coupon.status === "ACTIVE" ? "okBadge" : "statusBadge"}>{coupon.status}</span></td>
-                    <td>{coupon.issuedAt.toLocaleDateString("ar-SA")}</td>
-                    <td>{coupon.usedAt?.toLocaleString("ar-SA") ?? "—"}</td>
+                    <td>{coupon.issuedAt.toLocaleDateString("ar-SA-u-nu-latn")}</td>
+                    <td>{coupon.usedAt?.toLocaleString("ar-SA-u-nu-latn") ?? "—"}</td>
                     <td><a className="orderLink" href={`/dashboard/coupons/${coupon.id}/print`}>طباعة الكوبون</a></td>
                   </tr>
                 ))}

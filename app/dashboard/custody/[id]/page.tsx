@@ -84,7 +84,7 @@ export default async function CustodyDetailPage({ params }: { params: Promise<{ 
                     <td>{Number(item.expenseAmount).toFixed(2)} ر.س</td>
                     <td>{Number(item.returnedAmount).toFixed(2)} ر.س</td>
                     <td>{item.documentReference || "—"}</td>
-                    <td>{item.createdAt.toLocaleString("ar-SA")}</td>
+                    <td>{item.createdAt.toLocaleString("ar-SA-u-nu-latn")}</td>
                   </tr>
                 ))}
                 {custody.settlements.length === 0 && <tr><td colSpan={5} className="empty">لا توجد تسويات بعد.</td></tr>}

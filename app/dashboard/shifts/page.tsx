@@ -1,3 +1,4 @@
+import { drawerSummary } from "@/services/cash-drawer";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
@@ -27,6 +28,7 @@ export default async function ShiftsPage() {
   });
   const openShift = shifts.find((shift) => !shift.closedAt) ?? null;
 
+  const drawer = openShift ? await drawerSummary(db, openShift) : null;
   let expected = { cash: 0, card: 0, transfer: 0 };
   if (openShift) {
     const [payments, refunds] = await Promise.all([
@@ -57,7 +59,7 @@ export default async function ShiftsPage() {
     };
 
     expected = {
-      cash: Number(openShift.openingCash) + net("CASH"),
+      cash: drawer ? Number(drawer.expectedCash) : Number(openShift.openingCash) + net("CASH"),
       card: net("CARD"),
       transfer: net("TRANSFER"),
     };
@@ -74,6 +76,8 @@ export default async function ShiftsPage() {
         <span className={openShift ? "okBadge" : "statusBadge"}>{openShift ? "وردية مفتوحة" : "لا توجد وردية مفتوحة"}</span>
       </div>
 
+      {hasPermission(session.permissions, PERMISSIONS.FINANCE_MANAGE) && <a className="secondaryButton" href="/dashboard/finance/cash-policy">درج الكاشير وصندوق الإدارة</a>}
+      {drawer && <article className="panel"><h2>حركة درج الكاشير</h2><p>النقد المتوقع = رصيد البداية + الوارد − الصادر. يشمل الصرف المسجل قبل فصل الدرج، دون إعادة تسجيله.</p><div className="tableWrap"><table><thead><tr><th>البيان</th><th>المرجع</th><th>الوارد / الصادر</th></tr></thead><tbody>{drawer.movements.map(row => <tr key={row.id}><td>{row.descriptionAr}</td><td>{row.reference || row.documentNo}</td><td>{money(Number(row.amount))}</td></tr>)}</tbody></table></div><a href={`/dashboard/shifts/${openShift!.id}`}>عرض التقرير والسندات</a></article>}
       <ShiftControls
         canOpen={canOpen}
         canClose={canClose}
@@ -102,8 +106,8 @@ export default async function ShiftsPage() {
             <tbody>
               {shifts.map((shift) => (
                 <tr key={shift.id}>
-                  <td>{shift.openedAt.toLocaleString("ar-SA")}</td>
-                  <td>{shift.closedAt?.toLocaleString("ar-SA") ?? "مفتوحة"}</td>
+                  <td>{shift.openedAt.toLocaleString("ar-SA-u-nu-latn")}</td>
+                  <td>{shift.closedAt?.toLocaleString("ar-SA-u-nu-latn") ?? "مفتوحة"}</td>
                   <td>{money(shift.expectedCash === null ? null : Number(shift.expectedCash))}</td>
                   <td>{money(shift.countedCash === null ? null : Number(shift.countedCash))}</td>
                   <td>{money(shift.cashVariance === null ? null : Number(shift.cashVariance))}</td>

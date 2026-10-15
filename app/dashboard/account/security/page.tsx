@@ -40,7 +40,7 @@ export default async function AccountSecurityPage() {
           <p><b>اسم الدخول:</b> <span dir="ltr">{user.username}</span></p>
           <p><b>البريد:</b> {user.email || "غير مسجل"}</p>
           <p><b>الحالة:</b> {user.status === "ACTIVE" ? "نشط" : "موقوف"}</p>
-          <p><b>آخر دخول:</b> {user.lastLoginAt ? user.lastLoginAt.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" }) : "لم يسجل بعد"}</p>
+          <p><b>آخر دخول:</b> {user.lastLoginAt ? user.lastLoginAt.toLocaleString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" }) : "لم يسجل بعد"}</p>
           <p><b>الأدوار:</b> {user.roles.map((entry) => entry.role.nameAr).join(" + ") || "—"}</p>
           {user.mustChangePassword && <p className="alertBadge">يلزم تغيير كلمة المرور المؤقتة.</p>}
         </article>

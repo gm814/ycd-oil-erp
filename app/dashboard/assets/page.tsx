@@ -73,7 +73,7 @@ export default async function AssetsPage() {
         <article className="panel inventoryPanel" key={acquisition.id}>
           <h2>سجل تجهيزات المركز — فاتورة {acquisition.invoiceNo}</h2>
           <p className="muted">
-            {acquisition.supplierName} · {acquisition.invoiceDate.toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" })}
+            {acquisition.supplierName} · {acquisition.invoiceDate.toLocaleDateString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}
             {" · "}المشتري: {acquisition.purchaserName || "—"}
             {" · "}جهة التمويل: {acquisition.fundingCompanyName || "—"}
           </p>
@@ -91,7 +91,7 @@ export default async function AssetsPage() {
                   <tr key={item.id}>
                     <td>{item.itemCode || "—"}</td>
                     <td>{item.nameAr}</td>
-                    <td>{Number(item.quantity).toLocaleString("ar-SA")}</td>
+                    <td>{Number(item.quantity).toLocaleString("ar-SA-u-nu-latn")}</td>
                     <td>{Number(item.unitCost).toFixed(2)} ر.س</td>
                     <td>{Number(item.lineSubtotal).toFixed(2)} ر.س</td>
                   </tr>
@@ -113,7 +113,7 @@ export default async function AssetsPage() {
                 <tr key={asset.id}>
                   <td>{asset.assetNo}</td><td>{asset.nameAr}</td><td>{asset.categoryAr}</td><td>{asset.locationAr || "—"}</td>
                   <td><span className="statusBadge">{assetStatus[asset.status] ?? asset.status}</span></td>
-                  <td>{asset.nextMaintenanceAt ? asset.nextMaintenanceAt.toLocaleDateString("ar-SA") : "—"}</td>
+                  <td>{asset.nextMaintenanceAt ? asset.nextMaintenanceAt.toLocaleDateString("ar-SA-u-nu-latn") : "—"}</td>
                   <td>{asset.purchaseCost ? Number(asset.purchaseCost).toFixed(2) + " ر.س" : "—"}</td>
                 </tr>
               ))}

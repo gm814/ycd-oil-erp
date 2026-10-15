@@ -20,6 +20,12 @@ RUN npm run db:generate
 RUN npm run build
 
 FROM base AS runner
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends python3-venv libpango-1.0-0 libpangoft2-1.0-0 fonts-dejavu-core \
+  && python3 -m venv /opt/pdf \
+  && /opt/pdf/bin/pip install --no-cache-dir weasyprint==70.0 \
+  && rm -rf /var/lib/apt/lists/*
+ENV PDF_PYTHON=/opt/pdf/bin/python
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -38,6 +44,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/scripts/bootstrap-production.cjs ./scripts/bootstrap-production.cjs
 COPY --from=builder --chown=nextjs:nodejs /app/scripts/start-production.sh ./scripts/start-production.sh
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/render-invoice-pdf.py ./scripts/render-invoice-pdf.py
+RUN printf '<html lang="ar" dir="rtl"><meta charset="utf-8"><p>فاتورة 123</p></html>' | /opt/pdf/bin/python scripts/render-invoice-pdf.py > /dev/null
 
 USER nextjs
 EXPOSE 10000

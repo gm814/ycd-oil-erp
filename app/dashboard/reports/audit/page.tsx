@@ -147,7 +147,7 @@ export default async function AuditTrailPage({
           <button type="submit">تطبيق الفلاتر</button>
         </form>
         <div className="actionStack">
-          <span>النتائج المطابقة: <b>{total.toLocaleString("ar-SA")}</b></span>
+          <span>النتائج المطابقة: <b>{total.toLocaleString("ar-SA-u-nu-latn")}</b></span>
           <a className="secondaryLink" href={`/api/secure/reports/audit.csv?${exportParams.toString()}`}>تصدير CSV</a>
         </div>
       </article>
@@ -163,7 +163,7 @@ export default async function AuditTrailPage({
                 const after = safeJson(row.afterJson);
                 return (
                   <tr key={row.id}>
-                    <td>{row.createdAt.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</td>
+                    <td>{row.createdAt.toLocaleString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</td>
                     <td><b>{row.actor?.name || "النظام"}</b>{row.actor?.username ? <><br /><small>{row.actor.username}</small></> : null}</td>
                     <td>{actionLabels[row.action] || row.action}<br /><small>{row.action}</small></td>
                     <td>{row.entityType}</td>

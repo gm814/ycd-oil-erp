@@ -1,8 +1,14 @@
+import { companyConfig } from "@/lib/config";
+import { productPriceRange } from "@/lib/product-pricing";
+import { oilServiceReminder } from "@/lib/oil-service-interval";
 import ActionForm from "@/app/dashboard/loyalty/action-form";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import OrderActions from "./order-actions";
+import ShiftTransfer from "./shift-transfer";
+import { PERMISSIONS, hasPermission } from "@/lib/rbac";
+import { serviceOrderTotals } from "@/lib/service-order-totals";
 
 export default async function ServiceOrderPage({
   params,
@@ -18,6 +24,7 @@ export default async function ServiceOrderPage({
       where: { id },
       include: {
         customer: true,
+        shift: true,
         vehicle: true,
         items: { include: { product: true }, orderBy: { id: "asc" } },
         invoice: { include: { payments: true, coupons: true } },
@@ -25,17 +32,18 @@ export default async function ServiceOrderPage({
     }),
     db.product.findMany({
       where: { active: true },
-      select: { id: true, sku: true, nameAr: true, salePrice: true, category: true },
+      select: { id: true, sku: true, nameAr: true, salePrice: true, costPrice: true, costBasedPricing: true, category: true },
       orderBy: { nameAr: "asc" },
     }),
   ]);
 
   if (!order || order.branchId !== session.branchId) notFound();
+  const canTransfer = hasPermission(session.permissions, PERMISSIONS.FINANCE_MANAGE) && hasPermission(session.permissions, PERMISSIONS.SERVICE_ORDER_APPROVE);
+  const openShifts = canTransfer && !order.invoice && ["DRAFT","OPEN","IN_PROGRESS"].includes(order.status) && (!order.shift || order.shift.closedAt)
+    ? await db.shift.findMany({where:{branchId:order.branchId,closedAt:null}}) : [];
 
-  const subtotal = order.items.reduce(
-    (sum, item) => sum + Number(item.unitPrice) * Number(item.quantity) - Number(item.discount),
-    0,
-  );
+  const totals = serviceOrderTotals(order.items,companyConfig.vatRate);
+  const subtotal = totals.subtotal.toNumber();
 
   return (
     <main className="workspace">
@@ -43,11 +51,12 @@ export default async function ServiceOrderPage({
         <div>
           <a href="/dashboard/service-orders" className="backLink">← أوامر الخدمة</a>
           <h1>{order.orderNo}</h1>
-          <p><a className="orderLink" href={`/dashboard/customers/${order.customerId}`}>{order.customer.name}</a> · {order.vehicle.plate} · العداد {order.odometer?.toLocaleString("ar-SA") ?? "—"}</p>
+          <p><a className="orderLink" href={`/dashboard/customers/${order.customerId}`}>{order.customer.name}</a> · {order.vehicle.plate} · العداد {order.odometer?.toLocaleString("ar-SA-u-nu-latn") ?? "—"}</p>
         </div>
         <div className="actionStack">
           <span className="statusBadge">{order.status}</span>
-          {order.status === "COMPLETED" && <a className="secondaryLink" href={`/dashboard/service-orders/${order.id}/reminder`}>طباعة تذكير الخدمة</a>}
+          {order.invoice && <a className="secondaryLink" href={`/dashboard/invoices/${order.invoice.id}#customer-package`}>تنزيل وطباعة ومشاركة مستندات العميل</a>}
+          {order.status === "COMPLETED" && <a className="secondaryLink" href={`/dashboard/service-orders/${order.id}/reminder`}>تذكير الخدمة عبر واتساب</a>}
         </div>
       </div>
 
@@ -55,12 +64,21 @@ export default async function ServiceOrderPage({
       <section className="workGrid">
         <article className="panel">
           <h2>إضافة خدمة / مادة</h2>
+          {openShifts.length === 1 && order.channel !== "PRICE_CORRECTION" && <ShiftTransfer orderId={order.id} orderNo={order.orderNo} previousShiftId={order.shiftId} targetShiftId={openShifts[0].id} targetOpenedAt={openShifts[0].openedAt.toLocaleString("ar-SA-u-nu-latn",{timeZone:"Asia/Riyadh"})} />}
           <OrderActions
             orderId={order.id}
+            subtotal={subtotal}
+            vatAmount={totals.vatAmount.toNumber()}
+            invoiceTotal={totals.total.toNumber()}
+            vatRate={companyConfig.vatRate}
+            odometer={order.odometer}
+            reminder={oilServiceReminder(order.odometer, order.items)}
             locked={Boolean(order.invoice) || order.status === "CANCELLED"}
             products={products.map((product) => ({
-              ...product,
+              id: product.id, sku: product.sku, nameAr: product.nameAr, category: product.category,
               salePrice: Number(product.salePrice),
+              minPrice: productPriceRange(product)?.min.toNumber() ?? null,
+              maxPrice: productPriceRange(product)?.max.toNumber() ?? null,
             }))}
           />
         </article>
@@ -76,7 +94,7 @@ export default async function ServiceOrderPage({
                   return (
                     <tr key={item.id}>
                       <td>{item.descriptionAr}</td>
-                      <td>{Number(item.quantity).toLocaleString("ar-SA")}</td>
+                      <td>{Number(item.quantity).toLocaleString("ar-SA-u-nu-latn")}</td>
                       <td>{Number(item.unitPrice).toFixed(2)}</td>
                       <td>{Number(item.discount).toFixed(2)}</td>
                       <td>{lineTotal.toFixed(2)} ر.س</td>

@@ -1,3 +1,5 @@
+import { nextDocumentNumber } from "@/lib/document-number";
+import { isCustomerPhone, normalizeCustomerPhone } from "@/lib/customer-phone";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -9,7 +11,7 @@ const intakeSchema = z.object({
   customerId: z.string().min(1).max(100).optional(),
   vehicleId: z.string().min(1).max(100).optional(),
   customerName: z.string().trim().min(2).max(120),
-  phone: z.string().trim().min(7).max(20).optional().or(z.literal("")),
+  phone: z.string().refine(isCustomerPhone).transform(normalizeCustomerPhone),
   plate: z.string().trim().min(2).max(30),
   make: z.string().trim().max(60).optional().or(z.literal("")),
   model: z.string().trim().max(60).optional().or(z.literal("")),
@@ -27,7 +29,7 @@ export async function POST(request: Request) {
 
   const parsed = intakeSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: "INVALID_INPUT", details: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json({ error: parsed.error.issues.some(i => i.path[0] === "phone") ? "INVALID_CUSTOMER_PHONE" : "INVALID_INPUT", details: parsed.error.flatten() }, { status: 400 });
   }
 
   const data = parsed.data;
@@ -54,10 +56,10 @@ export async function POST(request: Request) {
       if (!vehicle) {
         vehicle = await tx.vehicle.create({ data: { customerId: customer.id, plate: normalizedPlate, make: data.make || null, model: data.model || null, year: data.year, currentOdometer: data.odometer }, include: { customer: true } });
       } else {
-        vehicle = await tx.vehicle.update({ where: { id: vehicle.id }, data: { currentOdometer: data.odometer ?? vehicle.currentOdometer }, include: { customer: true } });
+        vehicle = await tx.vehicle.update({ where: { id: vehicle.id }, data: { currentOdometer: data.odometer ?? vehicle.currentOdometer, ...(data.make ? { make: data.make } : {}), ...(data.model ? { model: data.model } : {}), ...(data.year ? { year: data.year } : {}) }, include: { customer: true } });
       }
 
-      const orderNo = `${data.channel === "WASH" ? "WS-DIRECT" : "SO"}-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+      const orderNo = await nextDocumentNumber(tx);
       const created = await tx.serviceOrder.create({
         data: {
           orderNo,

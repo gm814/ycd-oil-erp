@@ -43,7 +43,7 @@ export default async function PurchaseRequestPage({ params }: { params: Promise<
               <thead><tr><th>الصنف</th><th>الكمية</th><th>الوحدة</th></tr></thead>
               <tbody>
                 {request.items.map((item) => (
-                  <tr key={item.id}><td>{item.product.sku} — {item.product.nameAr}</td><td>{Number(item.quantity).toLocaleString("ar-SA")}</td><td>{item.product.unit}</td></tr>
+                  <tr key={item.id}><td>{item.product.sku} — {item.product.nameAr}</td><td>{Number(item.quantity).toLocaleString("ar-SA-u-nu-latn")}</td><td>{item.product.unit}</td></tr>
                 ))}
               </tbody>
             </table>

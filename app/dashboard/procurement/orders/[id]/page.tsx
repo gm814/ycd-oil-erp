@@ -85,7 +85,7 @@ export default async function PurchaseOrderPage({ params }: { params: Promise<{ 
 
           <h3>سندات الاستلام</h3>
           {order.receipts.map((receipt) => (
-            <p key={receipt.id} className="receiptLine"><b>{receipt.receiptNo}</b><span>{receipt.createdAt.toLocaleString("ar-SA")}</span><a className="orderLink" href={`/dashboard/procurement/orders/${order.id}/receipts/${receipt.id}/print`}>طباعة محضر الاستلام</a></p>
+            <p key={receipt.id} className="receiptLine"><b>{receipt.receiptNo}</b><span>{receipt.createdAt.toLocaleString("ar-SA-u-nu-latn")}</span><a className="orderLink" href={`/dashboard/procurement/orders/${order.id}/receipts/${receipt.id}/print`}>طباعة محضر الاستلام</a></p>
           ))}
           {order.receipts.length === 0 && <p className="empty">لم يتم تسجيل استلام بعد.</p>}
 

@@ -21,7 +21,7 @@ const typeLabel: Record<string, string> = {
 };
 
 function money(value: number) {
-  return value.toLocaleString("ar-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
+  return value.toLocaleString("ar-SA-u-nu-latn", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
 }
 
 export default async function FinancialStatementPage({
@@ -135,7 +135,7 @@ export default async function FinancialStatementPage({
                 const amount = Number(transaction.amount);
                 return (
                   <tr key={transaction.id}>
-                    <td>{transaction.createdAt.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</td>
+                    <td>{transaction.createdAt.toLocaleString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</td>
                     <td>{transaction.account.nameAr}<br /><small>{transaction.account.code}</small></td>
                     <td>{typeLabel[transaction.type] ?? transaction.type}</td>
                     <td>{transaction.descriptionAr}</td>

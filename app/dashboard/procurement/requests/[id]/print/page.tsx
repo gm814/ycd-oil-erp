@@ -28,7 +28,7 @@ export default async function PurchaseRequestPrintPage({ params }: { params: Pro
         <YcdDocumentHeader title="طلب مشتريات" titleEn="PURCHASE REQUEST" number={request.requestNo} />
         <section className="ycdDocMeta">
           <div><span>الفرع</span><b>{request.branch.nameAr}</b></div>
-          <div><span>التاريخ</span><b>{request.createdAt.toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" })}</b></div>
+          <div><span>التاريخ</span><b>{request.createdAt.toLocaleDateString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh" })}</b></div>
           <div><span>مقدم الطلب</span><b>{requester?.name ?? request.requestedBy}</b></div>
           <div><span>الحالة</span><b>{request.status}</b></div>
         </section>
@@ -39,7 +39,7 @@ export default async function PurchaseRequestPrintPage({ params }: { params: Pro
               {request.items.map((item, index) => (
                 <tr key={item.id}>
                   <td>{index + 1}</td><td>{item.product.sku}</td><td>{item.product.nameAr}</td>
-                  <td>{Number(item.quantity).toLocaleString("ar-SA")}</td><td>{item.product.unit}</td><td>{item.notes || "—"}</td>
+                  <td>{Number(item.quantity).toLocaleString("ar-SA-u-nu-latn")}</td><td>{item.product.unit}</td><td>{item.notes || "—"}</td>
                 </tr>
               ))}
             </tbody>
