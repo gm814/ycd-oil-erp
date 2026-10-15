@@ -59,6 +59,11 @@ export async function POST(
     return NextResponse.json({ invoice });
   } catch (error) {
     const code = error instanceof Error ? error.message : "UNKNOWN_ERROR";
+    // Record only a symbolic error code, never receipt/customer data or SQL details.
+    console.error("SERVICE_ORDER_COMPLETE_FAILED", {
+      serviceOrderId: id,
+      code: /^[A-Z][A-Z0-9_]{1,80}$/.test(code) ? code : "UNEXPECTED_ERROR",
+    });
     const status = code === "INSUFFICIENT_STOCK" ? 409 : code.endsWith("_NOT_FOUND") ? 404 : 400;
     return NextResponse.json({ error: code }, { status });
   }
