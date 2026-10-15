@@ -2,6 +2,7 @@
 
 import { FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { CUSTOMER_PHONE_ERROR, isCustomerPhone, normalizeCustomerPhone } from "@/lib/customer-phone";
 
 export default function IntakeForm({ channel = "OIL" }: { channel?: "OIL" | "WASH" }) {
   type Match = { id: string; customerId: string; customerNo: string; customerName: string; phone: string | null; plate: string; make: string | null; model: string | null; year: number | null; odometer: number | null; nextServiceKm: number | null; nextServiceAt: string | null };
@@ -37,6 +38,9 @@ export default function IntakeForm({ channel = "OIL" }: { channel?: "OIL" | "WAS
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
     const payload = Object.fromEntries([...form.entries()].filter(([key, value]) => !(["year", "odometer"].includes(key) && value === "")));
+    const phone = normalizeCustomerPhone(String(payload.phone ?? ""));
+    if (!isCustomerPhone(phone)) { setMessage(CUSTOMER_PHONE_ERROR + (selected ? " عدّل الرقم من ملف العميل أولًا." : "")); return; }
+    payload.phone = phone;
 
     const response = await fetch("/api/secure/service-orders", {
       method: "POST",
@@ -49,7 +53,7 @@ export default function IntakeForm({ channel = "OIL" }: { channel?: "OIL" | "WAS
     setLoading(false);
 
     if (!response.ok) {
-      setMessage(result.error === "OPEN_SHIFT_REQUIRED"
+      setMessage(result.error === "INVALID_CUSTOMER_PHONE" ? CUSTOMER_PHONE_ERROR : result.error === "OPEN_SHIFT_REQUIRED"
         ? "يجب فتح وردية تشغيلية قبل استقبال السيارات."
         : result.error === "CUSTOMER_SELECTION_MISMATCH" ? "بيانات العميل لا تطابق السيارة المسجلة. ابحث عن السيارة واختر ملفها الصحيح." : result.error === "ODOMETER_DECREASE" ? "قراءة العداد أقل من القراءة السابقة؛ راجعها." : "تعذر فتح أمر الخدمة. راجع البيانات والصلاحيات.");
       return;
@@ -67,7 +71,7 @@ export default function IntakeForm({ channel = "OIL" }: { channel?: "OIL" | "WAS
     <><section className="panel"><h3>عميل أو سيارة سبق خدمتها</h3><label>ابحث باللوحة أو رقم العميل أو رمز الولاء أو الجوال<input value={query} onChange={e=>setQuery(e.target.value)} /></label><button type="button" onClick={lookup} disabled={searching}>{searching ? "جارٍ البحث..." : "بحث"}</button>{matches.map(v=><p key={v.id}><button type="button" onClick={()=>choose(v)}>{v.plate} — {v.customerName} — {v.customerNo}</button></p>)}{selected && <p>العميل {selected.customerNo} · الموعد السابق: {selected.nextServiceAt ? new Date(selected.nextServiceAt).toLocaleDateString("ar-SA-u-nu-latn") : "—"} · عند {selected.nextServiceKm ?? "—"} كم <button type="button" onClick={()=>{setSelected(null);formRef.current?.reset();}}>إلغاء الاختيار</button></p>}</section>
     <form ref={formRef} className="intakeForm" onSubmit={submit}>
       <label>اسم العميل<input name="customerName" required readOnly={Boolean(selected)} /></label>
-      <label>رقم الجوال<input name="phone" inputMode="tel" readOnly={Boolean(selected)} /></label>
+      <label>رقم الجوال<input name="phone" required inputMode="numeric" dir="ltr" pattern="[0-9٠-٩۰-۹]{10}" title={CUSTOMER_PHONE_ERROR} readOnly={Boolean(selected)} /><small>10 أرقام بالضبط، دون مسافات أو رمز الدولة.</small></label>
       <label>رقم اللوحة<input name="plate" required readOnly={Boolean(selected)} /></label>
       <div className="formRow">
         <label>الشركة المصنعة<input name="make" placeholder="Toyota" /></label>

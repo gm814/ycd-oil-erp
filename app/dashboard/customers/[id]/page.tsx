@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import CreditTermsForm from "./credit-terms-form";
+import CustomerDetailsForm from "./customer-details-form";
 
 function money(value: number) {
   return value.toLocaleString("ar-SA-u-nu-latn", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ر.س";
@@ -105,6 +106,7 @@ export default async function CustomerDetailsPage({
         <div className="logoPlaceholder">YCD <span>OIL</span></div>
       </div>
 
+      {hasPermission(session.permissions, PERMISSIONS.SERVICE_ORDER_CREATE) && <CustomerDetailsForm key={`${customer.name}:${customer.phone}`} customerId={customer.id} name={customer.name} phone={customer.phone} />}
       <section className="kpis">
         <article><span>عدد الزيارات</span><b>{customer.serviceOrders.length.toLocaleString("ar-SA-u-nu-latn")}</b></article>
         <article><span>صافي المبيعات</span><b>{money(totalSales)}</b></article>

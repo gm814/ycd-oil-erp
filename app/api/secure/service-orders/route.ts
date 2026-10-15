@@ -1,4 +1,5 @@
 import { nextDocumentNumber } from "@/lib/document-number";
+import { isCustomerPhone, normalizeCustomerPhone } from "@/lib/customer-phone";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -10,7 +11,7 @@ const intakeSchema = z.object({
   customerId: z.string().min(1).max(100).optional(),
   vehicleId: z.string().min(1).max(100).optional(),
   customerName: z.string().trim().min(2).max(120),
-  phone: z.string().trim().min(7).max(20).optional().or(z.literal("")),
+  phone: z.string().refine(isCustomerPhone).transform(normalizeCustomerPhone),
   plate: z.string().trim().min(2).max(30),
   make: z.string().trim().max(60).optional().or(z.literal("")),
   model: z.string().trim().max(60).optional().or(z.literal("")),
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
 
   const parsed = intakeSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: "INVALID_INPUT", details: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json({ error: parsed.error.issues.some(i => i.path[0] === "phone") ? "INVALID_CUSTOMER_PHONE" : "INVALID_INPUT", details: parsed.error.flatten() }, { status: 400 });
   }
 
   const data = parsed.data;
