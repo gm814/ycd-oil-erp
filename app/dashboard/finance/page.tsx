@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 import { companyConfig } from "@/lib/config";
 import FinanceActions from "./finance-actions";
+import TestBalanceForm from "./test-balance-form";
 
 const typeLabel: Record<string, string> = {
   CASH: "صندوق نقدي",
@@ -113,6 +114,7 @@ export default async function FinancePage() {
         <article><span>إجمالي الأرصدة التشغيلية</span><b>{liquidBalance.toFixed(2)} ر.س</b></article>
       </section>
 
+      {canManage && <TestBalanceForm accounts={accounts.filter(a=>a.type === "CASH" && a.code.startsWith("TEST-") && a.nameAr.includes("تجريبي")).map(a=>({id:a.id,nameAr:a.nameAr}))}/>}
       <FinanceActions
         accounts={accountRows}
         canManage={canManage}
