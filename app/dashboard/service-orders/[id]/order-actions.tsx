@@ -25,6 +25,8 @@ type PaymentMethod = "CASH" | "CARD" | "TRANSFER" | "CREDIT";
 export default function OrderActions({
   orderId,
   subtotal,
+  vatAmount,
+  invoiceTotal,
   vatRate,
   odometer,
   locked,
@@ -34,6 +36,8 @@ export default function OrderActions({
   reminder: { nextKm: number | null; reason: string };
   orderId: string;
   subtotal: number;
+  vatAmount: number;
+  invoiceTotal: number;
   vatRate: number;
   odometer: number | null;
   locked: boolean;
@@ -42,8 +46,6 @@ export default function OrderActions({
   const router = useRouter();
   const [priceIncludesVat, setPriceIncludesVat] = useState(false);
   const [amountPaid, setAmountPaid] = useState("");
-  const vatAmount = Math.round((subtotal * vatRate + Number.EPSILON) * 100) / 100;
-  const invoiceTotal = Math.round((subtotal + vatAmount + Number.EPSILON) * 100) / 100;
 
   const [productSearch, setProductSearch] = useState("");
   const normalizeSearch = (value: string) => value.normalize("NFKC").toLowerCase()

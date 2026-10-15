@@ -8,6 +8,7 @@ import { getSession } from "@/lib/auth";
 import OrderActions from "./order-actions";
 import ShiftTransfer from "./shift-transfer";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac";
+import { serviceOrderTotals } from "@/lib/service-order-totals";
 
 export default async function ServiceOrderPage({
   params,
@@ -41,10 +42,8 @@ export default async function ServiceOrderPage({
   const openShifts = canTransfer && !order.invoice && ["DRAFT","OPEN","IN_PROGRESS"].includes(order.status) && (!order.shift || order.shift.closedAt)
     ? await db.shift.findMany({where:{branchId:order.branchId,closedAt:null}}) : [];
 
-  const subtotal = order.items.reduce(
-    (sum, item) => sum + Number(item.unitPrice) * Number(item.quantity) - Number(item.discount),
-    0,
-  );
+  const totals = serviceOrderTotals(order.items,companyConfig.vatRate);
+  const subtotal = totals.subtotal.toNumber();
 
   return (
     <main className="workspace">
@@ -68,6 +67,8 @@ export default async function ServiceOrderPage({
           <OrderActions
             orderId={order.id}
             subtotal={subtotal}
+            vatAmount={totals.vatAmount.toNumber()}
+            invoiceTotal={totals.total.toNumber()}
             vatRate={companyConfig.vatRate}
             odometer={order.odometer}
             reminder={oilServiceReminder(order.odometer, order.items)}
