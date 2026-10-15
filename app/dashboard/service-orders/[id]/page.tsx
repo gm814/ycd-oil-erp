@@ -6,6 +6,8 @@ import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import OrderActions from "./order-actions";
+import ShiftTransfer from "./shift-transfer";
+import { PERMISSIONS, hasPermission } from "@/lib/rbac";
 
 export default async function ServiceOrderPage({
   params,
@@ -21,6 +23,7 @@ export default async function ServiceOrderPage({
       where: { id },
       include: {
         customer: true,
+        shift: true,
         vehicle: true,
         items: { include: { product: true }, orderBy: { id: "asc" } },
         invoice: { include: { payments: true, coupons: true } },
@@ -34,6 +37,9 @@ export default async function ServiceOrderPage({
   ]);
 
   if (!order || order.branchId !== session.branchId) notFound();
+  const canTransfer = hasPermission(session.permissions, PERMISSIONS.FINANCE_MANAGE) && hasPermission(session.permissions, PERMISSIONS.SERVICE_ORDER_APPROVE);
+  const openShifts = canTransfer && !order.invoice && ["DRAFT","OPEN","IN_PROGRESS"].includes(order.status) && (!order.shift || order.shift.closedAt)
+    ? await db.shift.findMany({where:{branchId:order.branchId,closedAt:null}}) : [];
 
   const subtotal = order.items.reduce(
     (sum, item) => sum + Number(item.unitPrice) * Number(item.quantity) - Number(item.discount),
@@ -58,6 +64,7 @@ export default async function ServiceOrderPage({
       <section className="workGrid">
         <article className="panel">
           <h2>إضافة خدمة / مادة</h2>
+          {openShifts.length === 1 && order.channel !== "PRICE_CORRECTION" && <ShiftTransfer orderId={order.id} orderNo={order.orderNo} previousShiftId={order.shiftId} targetShiftId={openShifts[0].id} targetOpenedAt={openShifts[0].openedAt.toLocaleString("ar-SA-u-nu-latn",{timeZone:"Asia/Riyadh"})} />}
           <OrderActions
             orderId={order.id}
             subtotal={subtotal}
