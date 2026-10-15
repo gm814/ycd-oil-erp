@@ -23,7 +23,7 @@ function sameOriginMutationAllowed(request: NextRequest) {
 
 export async function middleware(request: NextRequest) {
   // Signed, read-only coupon cards are intended for the customer without a staff login.
-  if (/^\/coupon\/[^/]+\/?$/.test(request.nextUrl.pathname)) {
+  if (/^\/(coupon|documents)\/[^/]+\/?$/.test(request.nextUrl.pathname)) {
     const response = NextResponse.next();
     response.headers.set("cache-control", "private, no-store, max-age=0");
     response.headers.set("referrer-policy", "no-referrer");
@@ -75,5 +75,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/coupon/:path*", "/dashboard/:path*", "/api/secure/:path*"],
+  matcher: ["/documents/:path*", "/coupon/:path*", "/dashboard/:path*", "/api/secure/:path*"],
 };

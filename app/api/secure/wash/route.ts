@@ -5,7 +5,7 @@ import { performWashAction, WashAction } from "@/services/wash-settlement";
 const id = z.string().min(1).max(100);
 const amount = z.string().regex(/^\d{1,9}(\.\d{1,2})?$/);
 const schema = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("configure"), washBranchId: id, nameAr: z.string().trim().min(2).max(120), unitAmount: amount.optional(), cadence: z.enum(["DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "SEMIANNUAL", "ANNUAL"]), issueMode: z.enum(["ELIGIBLE", "ALL"]).optional() }),
+  z.object({ action: z.literal("configure"), washBranchId: id, nameAr: z.string().trim().min(2).max(120), unitAmount: amount.optional(), cadence: z.enum(["DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "SEMIANNUAL", "ANNUAL"]), issueMode: z.enum(["ELIGIBLE"]).optional() }),
   z.object({ action: z.literal("inspect"), serial: z.string().trim().min(6).max(2048) }),
   z.object({ action: z.literal("redeem"), serial: z.string().trim().min(6).max(2048), expectedAmount: amount.optional() }),
   z.object({ action: z.literal("complete"), serviceId: id }),

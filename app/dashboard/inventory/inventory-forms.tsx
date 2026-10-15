@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
-type ProductOption = { id: string; sku: string; nameAr: string; category: string; serviceIntervalKm: number | null };
+type ProductOption = { id: string; sku: string; nameAr: string; category: string; serviceIntervalKm: number | null; isOilFilter: boolean };
 
 export default function InventoryForms({ products }: { products: ProductOption[] }) {
   const router = useRouter();
@@ -69,7 +69,7 @@ export default function InventoryForms({ products }: { products: ProductOption[]
             </div>
             {category === "OIL" && <label>فترة الخدمة حسب صنف الزيت<select name="serviceIntervalKm" defaultValue=""><option value="">غير محددة</option><option value="5000">5,000 كم</option><option value="10000">10,000 كم</option></select></label>}
             <label>الحد الأدنى للمخزون<input name="minStock" type="number" min="0" step="0.001" defaultValue="0" /></label>
-            <label className="checkLabel"><input name="grantsWashCoupon" type="checkbox" value="true" /> يمنح كوبون غسيل مجاني عند بيعه</label>
+            {category === "FILTER" && <label className="checkLabel"><input name="isOilFilter" type="checkbox" value="true" /> فلتر زيت (سيفون) — يؤهل للغسيل مع خدمة تغيير الزيت</label>}<small>الغسيل المجاني يتطلب خدمة تغيير الزيت مع فلتر الزيت. يمكن للمخوّل تجاوز شرط الفلتر فقط من مستندات العميل.</small>
             <button disabled={busy}>حفظ الصنف</button>
           </form>
         </article>
@@ -96,6 +96,11 @@ export default function InventoryForms({ products }: { products: ProductOption[]
           <input type="hidden" name="productId" value={product.id} />
           <label>{product.sku} — {product.nameAr}<select name="serviceIntervalKm" defaultValue={product.serviceIntervalKm ?? ""}><option value="">غير محددة</option><option value="5000">5,000 كم</option><option value="10000">10,000 كم</option></select></label>
           <button disabled={busy}>حفظ فترة الصنف</button>
+        </form>)}
+      </article>
+      <article className="panel"><h2>تحديد فلاتر الزيت المؤهلة</h2><p>حدد فلاتر الزيت فقط، ولا تشمل فلاتر الهواء أو المكيف أو الوقود.</p>
+        {products.filter(p => p.category === "FILTER").map(product => <form key={`${product.id}-${product.isOilFilter}`} className="intakeForm" onSubmit={event => { event.preventDefault(); void post("/api/secure/inventory/products", event.currentTarget, "PATCH"); }}>
+          <input type="hidden" name="productId" value={product.id} /><label>{product.sku} — {product.nameAr}<select name="isOilFilter" defaultValue={String(product.isOilFilter)}><option value="false">فلتر آخر</option><option value="true">فلتر زيت (سيفون)</option></select></label><button disabled={busy}>حفظ تصنيف الفلتر</button>
         </form>)}
       </article>
       {message && <p className="formNotice globalNotice">{message}</p>}

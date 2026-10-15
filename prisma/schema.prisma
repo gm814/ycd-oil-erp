@@ -433,6 +433,7 @@ model Product {
   minStock             Decimal               @default(0) @db.Decimal(12,3)
   serviceIntervalKm    Int?
   grantsWashCoupon     Boolean               @default(false)
+  isOilFilter          Boolean               @default(false)
   active               Boolean               @default(true)
   serviceItems         ServiceOrderItem[]
   stockMovements       StockMovement[]

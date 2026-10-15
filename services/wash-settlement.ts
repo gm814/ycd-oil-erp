@@ -8,7 +8,7 @@ import { PERMISSIONS as P, hasPermission } from "@/lib/rbac";
 import { riyadhDateRange, riyadhDateKey } from "@/lib/time";
 
 export type WashAction =
-  | { action: "configure"; washBranchId: string; nameAr: string; unitAmount?: string; cadence: string; issueMode?: "ELIGIBLE" | "ALL" }
+  | { action: "configure"; washBranchId: string; nameAr: string; unitAmount?: string; cadence: string; issueMode?: "ELIGIBLE" }
   | { action: "inspect"; serial: string }
   | { action: "redeem"; serial: string; expectedAmount?: string }
   | { action: "complete"; serviceId: string }
@@ -42,7 +42,7 @@ export async function washActionInTransaction(tx: Prisma.TransactionClient, sess
     if (!receiver) throw new Error("WASH_BRANCH_NOT_FOUND");
     const old = await tx.washAgreement.findUnique({ where: { sourceBranchId: branchId }, include: { _count: { select: { services: true } } } });
     if (old && old.washBranchId !== receiver.id && old._count.services > 0) throw new Error("AGREEMENT_BRANCH_LOCKED");
-    const data = { nameAr: input.nameAr, washBranchId: receiver.id, unitAmount: input.unitAmount ? settlementAmount(input.unitAmount) : null, cadence: input.cadence, issueMode: input.issueMode ?? old?.issueMode ?? "ELIGIBLE" };
+    const data = { nameAr: input.nameAr, washBranchId: receiver.id, unitAmount: input.unitAmount ? settlementAmount(input.unitAmount) : null, cadence: input.cadence, issueMode: "ELIGIBLE" };
     const agreement = await tx.washAgreement.upsert({ where: { sourceBranchId: branchId }, create: { sourceBranchId: branchId, ...data }, update: data });
     await audit("WASH_AGREEMENT_UPDATED", agreement.id, { before: old ? { nameAr: old.nameAr, unitAmount: old.unitAmount?.toString() ?? null, cadence: old.cadence, issueMode: old.issueMode } : null, nameAr: data.nameAr, unitAmount: data.unitAmount?.toString() ?? null, cadence: data.cadence, issueMode: data.issueMode, washBranchId: receiver.id });
     return { agreementId: agreement.id };

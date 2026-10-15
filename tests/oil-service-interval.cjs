@@ -43,6 +43,8 @@ const tx = {
   vehicle: {update:async()=>({})}, auditLog:{create:async({data})=>{audit=data;return {};}},
 };
 const complete = load('services/service-order.ts', {
+  '@/lib/wash-eligibility':load('lib/wash-eligibility.ts'),
+  '@/lib/service-order-totals':load('lib/service-order-totals.ts'),
   '@/lib/oil-service-interval':helper,
   '@/lib/product-pricing':load('lib/product-pricing.ts'),
   '@/services/cash-drawer':{receiptAccount:async()=>null},

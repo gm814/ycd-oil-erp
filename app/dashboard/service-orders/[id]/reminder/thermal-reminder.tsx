@@ -50,8 +50,20 @@ function wrap(s:string,bold:boolean){font(bold,s);const a:string[]=[];let line='
 function text(s:string,y:number,bold=true,color=ink){font(bold,s);c.fillStyle=color;c.fillText(s,600,y);}
 text('تذكير الخدمة القادمة',267,true,gold);
 let y=335;
-const rows=[['العداد القادم · كم',data.nextKm],['التاريخ القادم',data.nextDate],['السيارة / الموديل',data.vehicle.replace(/ · /g,' ')],['رقم اللوحة',data.plate],['العداد الحالي · كم',data.odometer],['تاريخ الخدمة',data.serviceDate],['الخدمة / الزيت',data.service]];
-for(let i=0;i<rows.length;i++){const [label,value]=rows[i];const labels=wrap(label,false),values=wrap(value,true);const h=(labels.length+Math.max(1,values.length))*110+40;box(50,y,1100,h,i<2||i===6?'#fffaf0':'white');let baseline=y+75;for(const l of labels){text(l,baseline,false,'#656565');baseline+=110;}for(const l of values){text(l,baseline,true);baseline+=110;}y+=h+8;}
+const rows=[['العداد القادم · كم',data.nextKm],...(data.nextDate ? [['التاريخ القادم',data.nextDate]] : []),['السيارة / الموديل',data.vehicle.replace(/ · /g,' ')],['رقم اللوحة',data.plate],['العداد الحالي · كم',data.odometer],['تاريخ الخدمة',data.serviceDate],['الخدمة / الزيت',data.service]];
+for(let i=0;i<rows.length;i++){
+  const [label,value]=rows[i];
+  const inline=label+': '+value;
+  font(true,inline);
+  if(i>0 && c.measureText(inline).width <= 1030){box(50,y,1100,130);text(inline,y+65,true);y+=138;continue;}
+  const labels=wrap(label,false),values=wrap(value,true);
+  const h=(labels.length+Math.max(1,values.length))*100+20;
+  box(50,y,1100,h,i===0||i===rows.length-1?'#fffaf0':'white');
+  let baseline=y+60;
+  for(const l of labels){text(l,baseline,false,'#656565');baseline+=100;}
+  for(const l of values){text(l,baseline,true);baseline+=100;}
+  y+=h+6;
+}
 
 if(y>2240)throw Error('البيانات طويلة على البطاقة بحجم خط 12. يرجى اختصار وصف الخدمة أو السيارة قبل المشاركة.');
 c.strokeStyle=gold;c.beginPath();c.moveTo(150,2250);c.lineTo(1050,2250);c.stroke();text(data.phone,2315,true);

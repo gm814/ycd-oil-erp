@@ -1,3 +1,4 @@
+import { washEligibility } from "@/lib/wash-eligibility";
 import { validateProductPrice } from "@/lib/product-pricing";
 import { oilServiceReminder, manualOilServiceKm } from "@/lib/oil-service-interval";
 import { receiptAccount } from "@/services/cash-drawer";
@@ -186,8 +187,7 @@ export async function completeServiceOrderInTransaction(tx: Prisma.TransactionCl
       });
     }
 
-    const washPolicy = await tx.washAgreement.findUnique({ where: { sourceBranchId: input.branchId } });
-    const grantsWashCoupon = order.channel === "OIL" && (washPolicy?.issueMode === "ALL" || order.items.some((item) => item.product?.grantsWashCoupon));
+    const grantsWashCoupon = washEligibility(order).eligible;
     let couponSerial: string | null = null;
     if (grantsWashCoupon) {
       couponSerial = await nextDocumentNumber(tx);

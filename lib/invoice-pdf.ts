@@ -6,7 +6,7 @@ export const invoicePdfInclude = {
   correctionOf: true,
   correction: true,
   customer: true,
-  serviceOrder: { include: { vehicle: true, items: { include: { product: true } } } },
+  serviceOrder: { include: { vehicle: true, histories: { orderBy: { createdAt: "desc" as const }, take: 1 }, items: { include: { product: true } } } },
   payments: { orderBy: { paidAt: "asc" as const } },
   coupons: { orderBy: { issuedAt: "desc" as const } },
   returns: { where: { status: "COMPLETED" as const }, orderBy: { createdAt: "desc" as const } },

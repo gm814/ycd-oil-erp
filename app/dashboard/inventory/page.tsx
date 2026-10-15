@@ -57,7 +57,7 @@ export default async function InventoryPage() {
       </article>}
       {canManage && <OpeningStockImport />}
       {canManage && <CatalogImport />}
-      {canManage && <InventoryForms products={products.map((p) => ({ id: p.id, sku: p.sku, nameAr: p.nameAr, category: p.category, serviceIntervalKm: p.serviceIntervalKm }))} />}
+      {canManage && <InventoryForms products={products.map((p) => ({ id: p.id, sku: p.sku, nameAr: p.nameAr, category: p.category, serviceIntervalKm: p.serviceIntervalKm, isOilFilter: p.isOilFilter }))} />}
 
       <article className="panel inventoryPanel">
         <h2>الرصيد الحالي</h2>

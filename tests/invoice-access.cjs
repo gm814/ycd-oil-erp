@@ -37,6 +37,9 @@ const shared = {
 };
 const page = load('app/dashboard/invoices/[id]/page.tsx', {
   ...shared,
+  '@/components/customer-package-actions': {default:'Package'},
+  '@/lib/wash-eligibility':load('lib/wash-eligibility.ts'),
+  './price-correction-form': {default:'PriceCorrectionForm'},
   'next/navigation': {
     redirect: to => { throw new Error('REDIRECT:' + to); },
     notFound: () => { throw new Error('NOT_FOUND'); },
@@ -48,7 +51,7 @@ const page = load('app/dashboard/invoices/[id]/page.tsx', {
   './collection-form': { default: 'CollectionForm' }, './sales-return-form': { default: 'SalesReturnForm' },
 }).default;
 const pdf = load('app/api/invoices/[id]/pdf/route.ts', {
-  ...shared, '@/lib/invoice-pdf': { invoicePdfInclude: {} },
+  ...shared, '@/lib/customer-package-token': {readPackageToken:()=>null}, '@/lib/customer-package-pdf': {}, '@/lib/invoice-pdf': { invoicePdfInclude: {} },
 }).GET;
 function reset(permissions, branchId = 'branch-1') {
   queries = [];

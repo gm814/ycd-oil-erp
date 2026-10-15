@@ -55,6 +55,7 @@ export default async function ServiceOrderPage({
         </div>
         <div className="actionStack">
           <span className="statusBadge">{order.status}</span>
+          {order.invoice && <a className="secondaryLink" href={`/dashboard/invoices/${order.invoice.id}#customer-package`}>تنزيل وطباعة ومشاركة مستندات العميل</a>}
           {order.status === "COMPLETED" && <a className="secondaryLink" href={`/dashboard/service-orders/${order.id}/reminder`}>تذكير الخدمة عبر واتساب</a>}
         </div>
       </div>

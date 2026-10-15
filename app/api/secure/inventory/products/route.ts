@@ -14,7 +14,7 @@ const schema = z.object({
   salePrice: z.coerce.number().min(0).max(10_000_000),
   costPrice: z.coerce.number().min(0).max(10_000_000),
   minStock: z.coerce.number().min(0).max(10_000_000).default(0),
-  grantsWashCoupon: z.coerce.boolean().default(false),
+  isOilFilter: z.union([z.boolean(), z.enum(["true", "false"])]).transform(v => v === true || v === "true").default(false),
 });
 
 export async function POST(request: Request) {
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
 
-  const parsed = schema.refine(data => data.serviceIntervalKm === null || data.category === "OIL").safeParse(await request.json().catch(() => null));
+  const parsed = schema.refine(data => (data.serviceIntervalKm === null || data.category === "OIL") && (!data.isOilFilter || data.category === "FILTER")).safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "INVALID_INPUT" }, { status: 400 });
 
   try {
@@ -55,10 +55,20 @@ export async function PATCH(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
   if (!hasPermission(session.permissions, PERMISSIONS.INVENTORY_MANAGE)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
-  const parsed = z.object({ productId: z.string().min(1), serviceIntervalKm: serviceIntervalInput }).safeParse(await request.json().catch(() => null));
+  const parsed = z.union([
+    z.object({ productId: z.string().min(1), serviceIntervalKm: serviceIntervalInput }).strict(),
+    z.object({ productId: z.string().min(1), isOilFilter: z.enum(["true", "false"]).transform(v => v === "true") }).strict(),
+  ]).safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "INVALID_INPUT" }, { status: 400 });
   const updated = await db.$transaction(async tx => {
     const product = await tx.product.findUnique({ where: { id: parsed.data.productId } });
+    if ("isOilFilter" in parsed.data) {
+      if (!product || product.category !== "FILTER") return false;
+      await tx.product.update({ where: { id: product.id }, data: { isOilFilter: parsed.data.isOilFilter } });
+      await tx.auditLog.create({ data: { actorId: session.userId, action: "PRODUCT_OIL_FILTER_UPDATED", entityType: "Product", entityId: product.id,
+        beforeJson: { isOilFilter: product.isOilFilter }, afterJson: { isOilFilter: parsed.data.isOilFilter } } });
+      return true;
+    }
     if (!product || product.category !== "OIL") return false;
     await tx.product.update({ where: { id: product.id }, data: { serviceIntervalKm: parsed.data.serviceIntervalKm } });
     await tx.auditLog.create({ data: {

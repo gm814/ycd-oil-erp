@@ -25,9 +25,11 @@ async function main() {
   assert(customer.customerNo);
   const vehicle=await db.vehicle.create({data:{customerId:customer.id,plate:suffix, currentOdometer:1000}});
   const shift=await db.shift.create({data:{branchId:source.id,openedBy:user.id,openingCash:0}});
-  const product=await db.product.create({data:{sku:`wash-test-${suffix}`,nameAr:"Eligible oil service",category:"SERVICE",unit:"service",salePrice:100,costPrice:0,minStock:0,grantsWashCoupon:true}});
+  const product=await db.product.create({data:{sku:`wash-test-${suffix}`,nameAr:"Eligible oil service",category:"OIL",unit:"service",salePrice:100,costPrice:0,minStock:0,serviceIntervalKm:5000}});
+  const filter=await db.product.create({data:{sku:`filter-${suffix}`,nameAr:"Oil filter UAT",category:"FILTER",isOilFilter:true,unit:"piece",salePrice:0,costPrice:0}});
+  await db.stockMovement.createMany({data:[product,filter].map(p=>({branchId:source.id,productId:p.id,type:"RECEIPT" as const,quantity:10,reference:"UAT",performedBy:user.id}))});
   async function invoiceWithCoupon() {
-    const order=await db.serviceOrder.create({data:{orderNo:randomUUID(),branchId:source.id,customerId:customer.id,vehicleId:vehicle.id,shiftId:shift.id,odometer:1000,status:"OPEN",items:{create:{productId:product.id,descriptionAr:product.nameAr,quantity:1,unitPrice:100,discount:0}}}});
+    const order=await db.serviceOrder.create({data:{orderNo:randomUUID(),branchId:source.id,customerId:customer.id,vehicleId:vehicle.id,shiftId:shift.id,odometer:1000,status:"OPEN",items:{create:[{productId:product.id,descriptionAr:product.nameAr,quantity:1,unitPrice:100,discount:0},{productId:filter.id,descriptionAr:filter.nameAr,quantity:1,unitPrice:0,discount:0}]}}});
     const invoice=await completeServiceOrder({branchId:source.id,actorId:user.id,serviceOrderId:order.id,paymentMethod:"CASH",nextServiceKm:6000,nextServiceAt:new Date("2030-01-01T00:00:00+03:00"),idempotencyReference:randomUUID()});
     assert.equal(invoice.coupons.length,1);
     const history=await db.vehicleHistory.findFirstOrThrow({where:{serviceOrderId:order.id}});assert.equal(history.nextServiceKm,6000);
@@ -77,7 +79,7 @@ async function main() {
   const batch=await db.washBatch.findUniqueOrThrow({where:{id:raised.batchId},include:{payments:true}});
   assert.equal(batch.payments.reduce((n,p)=>n+Number(p.amount),0),20.5);
   const paired=await db.financialTransaction.findMany({where:{relatedEntityType:"WashBatch",relatedEntityId:raised.batchId}});assert.equal(paired.length,4);assert.equal(paired.reduce((n,t)=>n+Number(t.amount),0),0);
-  await performWashAction(session,{action:"configure",nameAr:"Test wash",washBranchId:receiver.id,cadence:"MONTHLY",issueMode:"ALL",unitAmount:"30"});
+  await performWashAction(session,{action:"configure",nameAr:"Test wash",washBranchId:receiver.id,cadence:"MONTHLY",issueMode:"ELIGIBLE",unitAmount:"30"});
   await db.product.update({where:{id:product.id},data:{grantsWashCoupon:false}});
   const coupon2=await invoiceWithCoupon();await db.coupon.update({where:{id:coupon2.id},data:{expiresAt:new Date("2000-01-01")}});
   await assert.rejects(()=>performWashAction(operator,{action:"redeem",serial:coupon2.serial}),/COUPON_EXPIRED/);

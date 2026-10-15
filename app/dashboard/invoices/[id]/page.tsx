@@ -1,3 +1,5 @@
+import CustomerPackageActions from "@/components/customer-package-actions";
+import { washEligibility } from "@/lib/wash-eligibility";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { companyConfig } from "@/lib/config";
@@ -88,6 +90,9 @@ export default async function InvoicePage({
         <PrintButton invoiceId={invoice.id} />
       </div>
 
+      {invoice.documentType === "INVOICE" && invoice.status !== "VOID" && invoice.serviceOrder.status === "COMPLETED" && hasPermission(session.permissions, PERMISSIONS.INVOICE_ISSUE) && <CustomerPackageActions
+        invoiceId={invoice.id} canOverride={hasPermission(session.permissions, PERMISSIONS.SERVICE_ORDER_APPROVE)}
+        hasOil={washEligibility(invoice.serviceOrder).hasOil} hasOilFilter={washEligibility(invoice.serviceOrder).hasOilFilter} />}
       <article className="invoiceDocument">
         <header className="invoiceBilingualHeader">
           <div className="invoiceNameAr"><b>{companyConfig.legalNameAr}</b><p>السجل التجاري: <b dir="ltr">{companyConfig.crNumber}</b></p><p>الرقم الموحد: <b dir="ltr">{companyConfig.unifiedNumber}</b></p></div>

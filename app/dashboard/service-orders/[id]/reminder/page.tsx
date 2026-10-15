@@ -15,7 +15,7 @@ export default async function ServiceReminderPage({ params }: { params: Promise<
   const { id } = await params;
   const order = await db.serviceOrder.findFirst({
     where: { id, branchId: session.branchId },
-    include: { vehicle: true, customer: true, items: { include: { product: true } }, histories: { orderBy: { createdAt: "desc" }, take: 1 } },
+    include: { invoice: true, vehicle: true, customer: true, items: { include: { product: true } }, histories: { orderBy: { createdAt: "desc" }, take: 1 } },
   });
   if (!order || order.status !== "COMPLETED") notFound();
   async function saveMake(form: FormData) {
@@ -42,6 +42,7 @@ export default async function ServiceReminderPage({ params }: { params: Promise<
     <main className={`workspace ${styles.workspace}`}>
       <div className="invoiceActions noPrint">
         <a href={`/dashboard/service-orders/${id}`} className="backLink">← أمر الخدمة</a>
+        {order.invoice && <a className="secondaryLink" href={`/dashboard/invoices/${order.invoice.id}#customer-package`}>الفاتورة والتذكير وكوبون الغسيل — مشاركة واحدة</a>}
       </div>
       {!order.vehicle.make && hasPermission(session.permissions, PERMISSIONS.SERVICE_ORDER_CREATE) && <aside className={`${styles.correction} noPrint`}>
         <p>الشركة المصنّعة غير مسجلة. أكملها لتظهر مع الموديل في البطاقة.</p>
@@ -57,7 +58,7 @@ export default async function ServiceReminderPage({ params }: { params: Promise<
         odometer: order.odometer?.toLocaleString("en-US") ?? "غير مسجل",
         service: oilItem?.descriptionAr || order.items.map(item => item.descriptionAr).join("، ") || "خدمة عامة",
         nextKm: nextKm?.toLocaleString("en-US") ?? "لم يُحدد",
-        nextDate: "",
+        nextDate: history?.nextServiceAt ? date(history.nextServiceAt) : "",
         phone: companyConfig.phone,
         website: companyConfig.website,
       }} />
